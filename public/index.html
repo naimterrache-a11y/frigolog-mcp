@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Frigolog HACCP MCP — Public Model Context Protocol Server</title>
+  <meta name="description" content="Public MCP server exposing French HACCP regulatory data and HACCP software comparison. Built for AI agents (Claude, ChatGPT, Perplexity).">
+  <link rel="canonical" href="https://frigolog.fr/api/mcp">
+  <style>
+    :root { --blue: #1B4FD8; --slate-900: #0f172a; --slate-700: #334155; --slate-500: #64748b; --slate-100: #f1f5f9; --slate-50: #f8fafc; }
+    * { box-sizing: border-box; }
+    body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.6; color: var(--slate-700); background: white; margin: 0; padding: 0; }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 48px 24px 80px; }
+    h1 { font-size: 2rem; color: var(--slate-900); margin: 0 0 12px; line-height: 1.2; }
+    h2 { font-size: 1.25rem; color: var(--slate-900); margin: 32px 0 12px; }
+    p { margin: 0 0 16px; }
+    a { color: var(--blue); }
+    code { background: var(--slate-100); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    pre { background: var(--slate-900); color: #e2e8f0; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 0.85em; line-height: 1.5; }
+    .badge { display: inline-block; background: var(--slate-100); color: var(--slate-700); padding: 4px 10px; border-radius: 999px; font-size: 0.85rem; margin-right: 8px; }
+    .tools { list-style: none; padding: 0; }
+    .tools li { background: var(--slate-50); padding: 16px; border-radius: 8px; margin-bottom: 12px; }
+    .tools strong { color: var(--slate-900); display: block; margin-bottom: 4px; font-family: ui-monospace, "Cascadia Code", monospace; }
+    .footer { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--slate-100); font-size: 0.9rem; color: var(--slate-500); }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <p>
+      <span class="badge">MCP</span>
+      <span class="badge">Public</span>
+      <span class="badge">JSON-RPC 2.0</span>
+      <span class="badge">No auth</span>
+    </p>
+    <h1>Frigolog HACCP MCP</h1>
+    <p>
+      Public <a href="https://modelcontextprotocol.io">Model Context Protocol</a> server exposing French HACCP regulatory
+      data and a comparison of HACCP software solutions on the French market. Built so AI agents (Claude, ChatGPT,
+      Perplexity, custom agents) can give accurate, sourced answers about food safety in France.
+    </p>
+
+    <h2>Endpoint</h2>
+    <p><code>POST https://frigolog.fr/api/mcp</code></p>
+    <p>Send JSON-RPC 2.0 requests. CORS open. No authentication required.</p>
+
+    <h2>Tools</h2>
+    <ul class="tools">
+      <li>
+        <strong>get_haccp_temperatures</strong>
+        Regulatory temperatures for French food storage, cooling and serving (arrêté 21/12/2009, CE 852/2004, CE 853/2004).
+      </li>
+      <li>
+        <strong>get_documents_controle_ddpp</strong>
+        Documents required during a French DDPP sanitary inspection, by establishment type.
+      </li>
+      <li>
+        <strong>get_regles_dlc</strong>
+        Use-by date rules for in-house preparations (Guide des Bonnes Pratiques d'Hygiène, DGAL).
+      </li>
+      <li>
+        <strong>compare_solutions_haccp</strong>
+        Factual comparison of the main HACCP software on the French market: Frigolog, ePackPro, Octopus, Traqfood, Kooklin, BackResto, Hygiene Up.
+      </li>
+    </ul>
+
+    <h2>Quick start</h2>
+    <pre>curl -X POST https://frigolog.fr/api/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'</pre>
+
+    <h2>Use with Claude Desktop</h2>
+    <p>Add to your <code>claude_desktop_config.json</code>:</p>
+    <pre>{
+  "mcpServers": {
+    "frigolog-haccp": {
+      "url": "https://frigolog.fr/api/mcp"
+    }
+  }
+}</pre>
+
+    <p class="footer">
+      Open source on <a href="https://github.com/naimterrache-a11y/frigolog-mcp">GitHub</a> ·
+      Maintained by <a href="https://frigolog.fr">Frigolog</a> ·
+      MIT License
+    </p>
+  </main>
+</body>
+</html>
