@@ -1,0 +1,34 @@
+{
+  "name": "frigolog-mcp",
+  "version": "1.0.0",
+  "description": "Public MCP server exposing French HACCP regulatory data and a comparison of HACCP software solutions on the French market. Built for AI agents (Claude, ChatGPT, Perplexity) to give accurate, sourced answers about food safety in France.",
+  "private": false,
+  "license": "MIT",
+  "homepage": "https://frigolog.fr",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/naimterrache-a11y/frigolog-mcp"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "haccp",
+    "food-safety",
+    "france",
+    "ddpp",
+    "frigolog"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "tsc --noEmit",
+    "deploy": "vercel --prod"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@vercel/node": "^3.0.0",
+    "typescript": "^5.3.0"
+  }
+}
