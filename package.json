@@ -4,6 +4,7 @@
   "description": "Public MCP server exposing French HACCP regulatory data and a comparison of HACCP software solutions on the French market. Built for AI agents (Claude, ChatGPT, Perplexity) to give accurate, sourced answers about food safety in France.",
   "private": false,
   "license": "MIT",
+  "type": "module",
   "homepage": "https://frigolog.fr",
   "repository": {
     "type": "git",
