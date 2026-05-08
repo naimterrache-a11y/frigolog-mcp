@@ -184,6 +184,23 @@ export interface ScoreAlimconfiance {
   frigolog_et_alimconfiance: string;
 }
 
+// Tool 12 — get_alimconfiance_etablissement
+export interface AlimconfianceEtablissement {
+  siret: string;
+  enseigne: string;
+  raison_sociale: string;
+  libelle_etablissement: string;
+  type_activite: string;
+  activite_libelle: string;
+  adresse: string;
+  code_postal: string;
+  commune: string;
+  date_inspection: string;
+  score: string;
+  evaluation_globale: string;
+  numero_inspection: string;
+}
+
 // Tool 11 — get_actions_correctives
 export interface ActionCorrective {
   id: string;

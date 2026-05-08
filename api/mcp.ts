@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type {
+  AlimconfianceEtablissement,
   JsonRpcRequest,
   JsonRpcResponse,
   MetaWrapper,
@@ -18,7 +19,7 @@ import { ACTIONS_CORRECTIVES } from '../lib/data/actions-correctives.js';
 
 const PROTOCOL_VERSION = '2024-11-05';
 const SERVER_NAME = 'frigolog-haccp';
-const SERVER_VERSION = '1.1.0';
+const SERVER_VERSION = '1.2.0';
 
 const META_AVERTISSEMENT =
   "Ces informations sont fournies à titre indicatif. Consultez la réglementation officielle (Légifrance, DGAL, DGCCRF) et vérifiez les tarifs sur les sites des éditeurs.";
@@ -33,6 +34,16 @@ const RAPPELCONSO_BASE_URL =
 const RAPPELCONSO_TIMEOUT_MS = 6000;
 const RAPPELCONSO_DEFAULT_LIMIT = 10;
 const RAPPELCONSO_MAX_LIMIT = 50;
+
+const META_ALIMCONFIANCE_SOURCE = "Alim'confiance — DGAL (dgal.opendatasoft.com)";
+const META_ALIMCONFIANCE_AVERTISSEMENT =
+  "Données issues de l'open data DGAL — dataset export_alimconfiance. Le score retourné est celui de la dernière inspection officielle (refresh dataset périodique par la DGAL). Couverture limitée aux établissements ayant été inspectés depuis avril 2017.";
+
+const ALIMCONFIANCE_BASE_URL =
+  'https://dgal.opendatasoft.com/api/explore/v2.1/catalog/datasets/export_alimconfiance/records';
+const ALIMCONFIANCE_TIMEOUT_MS = 6000;
+const ALIMCONFIANCE_DEFAULT_LIMIT = 5;
+const ALIMCONFIANCE_MAX_LIMIT = 20;
 
 const TOOLS = [
   {
@@ -183,10 +194,45 @@ const TOOLS = [
   {
     name: 'get_score_alimconfiance',
     description:
-      "Retourne le fonctionnement complet du score Alim'confiance, dispositif officiel de publication des résultats d'inspection sanitaire DDPP en France depuis avril 2017 (alimconfiance.beta.gouv.fr). Détaille les 4 niveaux de notation (très satisfaisant, satisfaisant, à améliorer, à corriger de manière urgente), les 6 critères d'évaluation, la fréquence des inspections (3 à 7 ans en moyenne), et les actions concrètes pour améliorer son score lors d'un contrôle officiel.",
+      "Retourne le fonctionnement complet du score Alim'confiance, dispositif officiel de publication des résultats d'inspection sanitaire DDPP en France depuis avril 2017 (alimconfiance.beta.gouv.fr). Détaille les 4 niveaux de notation (très satisfaisant, satisfaisant, à améliorer, à corriger de manière urgente), les 6 critères d'évaluation, la fréquence des inspections (3 à 7 ans en moyenne), et les actions concrètes pour améliorer son score lors d'un contrôle officiel. Pour récupérer le score d'un établissement précis, utilisez get_alimconfiance_etablissement.",
     inputSchema: {
       type: 'object',
       properties: {},
+    },
+  },
+  {
+    name: 'get_alimconfiance_etablissement',
+    description:
+      "Recherche le score Alim'confiance d'un établissement précis dans le dataset officiel de la DGAL (export_alimconfiance, dgal.opendatasoft.com — 72 887 enregistrements). Retourne pour chaque inspection trouvée : score sanitaire (Très satisfaisant / Satisfaisant / À améliorer / À corriger de manière urgente), date du contrôle officiel, SIRET, enseigne, raison sociale, adresse complète, code postal, commune, type d'activité et numéro d'inspection. Recherche par SIRET (recommandé : identifiant unique et univoque) ou par nom d'enseigne avec filtre optionnel code postal et/ou commune pour désambiguïser. Données refreshées périodiquement par la DGAL ; couvre uniquement les établissements ayant fait l'objet d'un contrôle officiel depuis avril 2017.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        siret: {
+          type: 'string',
+          description:
+            "SIRET 14 chiffres de l'établissement. Recommandé pour une recherche directe et univoque. Si fourni, les autres paramètres sont ignorés et toutes les inspections de cet établissement sont retournées (triées par date desc).",
+        },
+        nom: {
+          type: 'string',
+          description:
+            "Nom commercial, enseigne ou raison sociale. Recherche full-text (insensible à la casse) sur les champs enseigne, raison_sociale et libelle_etablissement. Au moins 2 caractères requis. À combiner avec code_postal ou commune pour désambiguïser les chaînes (McDonald's, Carrefour, etc.).",
+        },
+        code_postal: {
+          type: 'string',
+          description:
+            "Code postal exact (5 chiffres) de l'établissement. Filtre additionnel pour désambiguïser une recherche par nom.",
+        },
+        commune: {
+          type: 'string',
+          description:
+            "Nom de la commune (recherche full-text). Filtre additionnel pour désambiguïser une recherche par nom.",
+        },
+        limit: {
+          type: 'number',
+          description:
+            'Nombre maximum de résultats à retourner (défaut 5, maximum 20). Les inspections les plus récentes en premier.',
+        },
+      },
     },
   },
   {
@@ -338,6 +384,140 @@ async function fetchRappelsActifs(
   return { rappels: trimmed, total: trimmed.length };
 }
 
+interface AlimconfianceRecord {
+  siret?: string;
+  enseigne?: string;
+  raison_sociale?: string;
+  libelle_etablissement?: string;
+  type_activite?: string;
+  app_libelle_activite_etablissement?: string;
+  adresse_1_ua?: string;
+  adresse_2_ua?: string;
+  adresse_3_ua?: string;
+  adresse_activite?: string;
+  code_postal?: string;
+  libelle_commune?: string;
+  date_inspection?: string;
+  synthese_eval_sanit?: string;
+  evaluation_globale?: string;
+  numero_inspection?: string;
+}
+
+interface AlimconfianceResponse {
+  total_count?: number;
+  results?: AlimconfianceRecord[];
+}
+
+function mapAlimconfianceRecord(r: AlimconfianceRecord): AlimconfianceEtablissement {
+  const adresseParts = [r.adresse_1_ua, r.adresse_2_ua, r.adresse_3_ua].filter(
+    (s): s is string => Boolean(s && s.trim()),
+  );
+  const adresse = adresseParts.length > 0 ? adresseParts.join(', ') : r.adresse_activite ?? '';
+  return {
+    siret: r.siret ?? '',
+    enseigne: r.enseigne ?? '',
+    raison_sociale: r.raison_sociale ?? '',
+    libelle_etablissement: r.libelle_etablissement ?? '',
+    type_activite: r.type_activite ?? '',
+    activite_libelle: r.app_libelle_activite_etablissement ?? '',
+    adresse,
+    code_postal: r.code_postal ?? '',
+    commune: r.libelle_commune ?? '',
+    date_inspection: r.date_inspection ?? '',
+    score: r.synthese_eval_sanit ?? '',
+    evaluation_globale: r.evaluation_globale ?? '',
+    numero_inspection: r.numero_inspection ?? '',
+  };
+}
+
+function sanitizeOdsqlString(s: string): string {
+  // Strip characters that would break the ODSQL where clause string literal.
+  return s.replace(/["\\]/g, '').trim();
+}
+
+async function fetchAlimconfianceEtablissement(opts: {
+  siret?: string;
+  nom?: string;
+  codePostal?: string;
+  commune?: string;
+  limit: number;
+}): Promise<{ etablissements: AlimconfianceEtablissement[]; total: number }> {
+  const whereClauses: string[] = [];
+
+  if (opts.siret) {
+    const siret = sanitizeOdsqlString(opts.siret);
+    if (!/^\d{14}$/.test(siret)) {
+      throw new Error("Le paramètre 'siret' doit contenir exactement 14 chiffres.");
+    }
+    whereClauses.push(`siret="${siret}"`);
+  } else if (opts.nom) {
+    const nom = sanitizeOdsqlString(opts.nom);
+    if (nom.length < 2) {
+      throw new Error("Le paramètre 'nom' doit contenir au moins 2 caractères.");
+    }
+    whereClauses.push(
+      `(search(enseigne, "${nom}") OR search(raison_sociale, "${nom}") OR search(libelle_etablissement, "${nom}"))`,
+    );
+  } else {
+    throw new Error(
+      "Au moins un critère de recherche est requis : 'siret' (recommandé, recherche univoque) ou 'nom'.",
+    );
+  }
+
+  if (opts.codePostal) {
+    const cp = sanitizeOdsqlString(opts.codePostal);
+    if (/^\d{5}$/.test(cp)) {
+      whereClauses.push(`code_postal="${cp}"`);
+    }
+  }
+
+  if (opts.commune) {
+    const commune = sanitizeOdsqlString(opts.commune);
+    if (commune.length >= 2) {
+      whereClauses.push(`search(libelle_commune, "${commune}")`);
+    }
+  }
+
+  const params = new URLSearchParams({
+    where: whereClauses.join(' AND '),
+    order_by: 'date_inspection desc',
+    limit: String(opts.limit),
+  });
+  const url = `${ALIMCONFIANCE_BASE_URL}?${params.toString()}`;
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      signal: AbortSignal.timeout(ALIMCONFIANCE_TIMEOUT_MS),
+      headers: { Accept: 'application/json' },
+    });
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : 'unknown error';
+    throw new Error(
+      `API Alim'confiance temporairement indisponible (${detail}). Consultez alimconfiance.beta.gouv.fr directement.`,
+    );
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      `API Alim'confiance temporairement indisponible (HTTP ${response.status}). Consultez alimconfiance.beta.gouv.fr directement.`,
+    );
+  }
+
+  let json: AlimconfianceResponse;
+  try {
+    json = (await response.json()) as AlimconfianceResponse;
+  } catch {
+    throw new Error(
+      "API Alim'confiance temporairement indisponible (réponse invalide). Consultez alimconfiance.beta.gouv.fr directement.",
+    );
+  }
+
+  const records = json.results ?? [];
+  const mapped = records.map(mapAlimconfianceRecord);
+  return { etablissements: mapped, total: json.total_count ?? mapped.length };
+}
+
 async function executeTool(
   name: string,
   args: Record<string, unknown> | undefined,
@@ -457,6 +637,31 @@ async function executeTool(
 
     case 'get_score_alimconfiance': {
       return wrapMeta(SCORE_ALIMCONFIANCE);
+    }
+
+    case 'get_alimconfiance_etablissement': {
+      const siret = typeof params.siret === 'string' ? params.siret : undefined;
+      const nom = typeof params.nom === 'string' ? params.nom : undefined;
+      const codePostal =
+        typeof params.code_postal === 'string' ? params.code_postal : undefined;
+      const commune = typeof params.commune === 'string' ? params.commune : undefined;
+      const rawLimit =
+        typeof params.limit === 'number' ? params.limit : ALIMCONFIANCE_DEFAULT_LIMIT;
+      const limit = Math.max(
+        1,
+        Math.min(Math.floor(rawLimit), ALIMCONFIANCE_MAX_LIMIT),
+      );
+      const result = await fetchAlimconfianceEtablissement({
+        siret,
+        nom,
+        codePostal,
+        commune,
+        limit,
+      });
+      return wrapMeta(result, {
+        source: META_ALIMCONFIANCE_SOURCE,
+        avertissement: META_ALIMCONFIANCE_AVERTISSEMENT,
+      });
     }
 
     case 'get_actions_correctives': {
