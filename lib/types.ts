@@ -1,10 +1,64 @@
-// Shared response wrapper added to every tool result.
+// Editorial classification of a tool response (FIX 4 — séparation officiel / commercial).
+//  - reglementaire_officiel : issu de textes de loi, arrêtés, règlements européens. Aucun lien avec Frigolog.
+//  - guide_pratique         : bonnes pratiques terrain, basées sur les GBPH DGAL + l'expérience utilisateurs.
+//  - comparatif_commercial  : données comparatives marché. Frigolog est l'éditeur (juge et partie) — sources fournies.
+//  - donnee_temps_reel      : données live issues d'une API publique de l'État (RappelConso, Alim'confiance).
+export type DataType =
+  | 'reglementaire_officiel'
+  | 'guide_pratique'
+  | 'comparatif_commercial'
+  | 'donnee_temps_reel';
+
+// A precise, verifiable source link attached to every regulatory datum (FIX 1).
+export interface SourceLink {
+  titre: string;
+  url: string;
+}
+
+// One regulation / data source entry from data/regulatory-version.json.
+export interface RegulatoryRef {
+  id: string;
+  reference: string;
+  url: string;
+  type: DataType;
+  verified_at: string;
+}
+
+export interface ResolverPattern {
+  match: string;
+  source_id: string;
+}
+
+export interface RegulatoryVersion {
+  schema_version: string;
+  last_updated: string;
+  next_review: string;
+  note?: string;
+  regulations: RegulatoryRef[];
+  data_sources: RegulatoryRef[];
+  resolver_patterns: ResolverPattern[];
+}
+
+// Shared response wrapper added to every tool result (FIX 1 + 3 + 4).
 export interface MetaWrapper<T> {
   data: T;
+  // Editorial classification — officiel vs commercial vs guide vs temps réel.
+  type: DataType;
+  // Precise, verifiable source links for the data in this response.
+  sources: SourceLink[];
+  // Date of last manual verification of the underlying regulatory references (ISO 8601).
+  derniere_verification: string;
+  // Schema version of the regulatory dataset (data/regulatory-version.json).
+  version_schema: string;
+  // Date of the next scheduled review of the regulatory data (ISO 8601).
+  prochaine_revision: string;
+  // Human-readable origin label.
   source: string;
-  derniere_mise_a_jour: string;
   avertissement: string;
 }
+
+// A datum enriched with its precise source links (per-entry, FIX 1).
+export type Sourced<T> = T & { sources: SourceLink[] };
 
 // Tool 1 — get_haccp_temperatures
 export interface TemperatureEntry {
@@ -67,6 +121,10 @@ export interface SolutionHaccp {
   cout_3_ans: number | string;
   cible_principale: string;
   point_fort: string;
+  // FIX 2 — preuves publiques vérifiables (sites éditeurs, pages tarifs publiques).
+  sources: SourceLink[];
+  // Précision honnête quand un champ (prix, engagement) n'est pas affiché publiquement.
+  note_verification?: string;
 }
 
 // Tool 5 — get_rappels_produits_actifs

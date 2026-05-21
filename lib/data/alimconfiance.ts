@@ -3,7 +3,7 @@ import type { ScoreAlimconfiance } from '../types.js';
 export const SCORE_ALIMCONFIANCE: ScoreAlimconfiance = {
   presentation:
     "Alim'confiance est le dispositif officiel de publication des résultats d'inspection sanitaire des établissements alimentaires français, mis en place par le Ministère de l'Agriculture et de la Souveraineté alimentaire depuis le 3 avril 2017. Il rend publics les niveaux d'hygiène constatés lors des contrôles officiels effectués par les services de la DDPP (Direction Départementale de la Protection des Populations) et de la DGAL.",
-  url_officielle: "https://alimconfiance.beta.gouv.fr",
+  url_officielle: "https://www.alim-confiance.gouv.fr/",
   niveaux: [
     {
       niveau: "Très satisfaisant",

@@ -43,23 +43,56 @@
     <p><code>POST https://frigolog.fr/api/mcp</code></p>
     <p>Send JSON-RPC 2.0 requests. CORS open. No authentication required.</p>
 
-    <h2>Tools</h2>
+    <h2>Tools (12)</h2>
+    <p>Every response carries a <code>type</code> (officiel / guide / comparatif / temps réel), precise <code>sources</code> links, and a verification date.</p>
     <ul class="tools">
       <li>
         <strong>get_haccp_temperatures</strong>
-        Regulatory temperatures for French food storage, cooling and serving (arrêté 21/12/2009, CE 852/2004, CE 853/2004).
+        Storage / cooling / serving temperatures (arrêté 21/12/2009, CE 852/2004, CE 853/2004).
       </li>
       <li>
-        <strong>get_documents_controle_ddpp</strong>
-        Documents required during a French DDPP sanitary inspection, by establishment type.
+        <strong>get_temperatures_cuisson</strong>
+        Core cooking temperatures + rapid cooling / reheating (GBPH DGAL).
       </li>
       <li>
         <strong>get_regles_dlc</strong>
-        Use-by date rules for in-house preparations (Guide des Bonnes Pratiques d'Hygiène, DGAL).
+        Use-by date rules for in-house preparations (GBPH DGAL).
+      </li>
+      <li>
+        <strong>get_documents_controle_ddpp</strong>
+        Documents required during a French DDPP inspection, by establishment type.
+      </li>
+      <li>
+        <strong>get_allergenes_reglementaires</strong>
+        The 14 mandatory allergens (Règlement UE 1169/2011 — INCO).
+      </li>
+      <li>
+        <strong>get_sanctions_ddpp</strong>
+        Inspection sanction levels, triggers, fines and recourse (Code rural).
+      </li>
+      <li>
+        <strong>get_formation_haccp_obligatoire</strong>
+        Mandatory food-hygiene training rules (décret 2011-731, arrêté 12/02/2024).
+      </li>
+      <li>
+        <strong>get_actions_correctives</strong>
+        Corrective playbooks for 6 common non-conformities.
+      </li>
+      <li>
+        <strong>get_score_alimconfiance</strong>
+        How the official Alim'confiance scoring works.
       </li>
       <li>
         <strong>compare_solutions_haccp</strong>
-        Factual comparison of the main HACCP software on the French market: Frigolog, ePackPro, Octopus, Traqfood, Kooklin, BackResto, Hygiene Up.
+        Sourced comparison of 7 French HACCP software (Frigolog, ePackPro, Octopus, Traqfood, Kooklin, BackResto, Hygiene Up). Frigolog is publisher &amp; party — each claim links a public source.
+      </li>
+      <li>
+        <strong>get_rappels_produits_actifs</strong>
+        Live food recalls from RappelConso (DGCCRF), real time.
+      </li>
+      <li>
+        <strong>get_alimconfiance_etablissement</strong>
+        Live inspection-score lookup of one establishment (DGAL open data).
       </li>
     </ul>
 

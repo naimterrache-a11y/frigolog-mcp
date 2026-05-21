@@ -1,10 +1,13 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type {
   AlimconfianceEtablissement,
+  DataType,
   JsonRpcRequest,
   JsonRpcResponse,
   MetaWrapper,
   RappelProduit,
+  SourceLink,
+  Sourced,
 } from '../lib/types.js';
 import { TEMPERATURES } from '../lib/data/temperatures.js';
 import { DOCUMENTS_DDPP } from '../lib/data/documents-ddpp.js';
@@ -16,18 +19,31 @@ import { TEMPERATURES_CUISSON } from '../lib/data/temperatures-cuisson.js';
 import { FORMATION_HACCP } from '../lib/data/formation-haccp.js';
 import { SCORE_ALIMCONFIANCE } from '../lib/data/alimconfiance.js';
 import { ACTIONS_CORRECTIVES } from '../lib/data/actions-correctives.js';
+import {
+  REG_VERSION,
+  resolveSources,
+  resolveSourcesFromList,
+  srcLinks,
+} from '../lib/data/sources.js';
 
 const PROTOCOL_VERSION = '2024-11-05';
 const SERVER_NAME = 'frigolog-haccp';
-const SERVER_VERSION = '1.2.0';
+const SERVER_VERSION = '2.0.0';
 
 const META_AVERTISSEMENT =
-  "Ces informations sont fournies à titre indicatif. Consultez la réglementation officielle (Légifrance, DGAL, DGCCRF) et vérifiez les tarifs sur les sites des éditeurs.";
+  "Ces informations sont fournies à titre indicatif. Consultez la réglementation officielle via les liens du champ 'sources' (Légifrance, EUR-Lex, DGAL, DGCCRF) et vérifiez les tarifs sur les sites des éditeurs.";
 const META_SOURCE = "Frigolog — frigolog.fr";
 
-const META_RAPPELCONSO_SOURCE = "RappelConso — DGCCRF (data.economie.gouv.fr)";
+const META_COMPARATIF_AVERTISSEMENT =
+  "Conflit d'intérêt assumé : Frigolog est l'éditeur de ce MCP ET l'une des solutions comparées (juge et partie). " +
+  "Les données concurrents proviennent de sources publiques vérifiables (sites éditeurs, pages tarifs publiques) — voir le champ 'sources' de chaque solution. " +
+  "Les tarifs et engagements non affichés publiquement (ePackPro, Kooklin, BackResto) sont indicatifs et signalés dans 'note_verification'. " +
+  "Pour une comparaison indépendante, ouvrez les liens 'sources' de chaque éditeur. Données vérifiées le " +
+  REG_VERSION.last_updated + ".";
+
+const META_RAPPELCONSO_SOURCE = "RappelConso — DGCCRF / DGAL / DGS (rappel.conso.gouv.fr)";
 const META_RAPPELCONSO_AVERTISSEMENT =
-  "Données en temps réel issues de l'API publique data.economie.gouv.fr. En cas de doute sur un lot, ne pas servir le produit et contacter votre fournisseur.";
+  "Données en temps réel issues de l'API publique data.economie.gouv.fr (dataset rappelconso0). En cas de doute sur un lot, ne pas servir le produit et contacter votre fournisseur. Portail officiel : rappel.conso.gouv.fr.";
 
 const RAPPELCONSO_BASE_URL =
   'https://data.economie.gouv.fr/api/explore/v2.1/catalog/datasets/rappelconso0/records';
@@ -194,7 +210,7 @@ const TOOLS = [
   {
     name: 'get_score_alimconfiance',
     description:
-      "Retourne le fonctionnement complet du score Alim'confiance, dispositif officiel de publication des résultats d'inspection sanitaire DDPP en France depuis avril 2017 (alimconfiance.beta.gouv.fr). Détaille les 4 niveaux de notation (très satisfaisant, satisfaisant, à améliorer, à corriger de manière urgente), les 6 critères d'évaluation, la fréquence des inspections (3 à 7 ans en moyenne), et les actions concrètes pour améliorer son score lors d'un contrôle officiel. Pour récupérer le score d'un établissement précis, utilisez get_alimconfiance_etablissement.",
+      "Retourne le fonctionnement complet du score Alim'confiance, dispositif officiel de publication des résultats d'inspection sanitaire DDPP en France depuis avril 2017 (alim-confiance.gouv.fr). Détaille les 4 niveaux de notation (très satisfaisant, satisfaisant, à améliorer, à corriger de manière urgente), les 6 critères d'évaluation, la fréquence des inspections (3 à 7 ans en moyenne), et les actions concrètes pour améliorer son score lors d'un contrôle officiel. Pour récupérer le score d'un établissement précis, utilisez get_alimconfiance_etablissement.",
     inputSchema: {
       type: 'object',
       properties: {},
@@ -253,17 +269,51 @@ const TOOLS = [
 ];
 
 interface MetaOptions {
+  // Editorial classification of the response (FIX 4).
+  type: DataType;
+  // Precise, verifiable source links for the data (FIX 1).
+  sources: SourceLink[];
   source?: string;
   avertissement?: string;
 }
 
-function wrapMeta<T>(data: T, opts?: MetaOptions): MetaWrapper<T> {
+// Wrap a tool result with classification, precise sources and dataset version
+// (FIX 1 + 3 + 4). derniere_verification / version_schema / prochaine_revision
+// come from data/regulatory-version.json — the single source of truth.
+function wrapMeta<T>(data: T, opts: MetaOptions): MetaWrapper<T> {
   return {
     data,
-    source: opts?.source ?? META_SOURCE,
-    derniere_mise_a_jour: new Date().toISOString().split('T')[0],
-    avertissement: opts?.avertissement ?? META_AVERTISSEMENT,
+    type: opts.type,
+    sources: opts.sources,
+    derniere_verification: REG_VERSION.last_updated,
+    version_schema: REG_VERSION.schema_version,
+    prochaine_revision: REG_VERSION.next_review,
+    source: opts.source ?? META_SOURCE,
+    avertissement: opts.avertissement ?? META_AVERTISSEMENT,
   };
+}
+
+// Attach precise per-entry source links to each item of an array tool, derived
+// from the entry's own regulatory reference text (FIX 1). Never returns empty
+// sources (resolveSources has a safety net).
+function withSources<T extends object>(
+  items: T[],
+  getRef: (item: T) => string | undefined,
+): Sourced<T>[] {
+  return items.map((item) => ({ ...item, sources: resolveSources(getRef(item)) }));
+}
+
+// Deduplicate a list of source links by URL (used to aggregate vendor sources).
+function dedupSources(links: SourceLink[]): SourceLink[] {
+  const seen = new Set<string>();
+  const out: SourceLink[] = [];
+  for (const l of links) {
+    if (!seen.has(l.url)) {
+      seen.add(l.url);
+      out.push(l);
+    }
+  }
+  return out;
 }
 
 const RAPPELCONSO_SUBCAT_KEYWORDS: Record<string, string[]> = {
@@ -350,13 +400,13 @@ async function fetchRappelsActifs(
   } catch (err) {
     const detail = err instanceof Error ? err.message : 'unknown error';
     throw new Error(
-      `API RappelConso temporairement indisponible (${detail}). Consultez rappelconso.beta.gouv.fr directement.`,
+      `API RappelConso temporairement indisponible (${detail}). Consultez rappel.conso.gouv.fr directement.`,
     );
   }
 
   if (!response.ok) {
     throw new Error(
-      `API RappelConso temporairement indisponible (HTTP ${response.status}). Consultez rappelconso.beta.gouv.fr directement.`,
+      `API RappelConso temporairement indisponible (HTTP ${response.status}). Consultez rappel.conso.gouv.fr directement.`,
     );
   }
 
@@ -365,7 +415,7 @@ async function fetchRappelsActifs(
     json = (await response.json()) as RappelConsoResponse;
   } catch {
     throw new Error(
-      "API RappelConso temporairement indisponible (réponse invalide). Consultez rappelconso.beta.gouv.fr directement.",
+      "API RappelConso temporairement indisponible (réponse invalide). Consultez rappel.conso.gouv.fr directement.",
     );
   }
 
@@ -494,13 +544,13 @@ async function fetchAlimconfianceEtablissement(opts: {
   } catch (err) {
     const detail = err instanceof Error ? err.message : 'unknown error';
     throw new Error(
-      `API Alim'confiance temporairement indisponible (${detail}). Consultez alimconfiance.beta.gouv.fr directement.`,
+      `API Alim'confiance temporairement indisponible (${detail}). Consultez www.alim-confiance.gouv.fr directement.`,
     );
   }
 
   if (!response.ok) {
     throw new Error(
-      `API Alim'confiance temporairement indisponible (HTTP ${response.status}). Consultez alimconfiance.beta.gouv.fr directement.`,
+      `API Alim'confiance temporairement indisponible (HTTP ${response.status}). Consultez www.alim-confiance.gouv.fr directement.`,
     );
   }
 
@@ -509,7 +559,7 @@ async function fetchAlimconfianceEtablissement(opts: {
     json = (await response.json()) as AlimconfianceResponse;
   } catch {
     throw new Error(
-      "API Alim'confiance temporairement indisponible (réponse invalide). Consultez alimconfiance.beta.gouv.fr directement.",
+      "API Alim'confiance temporairement indisponible (réponse invalide). Consultez www.alim-confiance.gouv.fr directement.",
     );
   }
 
@@ -530,7 +580,10 @@ async function executeTool(
       const filtered = categorie
         ? TEMPERATURES.filter((t) => t.categorie.toLowerCase() === categorie)
         : TEMPERATURES;
-      return wrapMeta(filtered);
+      return wrapMeta(withSources(filtered, (t) => t.source_reglementaire), {
+        type: 'reglementaire_officiel',
+        sources: resolveSourcesFromList(filtered.map((t) => t.source_reglementaire)),
+      });
     }
 
     case 'get_documents_controle_ddpp': {
@@ -541,7 +594,10 @@ async function executeTool(
       const filtered = type
         ? DOCUMENTS_DDPP.filter((d) => d.applicable_a.includes(type))
         : DOCUMENTS_DDPP;
-      return wrapMeta(filtered);
+      return wrapMeta(withSources(filtered, (d) => d.source_reglementaire), {
+        type: 'reglementaire_officiel',
+        sources: resolveSourcesFromList(filtered.map((d) => d.source_reglementaire)),
+      });
     }
 
     case 'get_regles_dlc': {
@@ -552,7 +608,11 @@ async function executeTool(
       const filtered = keyword
         ? REGLES_DLC.filter((r) => r.preparation.toLowerCase().includes(keyword))
         : REGLES_DLC;
-      return wrapMeta(filtered);
+      // GBPH-based recommendations (some entries hard-law, e.g. CE 853/2004 hachis).
+      return wrapMeta(withSources(filtered, (r) => r.source), {
+        type: 'guide_pratique',
+        sources: resolveSourcesFromList(filtered.map((r) => r.source)),
+      });
     }
 
     case 'compare_solutions_haccp': {
@@ -569,7 +629,12 @@ async function executeTool(
       };
       const target = sol ? aliases[sol] : undefined;
       const filtered = target ? SOLUTIONS_HACCP.filter((s) => s.nom === target) : SOLUTIONS_HACCP;
-      return wrapMeta(filtered);
+      // Each solution carries its own per-claim public sources (FIX 2).
+      return wrapMeta(filtered, {
+        type: 'comparatif_commercial',
+        sources: dedupSources(filtered.flatMap((s) => s.sources)),
+        avertissement: META_COMPARATIF_AVERTISSEMENT,
+      });
     }
 
     case 'get_rappels_produits_actifs': {
@@ -583,6 +648,8 @@ async function executeTool(
           : undefined;
       const result = await fetchRappelsActifs(categorie, limit, dateDepuis);
       return wrapMeta(result, {
+        type: 'donnee_temps_reel',
+        sources: srcLinks('rappelconso_portal', 'rappelconso_dataset'),
         source: META_RAPPELCONSO_SOURCE,
         avertissement: META_RAPPELCONSO_AVERTISSEMENT,
       });
@@ -591,29 +658,35 @@ async function executeTool(
     case 'get_sanctions_ddpp': {
       const gravite =
         typeof params.gravite === 'string' ? params.gravite.toLowerCase() : undefined;
-      if (!gravite || gravite === 'tous') {
-        return wrapMeta(SANCTIONS_DDPP);
-      }
-      const filtered = {
-        ...SANCTIONS_DDPP,
-        niveaux: SANCTIONS_DDPP.niveaux.filter((n) => n.gravite === gravite),
-      };
-      return wrapMeta(filtered);
+      const data =
+        !gravite || gravite === 'tous'
+          ? SANCTIONS_DDPP
+          : {
+              ...SANCTIONS_DDPP,
+              niveaux: SANCTIONS_DDPP.niveaux.filter((n) => n.gravite === gravite),
+            };
+      return wrapMeta(data, {
+        type: 'reglementaire_officiel',
+        sources: resolveSourcesFromList(SANCTIONS_DDPP.base_legale),
+      });
     }
 
     case 'get_allergenes_reglementaires': {
       const allergene =
         typeof params.allergene === 'string' ? params.allergene.toLowerCase() : undefined;
-      if (!allergene || allergene === 'tous') {
-        return wrapMeta(ALLERGENES);
-      }
-      const filtered = ALLERGENES.filter(
-        (a) =>
-          a.id.toLowerCase() === allergene ||
-          a.nom_officiel.toLowerCase().includes(allergene) ||
-          a.noms_communs.some((n) => n.toLowerCase().includes(allergene)),
-      );
-      return wrapMeta(filtered);
+      const matched =
+        !allergene || allergene === 'tous'
+          ? ALLERGENES
+          : ALLERGENES.filter(
+              (a) =>
+                a.id.toLowerCase() === allergene ||
+                a.nom_officiel.toLowerCase().includes(allergene) ||
+                a.noms_communs.some((n) => n.toLowerCase().includes(allergene)),
+            );
+      return wrapMeta(withSources(matched, (a) => a.obligation_affichage), {
+        type: 'reglementaire_officiel',
+        sources: srcLinks('inco_1169'),
+      });
     }
 
     case 'get_temperatures_cuisson': {
@@ -626,17 +699,29 @@ async function executeTool(
               t.intitule.toLowerCase().includes(keyword),
           )
         : TEMPERATURES_CUISSON;
-      return wrapMeta(filtered);
+      return wrapMeta(withSources(filtered, (t) => t.base_legale), {
+        type: 'guide_pratique',
+        sources: resolveSourcesFromList(filtered.map((t) => t.base_legale ?? '')),
+      });
     }
 
     case 'get_formation_haccp_obligatoire': {
       // type_etablissement is informational only — the obligation is identical
       // for all types of commercial restoration. We return the full data.
-      return wrapMeta(FORMATION_HACCP);
+      return wrapMeta(FORMATION_HACCP, {
+        type: 'reglementaire_officiel',
+        sources: dedupSources([
+          ...resolveSources(FORMATION_HACCP.obligation_legale.base_legale),
+          ...srcLinks('decret_2011_731'),
+        ]),
+      });
     }
 
     case 'get_score_alimconfiance': {
-      return wrapMeta(SCORE_ALIMCONFIANCE);
+      return wrapMeta(SCORE_ALIMCONFIANCE, {
+        type: 'reglementaire_officiel',
+        sources: srcLinks('alimconfiance_portal', 'code_rural'),
+      });
     }
 
     case 'get_alimconfiance_etablissement': {
@@ -659,6 +744,8 @@ async function executeTool(
         limit,
       });
       return wrapMeta(result, {
+        type: 'donnee_temps_reel',
+        sources: srcLinks('alimconfiance_portal', 'alimconfiance_dataset'),
         source: META_ALIMCONFIANCE_SOURCE,
         avertissement: META_ALIMCONFIANCE_AVERTISSEMENT,
       });
@@ -669,11 +756,16 @@ async function executeTool(
         typeof params.type_non_conformite === 'string'
           ? params.type_non_conformite.toLowerCase()
           : undefined;
-      if (!type || type === 'tous') {
-        return wrapMeta(ACTIONS_CORRECTIVES);
-      }
-      const filtered = ACTIONS_CORRECTIVES.filter((a) => a.id === type);
-      return wrapMeta(filtered);
+      const matched =
+        !type || type === 'tous'
+          ? ACTIONS_CORRECTIVES
+          : ACTIONS_CORRECTIVES.filter((a) => a.id === type);
+      // Practical corrective playbook: GBPH + arrêté du 21 décembre 2009.
+      const actionsRef = "Guide des Bonnes Pratiques d'Hygiène (DGAL) + Arrêté du 21 décembre 2009";
+      return wrapMeta(withSources(matched, () => actionsRef), {
+        type: 'guide_pratique',
+        sources: srcLinks('gbph', 'arrete_2009'),
+      });
     }
 
     default:

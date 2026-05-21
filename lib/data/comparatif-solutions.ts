@@ -27,6 +27,11 @@ export const SOLUTIONS_HACCP: SolutionHaccp[] = [
     cout_3_ans: 2124,
     cible_principale: "Indépendants, petites structures, métiers de bouche, restauration commerciale",
     point_fort: "Unique solution IA-first du marché français — scan étiquettes 13 champs en 8 secondes via Claude Vision + cross-check RappelConso DGCCRF temps réel + score conformité /100 + simulation inspecteur DDPP. Prix flat tout inclus, sans engagement, sans hardware imposé.",
+    sources: [
+      { titre: "Tarifs Frigolog (page publique)", url: "https://frigolog.fr/tarifs" },
+      { titre: "Site Frigolog", url: "https://frigolog.fr/" },
+    ],
+    note_verification: "Éditeur de ce MCP. Prix, fonctionnalités et conditions affichés publiquement sur frigolog.fr.",
   },
   {
     nom: "ePackPro",
@@ -52,6 +57,10 @@ export const SOLUTIONS_HACCP: SolutionHaccp[] = [
     cout_3_ans: "5053 à 7213 (selon pack + options)",
     cible_principale: "Restaurants structurés, groupes, franchises, chaînes de restauration",
     point_fort: "Leader historique du marché HACCP français. Réseau de 40 experts terrain pour installation sur site, profondeur fonctionnelle, support 7j/7 + SAV matériel intégré, sondes IoT mature.",
+    sources: [
+      { titre: "Site ePackPro", url: "https://www.epackpro.com/" },
+    ],
+    note_verification: "Prix, durée d'engagement (36 mois) et frais d'installation ne sont pas affichés publiquement : ils sont communiqués lors d'une démo commerciale sur site. Valeurs indicatives — à vérifier directement auprès de l'éditeur.",
   },
   {
     nom: "Octopus HACCP",
@@ -76,6 +85,11 @@ export const SOLUTIONS_HACCP: SolutionHaccp[] = [
     cout_3_ans: "≈ 3 200 (5 modules de base sur 36 mois + 448 € setup, hors capteurs et tablette en option)",
     cible_principale: "Restaurants, chaînes, collectivités, crèches, écoles",
     point_fort: "Partenariat distribution Transgourmet, app au design ludique, OCR traçabilité, forte communauté (4000+ Facebook), excellent contenu pédagogique HACCP. PMS PDF vierge gratuit reconnu.",
+    sources: [
+      { titre: "Tarifs Octopus HACCP (page publique)", url: "https://octopus-haccp.com/tarifs/" },
+      { titre: "Site Octopus HACCP", url: "https://octopus-haccp.com/" },
+    ],
+    note_verification: "Tarification modulaire : le montant exact dépend de la configuration choisie. Frais de mise en service et options (capteurs, tablette) affichés publiquement sur la page tarifs.",
   },
   {
     nom: "Traqfood",
@@ -99,6 +113,11 @@ export const SOLUTIONS_HACCP: SolutionHaccp[] = [
     cout_3_ans: "720 à 2 016 (Starter annuel à Pro mensuel sur 36 mois)",
     cible_principale: "PME alimentaires, groupes multi-sites, structures organisées avec plusieurs établissements",
     point_fort: "Adossé à Mérieux NutriSciences (leader mondial sécurité alimentaire). 50 000+ utilisateurs, 23 modules métier, présence internationale (6 langues : FR, EN, DE, ES, IT, NL). Caution scientifique forte sur les protocoles.",
+    sources: [
+      { titre: "Tarifs Traqfood (page publique)", url: "https://traqfood.com/tarifs/" },
+      { titre: "Site Traqfood", url: "https://traqfood.com/" },
+    ],
+    note_verification: "Prix Starter / Pro affichés publiquement sur la page tarifs (engagement annuel = réduction).",
   },
   {
     nom: "BackResto",
@@ -123,6 +142,10 @@ export const SOLUTIONS_HACCP: SolutionHaccp[] = [
     cout_3_ans: 720,
     cible_principale: "Petits indépendants, food trucks, activités saisonnières, structures avec connexion 4G instable",
     point_fort: "Le moins cher du marché français. Créé par un restaurateur, BYOD strict, mode offline robuste, multi-langues (6 langues), 1200+ utilisateurs. Adapté aux structures sans ambition fonctionnelle IA.",
+    sources: [
+      { titre: "Site BackResto", url: "https://www.backresto.com/" },
+    ],
+    note_verification: "Prix annoncés dans l'app et l'onboarding ; page tarifs publique non trouvée à la date de vérification. Valeurs indicatives — à confirmer auprès de l'éditeur.",
   },
   {
     nom: "Kooklin",
@@ -146,6 +169,10 @@ export const SOLUTIONS_HACCP: SolutionHaccp[] = [
     cout_3_ans: "À confirmer",
     cible_principale: "CHR, boucheries, collectivités, cuisines centrales, environnements humides",
     point_fort: "Tablette ultra-résistante IP68 (résistance immersion eau), OCR + commande vocale en cuisine, formation illimitée, portail manager Kookontrol pour réseaux multi-sites, présence simultanée France et Suisse.",
+    sources: [
+      { titre: "Site Kooklin", url: "https://kooklin.fr/" },
+    ],
+    note_verification: "Prix sur devis, non affiché publiquement (tablette durcie + installation sur site incluses). Engagement non communiqué. Valeurs indicatives — à vérifier directement auprès de l'éditeur.",
   },
   {
     nom: "Hygiene Up",
@@ -167,5 +194,10 @@ export const SOLUTIONS_HACCP: SolutionHaccp[] = [
     cout_3_ans: "≈ 2200 (5 modules de base sur 36 mois, hors modules supplémentaires)",
     cible_principale: "Petites structures cherchant une approche modulaire à la carte",
     point_fort: "Tarif d'entrée intermédiaire avec grille modulaire à la carte. Au-delà de 7 modules réels, le prix dépasse celui de Frigolog avec moins de fonctionnalités IA.",
+    sources: [
+      { titre: "Tarifs Hygiene Up (page publique)", url: "https://hygiene-up.com/tarifs" },
+      { titre: "Site Hygiene Up", url: "https://hygiene-up.com/" },
+    ],
+    note_verification: "Tarif de base affiché publiquement ; engagement, frais et essai non détaillés publiquement à la date de vérification.",
   },
 ];
