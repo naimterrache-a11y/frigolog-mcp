@@ -1,10 +1,13 @@
 import type { RegulatoryVersion, RegulatoryRef, SourceLink } from '../types.js';
-import REG_JSON from '../../data/regulatory-version.json';
+// Import attribute is REQUIRED: the Vercel runtime executes this as native ESM
+// (Node >= 20.10), which rejects a JSON import without `with { type: 'json' }`
+// (=> FUNCTION_INVOCATION_FAILED at cold start). The static import also ensures
+// node-file-trace ships the JSON with the function. resolveJsonModule covers the
+// build-time type-check.
+import REG_JSON from '../../data/regulatory-version.json' with { type: 'json' };
 
 // data/regulatory-version.json is the single source of truth for the regulatory
 // dataset version + the exact official link of every text we cite (FIX 1 + 3).
-// On Vercel the function is bundled by esbuild, which inlines this JSON
-// (resolveJsonModule handles the build-time type-check).
 export const REG_VERSION = REG_JSON as unknown as RegulatoryVersion;
 
 const ALL_REFS: RegulatoryRef[] = [
