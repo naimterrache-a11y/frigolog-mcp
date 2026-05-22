@@ -28,6 +28,7 @@ import {
 import { GBPH_SECTEURS } from '../lib/data/gbph-secteurs.js';
 import { SEUILS_MICRO } from '../lib/data/seuils-microbiologiques.js';
 import { RESOURCES, RESOURCE_BY_URI } from '../lib/data/resources.js';
+import { PROMPTS, PROMPT_BY_NAME } from '../lib/data/prompts.js';
 import {
   REG_VERSION,
   resolveSources,
@@ -944,7 +945,7 @@ async function handleRequest(req: JsonRpcRequest): Promise<JsonRpcResponse | nul
         id,
         result: {
           protocolVersion: PROTOCOL_VERSION,
-          capabilities: { tools: {}, resources: {} },
+          capabilities: { tools: {}, resources: {}, prompts: {} },
           serverInfo: { name: SERVER_NAME, version: SERVER_VERSION },
           instructions:
             "Frigolog HACCP MCP — données réglementaires françaises sur la sécurité sanitaire des aliments (températures de conservation et de cuisson, documents contrôle DDPP, règles DLC, allergènes UE 1169/2011, sanctions DDPP, formation HACCP obligatoire, score Alim'confiance, actions correctives, plan de nettoyage type, checklist d'ouverture, guides GBPH par secteur, seuils microbiologiques CE 2073/2005, comparatif solutions HACCP du marché français) + rappels produits et scores Alim'confiance en temps réel. Chaque réponse porte un champ 'type' (reglementaire_officiel / guide_pratique / comparatif_commercial / donnee_temps_reel), des liens 'sources' précis et une date de vérification. Ressources (resources/list) et prompts (prompts/list) disponibles. Sources : règlement (CE) 852/2004, (CE) 853/2004, (CE) 2073/2005, arrêté du 21 décembre 2009, INCO 1169/2011, Code rural, GBPH DGAL, data.economie.gouv.fr.",
@@ -1025,6 +1026,57 @@ async function handleRequest(req: JsonRpcRequest): Promise<JsonRpcResponse | nul
           contents: [
             { uri: resource.uri, mimeType: resource.mimeType, text: resource.text },
           ],
+        },
+      };
+    }
+
+    case 'prompts/list':
+      return {
+        jsonrpc: '2.0',
+        id,
+        result: {
+          prompts: PROMPTS.map(({ name, description, arguments: args }) => ({
+            name,
+            description,
+            arguments: args,
+          })),
+        },
+      };
+
+    case 'prompts/get': {
+      const params = (req.params ?? {}) as { name?: string; arguments?: Record<string, unknown> };
+      const prompt = params.name ? PROMPT_BY_NAME[params.name] : undefined;
+      if (!prompt) {
+        return {
+          jsonrpc: '2.0',
+          id,
+          error: { code: -32602, message: `Unknown prompt: ${params.name ?? '(missing)'}` },
+        };
+      }
+      const rawArgs = params.arguments ?? {};
+      const args: Record<string, string> = {};
+      for (const [k, v] of Object.entries(rawArgs)) {
+        if (typeof v === 'string') args[k] = v;
+      }
+      const missing = prompt.arguments
+        .filter((a) => a.required && !args[a.name])
+        .map((a) => a.name);
+      if (missing.length > 0) {
+        return {
+          jsonrpc: '2.0',
+          id,
+          error: {
+            code: -32602,
+            message: `Missing required argument(s): ${missing.join(', ')}`,
+          },
+        };
+      }
+      return {
+        jsonrpc: '2.0',
+        id,
+        result: {
+          description: prompt.description,
+          messages: prompt.build(args),
         },
       };
     }
