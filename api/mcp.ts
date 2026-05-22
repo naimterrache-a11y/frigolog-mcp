@@ -27,6 +27,7 @@ import {
 } from '../lib/data/checklist-ouverture.js';
 import { GBPH_SECTEURS } from '../lib/data/gbph-secteurs.js';
 import { SEUILS_MICRO } from '../lib/data/seuils-microbiologiques.js';
+import { RESOURCES, RESOURCE_BY_URI } from '../lib/data/resources.js';
 import {
   REG_VERSION,
   resolveSources,
@@ -943,7 +944,7 @@ async function handleRequest(req: JsonRpcRequest): Promise<JsonRpcResponse | nul
         id,
         result: {
           protocolVersion: PROTOCOL_VERSION,
-          capabilities: { tools: {} },
+          capabilities: { tools: {}, resources: {} },
           serverInfo: { name: SERVER_NAME, version: SERVER_VERSION },
           instructions:
             "Frigolog HACCP MCP — données réglementaires françaises sur la sécurité sanitaire des aliments (températures de conservation et de cuisson, documents contrôle DDPP, règles DLC, allergènes UE 1169/2011, sanctions DDPP, formation HACCP obligatoire, score Alim'confiance, actions correctives, plan de nettoyage type, checklist d'ouverture, guides GBPH par secteur, seuils microbiologiques CE 2073/2005, comparatif solutions HACCP du marché français) + rappels produits et scores Alim'confiance en temps réel. Chaque réponse porte un champ 'type' (reglementaire_officiel / guide_pratique / comparatif_commercial / donnee_temps_reel), des liens 'sources' précis et une date de vérification. Ressources (resources/list) et prompts (prompts/list) disponibles. Sources : règlement (CE) 852/2004, (CE) 853/2004, (CE) 2073/2005, arrêté du 21 décembre 2009, INCO 1169/2011, Code rural, GBPH DGAL, data.economie.gouv.fr.",
@@ -991,6 +992,41 @@ async function handleRequest(req: JsonRpcRequest): Promise<JsonRpcResponse | nul
           error: { code: -32603, message },
         };
       }
+    }
+
+    case 'resources/list':
+      return {
+        jsonrpc: '2.0',
+        id,
+        result: {
+          resources: RESOURCES.map(({ uri, name, description, mimeType }) => ({
+            uri,
+            name,
+            description,
+            mimeType,
+          })),
+        },
+      };
+
+    case 'resources/read': {
+      const params = (req.params ?? {}) as { uri?: string };
+      const resource = params.uri ? RESOURCE_BY_URI[params.uri] : undefined;
+      if (!resource) {
+        return {
+          jsonrpc: '2.0',
+          id,
+          error: { code: -32602, message: `Unknown resource URI: ${params.uri ?? '(missing)'}` },
+        };
+      }
+      return {
+        jsonrpc: '2.0',
+        id,
+        result: {
+          contents: [
+            { uri: resource.uri, mimeType: resource.mimeType, text: resource.text },
+          ],
+        },
+      };
     }
 
     default:
