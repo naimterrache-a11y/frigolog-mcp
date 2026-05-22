@@ -338,6 +338,52 @@ const TOOLS = [
   },
 ];
 
+// English descriptions, appended to each tool's (French) description at list time
+// so anglophone agents understand the tools. The French descriptions above — the
+// primary market — are left untouched.
+const EN_DESCRIPTIONS: Record<string, string> = {
+  get_haccp_temperatures:
+    "Returns French regulatory food temperatures (storage, cooling, serving) by product category, per the arrêté of 21 Dec 2009 and Regulations (EC) 852/2004 & 853/2004. Optional 'categorie' filter.",
+  get_documents_controle_ddpp:
+    "Returns the documents a French DDPP inspector may request during a sanitary inspection, by establishment type (the 12-document common base + business-specific documents). Optional 'type_etablissement'.",
+  get_regles_dlc:
+    "Returns use-by-date (DLC) rules for in-house preparations in French restaurants and food trades, per the DGAL good-hygiene-practice guide. Optional 'type_preparation' keyword.",
+  compare_solutions_haccp:
+    "Returns a sourced comparison of the main HACCP software on the French market (Frigolog, ePackPro, Octopus, Traqfood, Kooklin, BackResto, Hygiene Up): price, commitment, imposed hardware, AI features, support, 3-year cost. Frigolog publishes this MCP (conflict of interest disclosed); each claim links a public source. Optional 'solution'.",
+  get_rappels_produits_actifs:
+    "Returns active French food-product recalls in real time from RappelConso (DGCCRF open data). Filters: 'categorie', 'limit', 'date_depuis'.",
+  get_sanctions_ddpp:
+    "Returns DDPP inspection sanction levels in France (observation, formal notice, report, administrative closure): triggers, deadlines, fines (€1,500–€75,000), legal basis (Code rural). Optional 'gravite'.",
+  get_allergenes_reglementaires:
+    "Returns the 14 mandatory allergens under EU Regulation 1169/2011 (INCO): common names, main and hidden sources, display obligation, penalties. Optional 'allergene'.",
+  get_temperatures_cuisson:
+    "Returns mandatory core cooking temperatures by food type in French catering (poultry 74°C, minced beef 70°C, fish 63°C…) plus rapid cooling and reheating rules. Optional 'type_aliment'.",
+  get_formation_haccp_obligatoire:
+    "Returns the mandatory food-hygiene (HACCP) training rules for French commercial catering: who must train, exemptions, content, duration, cost, penalties. Legal basis: Code rural L.233-4, arrêté of 12 Feb 2024. Optional 'type_etablissement' (informational).",
+  get_score_alimconfiance:
+    "Explains how France's official Alim'confiance sanitary-inspection scoring works (4 levels, 6 criteria, inspection frequency, how to improve). For one establishment's score, use get_alimconfiance_etablissement.",
+  get_alimconfiance_etablissement:
+    "Looks up a specific establishment's Alim'confiance inspection score in the official DGAL open dataset (real time): score, inspection date, SIRET, name, address. Search by 'siret' (recommended) or 'nom' + optional 'code_postal'/'commune'.",
+  get_actions_correctives:
+    "Returns regulatory corrective actions for the 6 most common catering non-conformities (fridge too warm, expired product, cold-chain break, non-compliant delivery, pests, cleaning not done): immediate action, PMS documentation, deadlines, when to alert the DDPP. Optional 'type_non_conformite'.",
+  get_plan_nettoyage_type:
+    "Returns a model cleaning plan for a French food-establishment type (GBPH-compliant): cleaning stations by zone, frequency, recommended product, method (5-step protocol), verification criterion. Covers restaurant, bakery, butcher, cheese shop, fishmonger, caterer, ice-cream maker, pizzeria. Arg 'type_etablissement'.",
+  get_checklist_ouverture_etablissement:
+    "Returns the full daily pre-opening checklist for a French food establishment (HACCP/GBPH): visual checks, temperature readings, stock checks (DLC, recalled products), staff hygiene, document readiness. Optional 'type_etablissement' adds trade-specific items.",
+  get_guide_bonnes_pratiques_secteur:
+    "Returns the official Good Hygiene Practice Guide (GBPH) reference for a French food-trade sector: title, editor/federation, year, price, pages, link, key points, related regulatory obligations. Sectors with no distinct validated guide (bakery, cheese, caterer) are flagged. Arg 'secteur'.",
+  get_seuils_microbiologiques:
+    "Returns the regulatory microbiological criteria for foodstuffs under Regulation (EC) 2073/2005 (amended by 1441/2007): food-safety criteria (Salmonella, Listeria, STEC E. coli, staphylococcal enterotoxins, histamine) and process-hygiene criteria, with the sampling plan (n, c, m, M), application stage and action on exceedance. Note: Listeria criterion changes from 1 July 2026 (EU 2024/2895). Optional 'categorie'.",
+};
+
+// Tools with the English description appended (used by tools/list and the GET probe).
+const TOOLS_BILINGUAL = TOOLS.map((t) => ({
+  ...t,
+  description: EN_DESCRIPTIONS[t.name]
+    ? `${t.description}\n\n[EN] ${EN_DESCRIPTIONS[t.name]}`
+    : t.description,
+}));
+
 interface MetaOptions {
   // Editorial classification of the response (FIX 4).
   type: DataType;
@@ -960,7 +1006,7 @@ async function handleRequest(req: JsonRpcRequest): Promise<JsonRpcResponse | nul
       return { jsonrpc: '2.0', id, result: {} };
 
     case 'tools/list':
-      return { jsonrpc: '2.0', id, result: { tools: TOOLS } };
+      return { jsonrpc: '2.0', id, result: { tools: TOOLS_BILINGUAL } };
 
     case 'tools/call': {
       const params = (req.params ?? {}) as { name?: string; arguments?: Record<string, unknown> };
@@ -1114,7 +1160,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       transport: 'http+jsonrpc',
       description:
         "Frigolog HACCP MCP — Public Model Context Protocol server exposing French HACCP regulatory data, real-time food recall alerts (RappelConso) and a comparison of HACCP software solutions. POST JSON-RPC 2.0 requests to this endpoint.",
-      tools: TOOLS.map((t) => ({ name: t.name, description: t.description })),
+      tools: TOOLS_BILINGUAL.map((t) => ({ name: t.name, description: t.description })),
       documentation: 'https://github.com/naimterrache-a11y/frigolog-mcp',
       maintainer: 'https://frigolog.fr',
     });
