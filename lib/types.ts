@@ -271,6 +271,103 @@ export interface ActionCorrective {
   exemple_fiche_correction: string;
 }
 
+// Tool 13 — get_plan_nettoyage_type
+export interface PosteNettoyage {
+  nom: string;
+  zone: string;
+  frequence: string;
+  produit_type: string;
+  methode: string;
+  verification: string;
+}
+
+export interface PlanNettoyage {
+  type_etablissement: string;
+  postes: PosteNettoyage[];
+  protocole_5_etapes: string;
+  source: string;
+  note?: string;
+}
+
+// Tool 14 — get_checklist_ouverture_etablissement
+export interface ChecklistItem {
+  categorie: string;
+  verification: string;
+  critere_ok: string;
+  action_si_ko: string;
+  obligatoire: boolean;
+}
+
+export interface ChecklistOuverture {
+  type_etablissement: string;
+  checklist: ChecklistItem[];
+  nombre_items: number;
+  duree_estimee_minutes: number;
+  source: string;
+}
+
+// Tool 15 — get_guide_bonnes_pratiques_secteur
+export interface GbphSecteur {
+  secteur: string;
+  titre: string;
+  editeur: string;
+  annee: number | string;
+  pages: number | string;
+  prix_eur: number | string;
+  lien_documentation_francaise: string;
+  resume: string;
+  points_cles: string[];
+  obligations_liees: string[];
+  source: string;
+  note?: string;
+}
+
+// Tool 16 — get_seuils_microbiologiques
+export interface CritereMicrobiologique {
+  categorie_aliment: string;
+  germe: string;
+  n: number | string;
+  c: number | string;
+  m: string;
+  M: string;
+  stade: string;
+  action_si_depassement: string;
+  note?: string;
+}
+
+export interface SeuilsMicrobiologiques {
+  categorie: string;
+  criteres_securite: CritereMicrobiologique[];
+  criteres_hygiene_procede: CritereMicrobiologique[];
+  reglement: string;
+  notes: string;
+  source: string;
+}
+
+// MCP resources (resources/list + resources/read).
+export interface McpResource {
+  uri: string;
+  name: string;
+  description: string;
+  mimeType: string;
+  text: string;
+}
+
+// MCP prompts (prompts/list + prompts/get).
+export interface McpPromptArgument {
+  name: string;
+  description: string;
+  required: boolean;
+}
+
+export interface McpPrompt {
+  name: string;
+  description: string;
+  arguments: McpPromptArgument[];
+  // Builds the messages returned by prompts/get from the provided arguments.
+  build: (args: Record<string, string>) => { role: 'user' | 'assistant'; content: { type: 'text'; text: string } }[];
+}
+
 // JSON-RPC 2.0 envelope types.
 export interface JsonRpcRequest {
   jsonrpc: '2.0';

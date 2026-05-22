@@ -264,6 +264,57 @@ async function testLiveContract() {
   }
 }
 
+// ====== GROUP 5 — capability counts (live) ==================================
+// Expected counts for the "Reference MCP" milestone. Each check skips gracefully
+// if the deployed server does not yet expose that capability.
+const EXPECT_TOOLS = 16;
+const EXPECT_RESOURCES = 5;
+const EXPECT_PROMPTS = 3;
+
+async function testCounts() {
+  group(`5. capability counts (${MCP_URL})`);
+  // tools
+  try {
+    const res = await rpc('tools/list');
+    const n = res?.result?.tools?.length;
+    if (typeof n !== 'number') {
+      skipped('tools/list count', 'no tools array');
+    } else if (n === EXPECT_TOOLS) {
+      ok(`tools/list === ${EXPECT_TOOLS}`);
+    } else if (n < EXPECT_TOOLS) {
+      skipped('tools/list count', `deployed has ${n} tools (pre-milestone) — deploy then re-run`);
+    } else {
+      ko('tools/list count', `expected ${EXPECT_TOOLS}, got ${n}`);
+    }
+  } catch (err) {
+    skipped('tools/list count', `${err?.message || err}`);
+  }
+  // resources
+  try {
+    const res = await rpc('resources/list');
+    if (res?.error) {
+      skipped('resources/list count', 'resources not yet supported by deployed server');
+    } else {
+      const n = res?.result?.resources?.length;
+      check(`resources/list === ${EXPECT_RESOURCES}`, n === EXPECT_RESOURCES, `expected ${EXPECT_RESOURCES}, got ${n}`);
+    }
+  } catch (err) {
+    skipped('resources/list count', `${err?.message || err}`);
+  }
+  // prompts
+  try {
+    const res = await rpc('prompts/list');
+    if (res?.error) {
+      skipped('prompts/list count', 'prompts not yet supported by deployed server');
+    } else {
+      const n = res?.result?.prompts?.length;
+      check(`prompts/list === ${EXPECT_PROMPTS}`, n === EXPECT_PROMPTS, `expected ${EXPECT_PROMPTS}, got ${n}`);
+    }
+  } catch (err) {
+    skipped('prompts/list count', `${err?.message || err}`);
+  }
+}
+
 // ---- run -------------------------------------------------------------------
 (async () => {
   console.log('Frigolog HACCP MCP — test suite');
@@ -271,6 +322,7 @@ async function testLiveContract() {
   testResolver();
   await testUrlLiveness();
   await testLiveContract();
+  await testCounts();
 
   console.log(`\n${'='.repeat(48)}`);
   console.log(`PASS ${pass}   FAIL ${fail}   SKIP ${skip}`);

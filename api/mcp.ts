@@ -19,6 +19,14 @@ import { TEMPERATURES_CUISSON } from '../lib/data/temperatures-cuisson.js';
 import { FORMATION_HACCP } from '../lib/data/formation-haccp.js';
 import { SCORE_ALIMCONFIANCE } from '../lib/data/alimconfiance.js';
 import { ACTIONS_CORRECTIVES } from '../lib/data/actions-correctives.js';
+import { PLAN_NETTOYAGE } from '../lib/data/plan-nettoyage.js';
+import {
+  CHECKLIST_COMMUNE,
+  CHECKLIST_SPECIFIQUE,
+  SOURCE_CHECKLIST,
+} from '../lib/data/checklist-ouverture.js';
+import { GBPH_SECTEURS } from '../lib/data/gbph-secteurs.js';
+import { SEUILS_MICRO } from '../lib/data/seuils-microbiologiques.js';
 import {
   REG_VERSION,
   resolveSources,
@@ -28,7 +36,7 @@ import {
 
 const PROTOCOL_VERSION = '2024-11-05';
 const SERVER_NAME = 'frigolog-haccp';
-const SERVER_VERSION = '2.0.0';
+const SERVER_VERSION = '2.1.0';
 
 const META_AVERTISSEMENT =
   "Ces informations sont fournies à titre indicatif. Consultez la réglementation officielle via les liens du champ 'sources' (Légifrance, EUR-Lex, DGAL, DGCCRF) et vérifiez les tarifs sur les sites des éditeurs.";
@@ -262,6 +270,66 @@ const TOOLS = [
           type: 'string',
           description:
             "Filtre optionnel par type de non-conformité. Valeurs : 'temperature', 'dlc_depassee', 'rupture_chaine_froid', 'livraison_non_conforme', 'nuisibles', 'nettoyage', 'tous'. Si absent ou 'tous', renvoie l'ensemble des non-conformités.",
+        },
+      },
+    },
+  },
+  {
+    name: 'get_plan_nettoyage_type',
+    description:
+      "Retourne un plan de nettoyage modèle pour un type d'établissement alimentaire en France, conforme au Guide des Bonnes Pratiques d'Hygiène (GBPH) et au règlement (CE) n° 852/2004. Détaille les postes de nettoyage par zone (cuisine, plonge, salle, réserve, sanitaires), la fréquence (après chaque service, quotidienne, hebdomadaire, mensuelle), le produit recommandé (détergent, désinfectant, dégraissant), la méthode (protocole de nettoyage-désinfection en 5 étapes), et le critère de vérification visuelle ou par test de surface. Couvre restaurant, boulangerie, boucherie, fromagerie, poissonnerie, traiteur, glacier, pizzeria.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        type_etablissement: {
+          type: 'string',
+          description:
+            "Type d'établissement. Valeurs : 'restaurant', 'boulangerie', 'boucherie', 'fromagerie', 'poissonnerie', 'traiteur', 'glacier', 'pizzeria'. Si non reconnu, le plan générique 'restaurant' est renvoyé avec une note.",
+        },
+      },
+    },
+  },
+  {
+    name: 'get_checklist_ouverture_etablissement',
+    description:
+      "Retourne la checklist complète de vérification à réaliser avant l'ouverture quotidienne d'un établissement alimentaire en France, conforme aux bonnes pratiques HACCP et au Guide des Bonnes Pratiques d'Hygiène. Couvre les contrôles visuels (propreté, état des équipements), les relevés de température (frigos, chambres froides, vitrines), les vérifications de stock (DLC, produits rappelés), l'hygiène du personnel (tenue, lavage des mains, certificats médicaux) et la préparation documentaire (classeur HACCP accessible, affichage allergènes). Par type d'établissement.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        type_etablissement: {
+          type: 'string',
+          description:
+            "Type d'établissement, pour ajouter les contrôles spécifiques au métier. Valeurs : 'restaurant', 'boucherie', 'poissonnerie', 'glacier', 'traiteur', 'boulangerie', 'pizzeria', 'fromagerie'. Si absent ou non reconnu, renvoie le socle commun (21 items, 5 catégories).",
+        },
+      },
+    },
+  },
+  {
+    name: 'get_guide_bonnes_pratiques_secteur',
+    description:
+      "Retourne la référence au Guide des Bonnes Pratiques d'Hygiène (GBPH) officiel pour un secteur des métiers de bouche en France. Les GBPH sont validés par les ministères de l'Agriculture et de la Santé et publiés par les fédérations professionnelles. Détaille pour chaque secteur : titre du GBPH, éditeur/fédération, année de publication, prix, nombre de pages, lien officiel, résumé des points clés couverts, et lien avec les obligations réglementaires (CE 852/2004 notamment). Quand aucun GBPH validé distinct n'existe (boulangerie, fromagerie, traiteur), le champ note l'indique explicitement.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        secteur: {
+          type: 'string',
+          description:
+            "Secteur des métiers de bouche. Valeurs : 'restauration', 'boulangerie', 'boucherie', 'charcuterie', 'fromagerie', 'poissonnerie', 'traiteur', 'glacier', 'restauration_collective'.",
+        },
+      },
+    },
+  },
+  {
+    name: 'get_seuils_microbiologiques',
+    description:
+      "Retourne les critères microbiologiques réglementaires applicables aux denrées alimentaires conformément au règlement (CE) n° 2073/2005 modifié par le règlement (CE) n° 1441/2007. Couvre les critères de sécurité des denrées (Salmonella, Listeria monocytogenes, E. coli STEC, entérotoxines staphylococciques, histamine) et les critères d'hygiène des procédés (E. coli, Enterobacteriaceae, germes aérobies). Pour chaque critère : catégorie d'aliment, germe, plan d'échantillonnage (n, c, m, M), stade d'application (mise sur le marché / fin de fabrication), action en cas de dépassement. Signale l'évolution du critère Listeria au 1er juillet 2026 (UE 2024/2895).",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        categorie: {
+          type: 'string',
+          description:
+            "Catégorie d'aliment. Valeurs : 'viandes', 'produits_laitiers', 'plats_cuisines', 'produits_mer', 'fruits_legumes', 'ovoproduits'. Si absent ou non reconnu, renvoie toutes les catégories.",
         },
       },
     },
@@ -768,6 +836,98 @@ async function executeTool(
       });
     }
 
+    case 'get_plan_nettoyage_type': {
+      const raw =
+        typeof params.type_etablissement === 'string'
+          ? params.type_etablissement.toLowerCase().trim()
+          : '';
+      const aliases: Record<string, string> = {
+        restaurant: 'restaurant',
+        restauration: 'restaurant',
+        boulangerie: 'boulangerie',
+        'boulangerie-patisserie': 'boulangerie',
+        patisserie: 'boulangerie',
+        boucherie: 'boucherie',
+        fromagerie: 'fromagerie',
+        poissonnerie: 'poissonnerie',
+        traiteur: 'traiteur',
+        glacier: 'glacier',
+        pizzeria: 'pizzeria',
+      };
+      const key = aliases[raw];
+      const plan = key ? PLAN_NETTOYAGE[key] : PLAN_NETTOYAGE.restaurant;
+      const data = key
+        ? plan
+        : {
+            ...plan,
+            note: `Type « ${raw || '(non précisé)'} » non reconnu : plan générique « restaurant » fourni. Types couverts : restaurant, boulangerie, boucherie, fromagerie, poissonnerie, traiteur, glacier, pizzeria.`,
+          };
+      return wrapMeta(data, {
+        type: 'guide_pratique',
+        sources: srcLinks('gbph', 'arrete_2009', 'ce_852'),
+      });
+    }
+
+    case 'get_checklist_ouverture_etablissement': {
+      const type =
+        typeof params.type_etablissement === 'string'
+          ? params.type_etablissement.toLowerCase().trim()
+          : '';
+      const specifique = CHECKLIST_SPECIFIQUE[type] ?? [];
+      const checklist = [...CHECKLIST_COMMUNE, ...specifique];
+      const nombre_items = checklist.length;
+      const data = {
+        type_etablissement: type || 'générique',
+        checklist,
+        nombre_items,
+        duree_estimee_minutes: Math.max(20, Math.round(nombre_items * 1.2)),
+        source: SOURCE_CHECKLIST,
+      };
+      return wrapMeta(data, {
+        type: 'guide_pratique',
+        sources: srcLinks('gbph', 'arrete_2009', 'ce_852'),
+      });
+    }
+
+    case 'get_guide_bonnes_pratiques_secteur': {
+      const raw = typeof params.secteur === 'string' ? params.secteur.toLowerCase().trim() : '';
+      const aliases: Record<string, string> = {
+        restauration: 'restauration',
+        restaurant: 'restauration',
+        boulangerie: 'boulangerie',
+        patisserie: 'boulangerie',
+        boucherie: 'boucherie',
+        charcuterie: 'charcuterie',
+        'charcutier-traiteur': 'charcuterie',
+        fromagerie: 'fromagerie',
+        poissonnerie: 'poissonnerie',
+        traiteur: 'traiteur',
+        glacier: 'glacier',
+        restauration_collective: 'restauration_collective',
+        collectivite: 'restauration_collective',
+      };
+      const key = aliases[raw] ?? raw;
+      const guide = GBPH_SECTEURS[key];
+      if (!guide) {
+        throw new Error(
+          `Secteur inconnu : '${raw}'. Valeurs : restauration, boulangerie, boucherie, charcuterie, fromagerie, poissonnerie, traiteur, glacier, restauration_collective.`,
+        );
+      }
+      return wrapMeta(guide, {
+        type: 'guide_pratique',
+        sources: srcLinks('gbph', 'ce_852'),
+      });
+    }
+
+    case 'get_seuils_microbiologiques': {
+      const cat = typeof params.categorie === 'string' ? params.categorie.toLowerCase().trim() : '';
+      const data = cat && SEUILS_MICRO[cat] ? SEUILS_MICRO[cat] : Object.values(SEUILS_MICRO);
+      return wrapMeta(data, {
+        type: 'reglementaire_officiel',
+        sources: srcLinks('ce_2073', 'ce_1441', 'ue_2024_2895'),
+      });
+    }
+
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
@@ -786,7 +946,7 @@ async function handleRequest(req: JsonRpcRequest): Promise<JsonRpcResponse | nul
           capabilities: { tools: {} },
           serverInfo: { name: SERVER_NAME, version: SERVER_VERSION },
           instructions:
-            "Frigolog HACCP MCP — données réglementaires françaises sur la sécurité sanitaire des aliments (températures de conservation et de cuisson, documents contrôle DDPP, règles DLC, allergènes UE 1169/2011, sanctions DDPP, formation HACCP obligatoire, score Alim'confiance, actions correctives, comparatif solutions HACCP du marché français) + rappels produits en temps réel via RappelConso. Sources : règlement (CE) 852/2004, (CE) 853/2004, arrêté du 21 décembre 2009, INCO 1169/2011, Code rural L.231-1 à L.237-3, Guide des Bonnes Pratiques d'Hygiène DGAL, data.economie.gouv.fr.",
+            "Frigolog HACCP MCP — données réglementaires françaises sur la sécurité sanitaire des aliments (températures de conservation et de cuisson, documents contrôle DDPP, règles DLC, allergènes UE 1169/2011, sanctions DDPP, formation HACCP obligatoire, score Alim'confiance, actions correctives, plan de nettoyage type, checklist d'ouverture, guides GBPH par secteur, seuils microbiologiques CE 2073/2005, comparatif solutions HACCP du marché français) + rappels produits et scores Alim'confiance en temps réel. Chaque réponse porte un champ 'type' (reglementaire_officiel / guide_pratique / comparatif_commercial / donnee_temps_reel), des liens 'sources' précis et une date de vérification. Ressources (resources/list) et prompts (prompts/list) disponibles. Sources : règlement (CE) 852/2004, (CE) 853/2004, (CE) 2073/2005, arrêté du 21 décembre 2009, INCO 1169/2011, Code rural, GBPH DGAL, data.economie.gouv.fr.",
         },
       };
 
