@@ -267,7 +267,7 @@ async function testLiveContract() {
 // ====== GROUP 5 — capability counts (live) ==================================
 // Expected counts for the "Reference MCP" milestone. Each check skips gracefully
 // if the deployed server does not yet expose that capability.
-const EXPECT_TOOLS = 16;
+const EXPECT_TOOLS = 19;
 const EXPECT_RESOURCES = 5;
 const EXPECT_PROMPTS = 3;
 
@@ -315,6 +315,156 @@ async function testCounts() {
   }
 }
 
+// ====== GROUP 6 — new automation tools 17/18/19 (live) ======================
+// These tools require arguments, so they can't be exercised by the generic
+// empty-args probe in group 4. Each is called with valid args and its wrapper
+// + a tool-specific invariant is asserted. Skips gracefully before the v2.2.0
+// deploy (when the live server still exposes only 16 tools).
+async function testNewAutomationTools() {
+  group(`6. new automation tools 17/18/19 (${MCP_URL})`);
+  let names;
+  try {
+    const res = await rpc('tools/list');
+    names = new Set((res?.result?.tools || []).map((t) => t.name));
+  } catch (err) {
+    skipped('new automation tools', `tools/list unreachable: ${err?.message || err}`);
+    return;
+  }
+  const NEW = [
+    'get_rappels_par_categorie_etablissement',
+    'get_calendrier_obligations',
+    'get_risque_inspection',
+  ];
+  if (!NEW.every((n) => names.has(n))) {
+    skipped('new automation tools', 'deployed server is pre-v2.2.0 (16 tools) — deploy then re-run');
+    return;
+  }
+
+  // 17 — rappels filtrés par établissement (live RappelConso).
+  try {
+    const w = unwrapToolResult(
+      await rpc('tools/call', {
+        name: 'get_rappels_par_categorie_etablissement',
+        arguments: { type_etablissement: 'boucherie' },
+      }),
+    );
+    assertWrapper('get_rappels_par_categorie_etablissement', w);
+    check(
+      '[rappels_par_etab] type is donnee_temps_reel',
+      w.type === 'donnee_temps_reel',
+      `type=${w.type}`,
+    );
+    check(
+      '[rappels_par_etab] totals are consistent',
+      w.data &&
+        Array.isArray(w.data.rappels_pertinents) &&
+        w.data.total_rappels_pertinents === w.data.rappels_pertinents.length,
+      `pertinents=${w.data?.total_rappels_pertinents} len=${w.data?.rappels_pertinents?.length}`,
+    );
+    check(
+      '[rappels_par_etab] categories_surveillees non-empty',
+      Array.isArray(w.data?.categories_surveillees) && w.data.categories_surveillees.length > 0,
+    );
+  } catch (err) {
+    ko('[get_rappels_par_categorie_etablissement] call', err?.message || String(err));
+  }
+
+  // 17 bis — restaurant surveille tout => 0 ignoré.
+  try {
+    const w = unwrapToolResult(
+      await rpc('tools/call', {
+        name: 'get_rappels_par_categorie_etablissement',
+        arguments: { type_etablissement: 'restaurant' },
+      }),
+    );
+    check(
+      '[rappels_par_etab:restaurant] watches all (total_rappels_ignores === 0)',
+      w.data?.total_rappels_ignores === 0,
+      `ignores=${w.data?.total_rappels_ignores}`,
+    );
+  } catch (err) {
+    ko('[rappels_par_etab:restaurant] call', err?.message || String(err));
+  }
+
+  // 18 — calendrier des obligations (logique pure).
+  try {
+    const w = unwrapToolResult(
+      await rpc('tools/call', {
+        name: 'get_calendrier_obligations',
+        arguments: {
+          type_etablissement: 'boulangerie',
+          derniere_formation_haccp: '2020-01-01', // > 5 ans => rouge
+          dernier_audit_interne: '2026-05-01', // récent => vert
+        },
+      }),
+    );
+    assertWrapper('get_calendrier_obligations', w);
+    check('[calendrier] type is guide_pratique', w.type === 'guide_pratique', `type=${w.type}`);
+    check(
+      '[calendrier] returns 4 obligations',
+      Array.isArray(w.data?.obligations) && w.data.obligations.length === 4,
+      `got ${w.data?.obligations?.length}`,
+    );
+    const formation = w.data?.obligations?.[0];
+    check(
+      '[calendrier] formation > 5 ans => rouge',
+      formation?.urgence === 'rouge',
+      `urgence=${formation?.urgence}`,
+    );
+    check(
+      '[calendrier] each obligation has urgence in {vert,orange,rouge}',
+      (w.data?.obligations || []).every((o) => ['vert', 'orange', 'rouge'].includes(o.urgence)),
+    );
+  } catch (err) {
+    ko('[get_calendrier_obligations] call', err?.message || String(err));
+  }
+
+  // 19 — risque inspection (logique pure + map départements).
+  try {
+    const w = unwrapToolResult(
+      await rpc('tools/call', {
+        name: 'get_risque_inspection',
+        arguments: {
+          type_etablissement: 'restaurant',
+          departement: '75',
+          dernier_controle_ddpp: '2018-01-01', // très ancien => eleve
+        },
+      }),
+    );
+    assertWrapper('get_risque_inspection', w);
+    check('[risque] type is guide_pratique', w.type === 'guide_pratique', `type=${w.type}`);
+    check('[risque] departement 75 => Paris', w.data?.nom_departement === 'Paris', `got ${w.data?.nom_departement}`);
+    check(
+      '[risque] very old control => score eleve',
+      w.data?.score_risque === 'eleve',
+      `score=${w.data?.score_risque}`,
+    );
+    check(
+      '[risque] recommandations non-empty',
+      Array.isArray(w.data?.recommandations) && w.data.recommandations.length > 0,
+    );
+  } catch (err) {
+    ko('[get_risque_inspection] call', err?.message || String(err));
+  }
+
+  // 19 bis — département inconnu géré proprement, pas de crash.
+  try {
+    const w = unwrapToolResult(
+      await rpc('tools/call', {
+        name: 'get_risque_inspection',
+        arguments: { type_etablissement: 'boucherie', departement: '999' },
+      }),
+    );
+    check(
+      '[risque:dep-inconnu] nom_departement = "Département inconnu"',
+      w.data?.nom_departement === 'Département inconnu',
+      `got ${w.data?.nom_departement}`,
+    );
+  } catch (err) {
+    ko('[risque:dep-inconnu] call', err?.message || String(err));
+  }
+}
+
 // ---- run -------------------------------------------------------------------
 (async () => {
   console.log('Frigolog HACCP MCP — test suite');
@@ -323,6 +473,7 @@ async function testCounts() {
   await testUrlLiveness();
   await testLiveContract();
   await testCounts();
+  await testNewAutomationTools();
 
   console.log(`\n${'='.repeat(48)}`);
   console.log(`PASS ${pass}   FAIL ${fail}   SKIP ${skip}`);
