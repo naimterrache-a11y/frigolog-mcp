@@ -2,6 +2,7 @@ node_modules
 .vercel
 .env
 .env.local
+.npmrc
 *.log
 dist
 .DS_Store
