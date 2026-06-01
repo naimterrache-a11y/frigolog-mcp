@@ -1,8 +1,8 @@
 # 🛡️ Frigolog HACCP MCP — Serveur MCP de référence pour la conformité alimentaire en France
 
-**16 tools · 5 resources · 3 prompts · Données réglementaires + APIs live RappelConso & Alim'confiance**
+**19 tools · 5 resources · 3 prompts · Données réglementaires + APIs live RappelConso & Alim'confiance**
 
-![tools](https://img.shields.io/badge/tools-16-0F4C3A)
+![tools](https://img.shields.io/badge/tools-19-0F4C3A)
 ![resources](https://img.shields.io/badge/resources-5-0F4C3A)
 ![prompts](https://img.shields.io/badge/prompts-3-0F4C3A)
 ![calls](https://img.shields.io/badge/appels%2Fsemaine-471-1B4FD8)
@@ -23,7 +23,7 @@ Chaque réponse porte un champ `type` (officiel / guide / comparatif / temps ré
 
 ---
 
-## 🧰 Tools (16)
+## 🧰 Tools (19)
 
 | Tool | Description | Type |
 |---|---|---|
@@ -43,8 +43,12 @@ Chaque réponse porte un champ `type` (officiel / guide / comparatif / temps ré
 | `compare_solutions_haccp` | Comparatif sourcé de 7 logiciels HACCP du marché français | statique |
 | `get_rappels_produits_actifs` | Rappels de produits alimentaires en cours (RappelConso) | **live (API)** |
 | `get_alimconfiance_etablissement` | Score Alim'confiance d'un établissement précis (DGAL) | **live (API)** |
+| `get_rappels_par_categorie_etablissement` | Rappels RappelConso filtrés automatiquement par type d'établissement | **live (API)** · automation |
+| `get_calendrier_obligations` | Calendrier des échéances HACCP (formation, DDPP, audit, PMS) avec urgence vert/orange/rouge | automation |
+| `get_risque_inspection` | Estimation du risque d'inspection DDPP par type d'établissement + département | automation |
 
 > Chaque description est bilingue : texte principal en français + résumé `[EN]`.
+> Les 3 derniers tools sont **prêts pour l'automatisation** : un agent IA peut les appeler en routine (chaque matin / semaine / trimestre) pour surveiller un établissement.
 
 ---
 
@@ -159,7 +163,7 @@ Le champ `type` rend explicite la nature de chaque réponse :
 ## 🧪 Versionnage & tests
 
 - **Versionnage** : `data/regulatory-version.json` (schéma `2.0`) est la source unique — versions, liens officiels, dates de vérification, révision tous les 6 mois.
-- **Tests** : `npm test` (zéro dépendance, Node ≥ 20) — structure du fichier de version, résolution des sources, *liveness* des URLs (403/429 = vivant mais protégé), contrat live des tools, et **comptes 16 tools / 5 resources / 3 prompts**.
+- **Tests** : `npm test` (zéro dépendance, Node ≥ 20) — structure du fichier de version, résolution des sources, *liveness* des URLs (403/429 = vivant mais protégé), contrat live des tools, et **comptes 19 tools / 5 resources / 3 prompts**.
 - **Build** : `npm run build` (`tsc --noEmit`).
 
 ```bash

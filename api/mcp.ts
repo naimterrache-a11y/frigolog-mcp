@@ -1,11 +1,16 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type {
   AlimconfianceEtablissement,
+  CalendrierObligations,
   DataType,
   JsonRpcRequest,
   JsonRpcResponse,
   MetaWrapper,
+  ObligationCalendaire,
+  RappelPertinent,
   RappelProduit,
+  RappelsParEtablissement,
+  RisqueInspection,
   SourceLink,
   Sourced,
 } from '../lib/types.js';
@@ -27,6 +32,10 @@ import {
 } from '../lib/data/checklist-ouverture.js';
 import { GBPH_SECTEURS } from '../lib/data/gbph-secteurs.js';
 import { SEUILS_MICRO } from '../lib/data/seuils-microbiologiques.js';
+import { ETABLISSEMENT_CATEGORIES } from '../lib/data/etablissement-categories.js';
+import { OBLIGATIONS_FIXES, DDPP_OBLIGATION } from '../lib/data/obligations-calendrier.js';
+import { RISQUE_INSPECTION, RISQUE_INSPECTION_ALIASES } from '../lib/data/risque-inspection.js';
+import { DEPARTEMENTS, normalizeDepartement } from '../lib/data/departements.js';
 import { RESOURCES, RESOURCE_BY_URI } from '../lib/data/resources.js';
 import { PROMPTS, PROMPT_BY_NAME } from '../lib/data/prompts.js';
 import {
@@ -38,7 +47,7 @@ import {
 
 const PROTOCOL_VERSION = '2024-11-05';
 const SERVER_NAME = 'frigolog-haccp';
-const SERVER_VERSION = '2.1.0';
+const SERVER_VERSION = '2.2.0';
 
 const META_AVERTISSEMENT =
   "Ces informations sont fournies à titre indicatif. Consultez la réglementation officielle via les liens du champ 'sources' (Légifrance, EUR-Lex, DGAL, DGCCRF) et vérifiez les tarifs sur les sites des éditeurs.";
@@ -53,10 +62,12 @@ const META_COMPARATIF_AVERTISSEMENT =
 
 const META_RAPPELCONSO_SOURCE = "RappelConso — DGCCRF / DGAL / DGS (rappel.conso.gouv.fr)";
 const META_RAPPELCONSO_AVERTISSEMENT =
-  "Données en temps réel issues de l'API publique data.economie.gouv.fr (dataset rappelconso0). En cas de doute sur un lot, ne pas servir le produit et contacter votre fournisseur. Portail officiel : rappel.conso.gouv.fr.";
+  "Données en temps réel issues de l'API publique data.economie.gouv.fr (dataset rappelconso-v2-gtin-trie). En cas de doute sur un lot, ne pas servir le produit et contacter votre fournisseur. Portail officiel : rappel.conso.gouv.fr.";
 
+// data.economie.gouv.fr a renommé/restructuré le dataset : l'ancien `rappelconso0`
+// renvoie 404 depuis ~2025 (champs renommés). Source actuelle : rappelconso-v2-gtin-trie.
 const RAPPELCONSO_BASE_URL =
-  'https://data.economie.gouv.fr/api/explore/v2.1/catalog/datasets/rappelconso0/records';
+  'https://data.economie.gouv.fr/api/explore/v2.1/catalog/datasets/rappelconso-v2-gtin-trie/records';
 const RAPPELCONSO_TIMEOUT_MS = 6000;
 const RAPPELCONSO_DEFAULT_LIMIT = 10;
 const RAPPELCONSO_MAX_LIMIT = 50;
@@ -70,6 +81,17 @@ const ALIMCONFIANCE_BASE_URL =
 const ALIMCONFIANCE_TIMEOUT_MS = 6000;
 const ALIMCONFIANCE_DEFAULT_LIMIT = 5;
 const ALIMCONFIANCE_MAX_LIMIT = 20;
+
+// How many recent active recalls to scan when filtering by establishment type (tool 17).
+const RAPPELCONSO_ETAB_SCAN_LIMIT = 50;
+
+const META_CALENDRIER_SOURCE = 'Frigolog — frigolog.fr (calendrier généré à partir des dates fournies)';
+const META_CALENDRIER_AVERTISSEMENT =
+  "Échéances calculées à partir des dates que vous fournissez et de cadences recommandées (recyclage HACCP ~5 ans, audit interne annuel, revue PMS annuelle). Le recyclage de formation n'est pas une obligation légale à date fixe mais une forte recommandation. La fréquence DDPP est une moyenne indicative : un contrôle peut survenir à tout moment.";
+
+const META_RISQUE_SOURCE = "Alim'confiance (DGAL) + statistiques DGCCRF — estimation agrégée Frigolog";
+const META_RISQUE_AVERTISSEMENT =
+  "Estimation basée sur des données publiques agrégées. La DDPP peut contrôler tout établissement à tout moment.";
 
 const TOOLS = [
   {
@@ -135,7 +157,7 @@ const TOOLS = [
   {
     name: 'get_rappels_produits_actifs',
     description:
-      "Retourne les rappels et retraits de lots de produits alimentaires actifs en France en temps réel depuis RappelConso (DGCCRF). Source officielle : data.economie.gouv.fr (dataset rappelconso0). Utilisez ce tool pour vérifier la sécurité alimentaire d'un produit avant service, savoir si une référence fait l'objet d'un rappel ou retrait de lots en cours, ou consulter les dernières alertes sanitaires officielles publiées par la Direction Générale de la Concurrence, de la Consommation et de la Répression des fraudes.",
+      "Retourne les rappels et retraits de lots de produits alimentaires actifs en France en temps réel depuis RappelConso (DGCCRF). Source officielle : data.economie.gouv.fr (dataset rappelconso-v2-gtin-trie). Utilisez ce tool pour vérifier la sécurité alimentaire d'un produit avant service, savoir si une référence fait l'objet d'un rappel ou retrait de lots en cours, ou consulter les dernières alertes sanitaires officielles publiées par la Direction Générale de la Concurrence, de la Consommation et de la Répression des fraudes.",
     inputSchema: {
       type: 'object',
       properties: {
@@ -336,6 +358,83 @@ const TOOLS = [
       },
     },
   },
+  {
+    name: 'get_rappels_par_categorie_etablissement',
+    description:
+      "Retourne les rappels produits RappelConso actifs filtrés automatiquement par type d'établissement. Au lieu de chercher manuellement dans toutes les catégories, ce tool identifie les familles de produits pertinentes pour un type d'établissement donné (ex : un boulanger reçoit uniquement les rappels farines, oeufs, beurre, levures, fruits secs, chocolat ; un poissonnier reçoit uniquement les rappels poissons, crustacés, coquillages, produits fumés). Utilise get_rappels_produits_actifs en interne et filtre les résultats. Conçu pour l'automatisation : un agent IA peut appeler ce tool chaque matin pour vérifier si un rappel concerne son établissement.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        type_etablissement: {
+          type: 'string',
+          description:
+            "Type d'établissement. Valeurs : 'restaurant', 'boulangerie', 'boucherie', 'fromagerie', 'poissonnerie', 'traiteur', 'glacier', 'pizzeria', 'patisserie'. 'restaurant' et 'traiteur' surveillent toutes les catégories alimentaires.",
+        },
+      },
+      required: ['type_etablissement'],
+    },
+  },
+  {
+    name: 'get_calendrier_obligations',
+    description:
+      "Retourne le calendrier des obligations réglementaires HACCP à venir pour un établissement, basé sur les dates de ses dernières actions : date de dernière formation HACCP (obligation de recyclage tous les X ans), date de dernier contrôle DDPP (fréquence moyenne des inspections par type et département), date de dernier audit interne, date de dernier changement de Plan de Maîtrise Sanitaire. Pour chaque obligation, retourne la date prévisionnelle, le niveau d'urgence (vert/orange/rouge), et l'action recommandée. Conçu pour l'automatisation : un agent IA peut appeler ce tool chaque semaine et alerter le gérant des échéances à venir.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        type_etablissement: {
+          type: 'string',
+          description:
+            "Type d'établissement (pour la fréquence d'inspection DDPP). Valeurs : 'restaurant', 'boulangerie', 'boucherie', 'fromagerie', 'poissonnerie', 'traiteur', 'glacier', 'pizzeria', 'patisserie', 'collectivite'.",
+        },
+        derniere_formation_haccp: {
+          type: 'string',
+          description: "Date ISO (YYYY-MM-DD) de la dernière formation/recyclage hygiène HACCP. Optionnel.",
+        },
+        dernier_controle_ddpp: {
+          type: 'string',
+          description: "Date ISO (YYYY-MM-DD) du dernier contrôle DDPP. Optionnel.",
+        },
+        dernier_audit_interne: {
+          type: 'string',
+          description: "Date ISO (YYYY-MM-DD) du dernier audit interne du PMS. Optionnel.",
+        },
+        dernier_maj_pms: {
+          type: 'string',
+          description: "Date ISO (YYYY-MM-DD) de la dernière mise à jour du Plan de Maîtrise Sanitaire. Optionnel.",
+        },
+        departement: {
+          type: 'string',
+          description: "Code département français (ex: '75', '2A', '971'). Optionnel, informatif.",
+        },
+      },
+      required: ['type_etablissement'],
+    },
+  },
+  {
+    name: 'get_risque_inspection',
+    description:
+      "Retourne une estimation du niveau de risque d'inspection DDPP pour un type d'établissement dans un département français donné. Basé sur les données publiques Alim'confiance (fréquence des inspections par département et type d'activité), les statistiques DGCCRF (nombre de contrôles annuels), et les périodes connues d'intensification des contrôles (été pour les restaurants, fêtes pour les boulangers/traiteurs, rentrée pour la restauration collective). Retourne un score de risque (faible/moyen/élevé), les mois à risque, la fréquence moyenne d'inspection dans le département, et des recommandations concrètes. Conçu pour l'automatisation : un agent IA peut appeler ce tool trimestriellement pour ajuster la vigilance.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        type_etablissement: {
+          type: 'string',
+          description:
+            "Type d'établissement. Valeurs : 'restaurant', 'boulangerie', 'boucherie', 'fromagerie', 'poissonnerie', 'traiteur', 'glacier', 'pizzeria', 'patisserie', 'collectivite'.",
+        },
+        departement: {
+          type: 'string',
+          description: "Code département français (ex: '75', '13', '2A', '971'). Obligatoire.",
+        },
+        dernier_controle_ddpp: {
+          type: 'string',
+          description:
+            "Date ISO (YYYY-MM-DD) du dernier contrôle DDPP. Optionnel — affine le score de risque et la probabilité de contrôle.",
+        },
+      },
+      required: ['type_etablissement', 'departement'],
+    },
+  },
 ];
 
 // English descriptions, appended to each tool's (French) description at list time
@@ -374,6 +473,12 @@ const EN_DESCRIPTIONS: Record<string, string> = {
     "Returns the official Good Hygiene Practice Guide (GBPH) reference for a French food-trade sector: title, editor/federation, year, price, pages, link, key points, related regulatory obligations. Sectors with no distinct validated guide (bakery, cheese, caterer) are flagged. Arg 'secteur'.",
   get_seuils_microbiologiques:
     "Returns the regulatory microbiological criteria for foodstuffs under Regulation (EC) 2073/2005 (amended by 1441/2007): food-safety criteria (Salmonella, Listeria, STEC E. coli, staphylococcal enterotoxins, histamine) and process-hygiene criteria, with the sampling plan (n, c, m, M), application stage and action on exceedance. Note: Listeria criterion changes from 1 July 2026 (EU 2024/2895). Optional 'categorie'.",
+  get_rappels_par_categorie_etablissement:
+    "Returns active RappelConso product recalls automatically filtered by establishment type. Instead of searching all categories, this tool identifies relevant product families for a given establishment type (e.g., a bakery only receives recalls for flour, eggs, butter, yeast, dried fruits, chocolate; a fishmonger only receives recalls for fish, shellfish, smoked products). Designed for automation: an AI agent can call this tool every morning to check if a recall affects the establishment. Required 'type_etablissement'.",
+  get_calendrier_obligations:
+    "Returns the calendar of upcoming HACCP regulatory obligations for an establishment, based on dates of last actions: last HACCP training (renewal obligation), last DDPP inspection (average inspection frequency by type and department), last internal audit, last PMS update. For each obligation, returns the estimated due date, urgency level (green/orange/red), and recommended action. Designed for automation. Required 'type_etablissement'; optional last-action dates.",
+  get_risque_inspection:
+    "Returns an estimated DDPP inspection risk level for a given establishment type in a French department. Based on public Alim'confiance data (inspection frequency by department and activity type), DGCCRF statistics, and known inspection surge periods (summer for restaurants, holidays for bakers/caterers, back-to-school for school catering). Returns a risk score, high-risk months, average inspection frequency, and actionable recommendations. Required 'type_etablissement' and 'departement'.",
 };
 
 // Tools with the English description appended (used by tools/list and the GET probe).
@@ -440,7 +545,26 @@ const RAPPELCONSO_SUBCAT_KEYWORDS: Record<string, string[]> = {
   epicerie: ['épicerie', 'epicerie', 'condiment', 'sauce', 'huile', 'conserve'],
 };
 
+// Schéma du dataset rappelconso-v2-gtin-trie (champs v2). Les anciens champs
+// (rappelconso0) sont conservés en optionnel comme filet de sécurité si l'API
+// resservait l'ancien format.
 interface RappelConsoRecord {
+  // --- v2 (rappelconso-v2-gtin-trie) ---
+  numero_fiche?: string;
+  libelle?: string;
+  marque_produit?: string;
+  identification_produits?: string;
+  modeles_ou_references?: string;
+  motif_rappel?: string;
+  risques_encourus?: string;
+  date_publication?: string;
+  conduites_a_tenir_par_le_consommateur?: string;
+  lien_vers_la_fiche_rappel?: string;
+  lien_vers_affichette_pdf?: string;
+  sous_categorie_produit?: string;
+  date_date_fin_commercialisation?: string;
+  informations_complementaires_publiques?: string;
+  // --- v1 fallbacks (ancien rappelconso0) ---
   reference_fiche?: string;
   noms_des_produits_concernes?: string;
   nom_du_produit?: string;
@@ -449,13 +573,8 @@ interface RappelConsoRecord {
   motif_du_rappel?: string;
   risques_pour_le_consommateur?: string;
   date_de_publication?: string;
-  date_publication?: string;
-  conduites_a_tenir_par_le_consommateur?: string;
   lien_vers_la_fiche_rappelconso?: string;
-  lien_vers_la_fiche_rappel?: string;
-  lien_vers_affichette_pdf?: string;
   sous_categorie_de_produit?: string;
-  informations_complementaires_publiques?: string;
   date_debut_fin_de_commercialisation?: string;
 }
 
@@ -466,23 +585,25 @@ interface RappelConsoResponse {
 
 function mapRappelRecord(r: RappelConsoRecord): RappelProduit {
   return {
-    nom_produit: r.noms_des_produits_concernes || r.nom_du_produit || '',
-    marque: r.nom_de_la_marque_du_produit || '',
-    lot: r.numero_de_lot || '',
+    reference_fiche: r.numero_fiche || r.reference_fiche || '',
+    nom_produit: r.libelle || r.noms_des_produits_concernes || r.nom_du_produit || '',
+    marque: r.marque_produit || r.nom_de_la_marque_du_produit || '',
+    lot: r.identification_produits || r.modeles_ou_references || r.numero_de_lot || '',
     dlc:
+      r.date_date_fin_commercialisation ||
       r.date_debut_fin_de_commercialisation ||
       r.informations_complementaires_publiques ||
       '',
-    motif_rappel: r.motif_du_rappel || '',
-    risque: r.risques_pour_le_consommateur || '',
-    date_rappel: r.date_de_publication || r.date_publication || '',
+    motif_rappel: r.motif_rappel || r.motif_du_rappel || '',
+    risque: r.risques_encourus || r.risques_pour_le_consommateur || '',
+    date_rappel: r.date_publication || r.date_de_publication || '',
     action_consommateur: r.conduites_a_tenir_par_le_consommateur || '',
     lien_fiche:
-      r.lien_vers_la_fiche_rappelconso ||
       r.lien_vers_la_fiche_rappel ||
+      r.lien_vers_la_fiche_rappelconso ||
       r.lien_vers_affichette_pdf ||
       '',
-    sous_categorie: r.sous_categorie_de_produit || '',
+    sous_categorie: r.sous_categorie_produit || r.sous_categorie_de_produit || '',
   };
 }
 
@@ -491,9 +612,11 @@ async function fetchRappelsActifs(
   limit: number,
   dateDepuis: string | undefined,
 ): Promise<{ rappels: RappelProduit[]; total: number }> {
-  const whereClauses: string[] = ['categorie_de_produit="Alimentation"'];
+  // v2 dataset : la catégorie est en minuscule ("alimentation") et le champ de
+  // date de publication s'appelle date_publication.
+  const whereClauses: string[] = ['categorie_produit="alimentation"'];
   if (dateDepuis && /^\d{4}-\d{2}-\d{2}$/.test(dateDepuis)) {
-    whereClauses.push(`date_de_publication>="${dateDepuis}"`);
+    whereClauses.push(`date_publication>="${dateDepuis}"`);
   }
   const where = whereClauses.join(' AND ');
 
@@ -502,7 +625,7 @@ async function fetchRappelsActifs(
 
   const params = new URLSearchParams({
     where,
-    order_by: 'date_de_publication desc',
+    order_by: 'date_publication desc',
     limit: String(fetchLimit),
   });
   const url = `${RAPPELCONSO_BASE_URL}?${params.toString()}`;
@@ -682,6 +805,93 @@ async function fetchAlimconfianceEtablissement(opts: {
   const records = json.results ?? [];
   const mapped = records.map(mapAlimconfianceRecord);
   return { etablissements: mapped, total: json.total_count ?? mapped.length };
+}
+
+// ---- Helpers for the 3 automation tools (17, 18, 19) -----------------------
+
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+const DAYS_PER_MONTH = 30.4375; // average Gregorian month
+
+// Current date as YYYY-MM-DD (UTC). Live runtime — fine on Vercel Node.
+function todayISO(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+// Parse a strict YYYY-MM-DD into a UTC Date, or null if invalid.
+function parseIsoDate(s: string | undefined): Date | null {
+  if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
+  const d = new Date(`${s}T00:00:00Z`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function isoOf(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+function addMonthsUTC(d: Date, months: number): Date {
+  const r = new Date(d.getTime());
+  r.setUTCMonth(r.getUTCMonth() + months);
+  return r;
+}
+
+function monthsSince(d: Date, now: Date): number {
+  return (now.getTime() - d.getTime()) / (MS_PER_DAY * DAYS_PER_MONTH);
+}
+
+function daysUntil(now: Date, future: Date): number {
+  return Math.round((future.getTime() - now.getTime()) / MS_PER_DAY);
+}
+
+// Tool 17 — does a recall match an establishment's surveilled families?
+// Empty keyword list => watches everything (restaurant, traiteur).
+function rappelMatchesEtablissement(r: RappelProduit, keywords: string[]): boolean {
+  if (keywords.length === 0) return true;
+  const haystack = `${r.sous_categorie ?? ''} ${r.nom_produit ?? ''}`.toLowerCase();
+  return keywords.some((k) => haystack.includes(k.toLowerCase()));
+}
+
+interface ObligationLike {
+  obligation: string;
+  intervalle_mois: number;
+  seuil_orange_mois: number;
+  seuil_rouge_mois: number;
+  base_legale: string;
+  action_recommandee: string;
+  action_si_inconnue: string;
+}
+
+// Tool 18 — compute one obligation line from its config + last-action date.
+function computeObligation(
+  cfg: ObligationLike,
+  dateStr: string | undefined,
+  now: Date,
+): ObligationCalendaire {
+  const last = parseIsoDate(dateStr);
+  if (!last) {
+    return {
+      obligation: cfg.obligation,
+      derniere_date: null,
+      prochaine_date_estimee: null,
+      urgence: 'rouge',
+      jours_restants: null,
+      action_recommandee: cfg.action_si_inconnue,
+      base_legale: cfg.base_legale,
+    };
+  }
+  const next = addMonthsUTC(last, cfg.intervalle_mois);
+  const age = monthsSince(last, now);
+  let urgence: 'vert' | 'orange' | 'rouge' = 'vert';
+  if (age >= cfg.seuil_rouge_mois) urgence = 'rouge';
+  else if (age >= cfg.seuil_orange_mois) urgence = 'orange';
+  return {
+    obligation: cfg.obligation,
+    derniere_date: dateStr ?? null,
+    prochaine_date_estimee: isoOf(next),
+    urgence,
+    jours_restants: daysUntil(now, next),
+    action_recommandee: cfg.action_recommandee,
+    base_legale: cfg.base_legale,
+  };
 }
 
 async function executeTool(
@@ -973,6 +1183,199 @@ async function executeTool(
       return wrapMeta(data, {
         type: 'reglementaire_officiel',
         sources: srcLinks('ce_2073', 'ce_1441', 'ue_2024_2895'),
+      });
+    }
+
+    case 'get_rappels_par_categorie_etablissement': {
+      const rawType =
+        typeof params.type_etablissement === 'string'
+          ? params.type_etablissement.toLowerCase().trim()
+          : '';
+      const config = ETABLISSEMENT_CATEGORIES[rawType];
+      if (!config) {
+        throw new Error(
+          `Type d'établissement inconnu : '${rawType || '(non précisé)'}'. Valeurs : ${Object.keys(
+            ETABLISSEMENT_CATEGORIES,
+          ).join(', ')}.`,
+        );
+      }
+      // Scan a window of recent active food recalls, then partition by relevance.
+      const { rappels } = await fetchRappelsActifs(undefined, RAPPELCONSO_ETAB_SCAN_LIMIT, undefined);
+      const pertinents: RappelPertinent[] = [];
+      let ignores = 0;
+      for (const r of rappels) {
+        if (rappelMatchesEtablissement(r, config.keywords)) {
+          pertinents.push({
+            ref_fiche: r.reference_fiche ?? '',
+            nom_produit: r.nom_produit,
+            marque: r.marque,
+            motif_rappel: r.motif_rappel,
+            date_rappel: r.date_rappel,
+            risques: r.risque,
+            conduite_a_tenir: r.action_consommateur,
+            categorie_matchee: r.sous_categorie ?? '',
+          });
+        } else {
+          ignores++;
+        }
+      }
+      const data: RappelsParEtablissement = {
+        type_etablissement: rawType,
+        categories_surveillees: config.categories_surveillees,
+        rappels_pertinents: pertinents,
+        total_rappels_pertinents: pertinents.length,
+        total_rappels_ignores: ignores,
+        source: META_RAPPELCONSO_SOURCE,
+        derniere_verification: todayISO(),
+      };
+      return wrapMeta(data, {
+        type: 'donnee_temps_reel',
+        sources: srcLinks('rappelconso_portal', 'rappelconso_dataset'),
+        source: META_RAPPELCONSO_SOURCE,
+        avertissement: META_RAPPELCONSO_AVERTISSEMENT,
+      });
+    }
+
+    case 'get_calendrier_obligations': {
+      const rawType =
+        typeof params.type_etablissement === 'string'
+          ? params.type_etablissement.toLowerCase().trim()
+          : '';
+      if (!rawType) {
+        throw new Error("Le paramètre 'type_etablissement' est requis.");
+      }
+      const now = new Date();
+
+      // DDPP frequency depends on the establishment type (from risque-inspection).
+      const ddppKey = RISQUE_INSPECTION_ALIASES[rawType] ?? 'restaurant';
+      const ri = RISQUE_INSPECTION[ddppKey] ?? RISQUE_INSPECTION.restaurant;
+      const ddppAvg = Math.round((ri.frequence_min_mois + ri.frequence_max_mois) / 2);
+      const ddppCfg: ObligationLike = {
+        obligation: DDPP_OBLIGATION.obligation,
+        intervalle_mois: ddppAvg,
+        seuil_orange_mois: Math.round(ddppAvg * DDPP_OBLIGATION.seuil_orange_fraction),
+        seuil_rouge_mois: ddppAvg,
+        base_legale: DDPP_OBLIGATION.base_legale,
+        action_recommandee: DDPP_OBLIGATION.action_recommandee,
+        action_si_inconnue: DDPP_OBLIGATION.action_si_inconnue,
+      };
+
+      const formationStr =
+        typeof params.derniere_formation_haccp === 'string' ? params.derniere_formation_haccp : undefined;
+      const ddppStr =
+        typeof params.dernier_controle_ddpp === 'string' ? params.dernier_controle_ddpp : undefined;
+      const auditStr =
+        typeof params.dernier_audit_interne === 'string' ? params.dernier_audit_interne : undefined;
+      const pmsStr = typeof params.dernier_maj_pms === 'string' ? params.dernier_maj_pms : undefined;
+
+      // OBLIGATIONS_FIXES order: [formation, audit, pms]; DDPP inserted after formation.
+      const [formationCfg, auditCfg, pmsCfg] = OBLIGATIONS_FIXES;
+      const obligations: ObligationCalendaire[] = [
+        computeObligation(formationCfg, formationStr, now),
+        computeObligation(ddppCfg, ddppStr, now),
+        computeObligation(auditCfg, auditStr, now),
+        computeObligation(pmsCfg, pmsStr, now),
+      ];
+
+      const rouge = obligations.find((o) => o.urgence === 'rouge');
+      const orange = obligations.find((o) => o.urgence === 'orange');
+      const flagged = rouge ?? orange ?? null;
+      const alerte_prioritaire = flagged
+        ? `[${flagged.urgence.toUpperCase()}] ${flagged.obligation} — ${flagged.action_recommandee}`
+        : null;
+
+      const data: CalendrierObligations = {
+        type_etablissement: rawType,
+        obligations,
+        alerte_prioritaire,
+        source: META_CALENDRIER_SOURCE,
+        derniere_verification: todayISO(),
+      };
+      return wrapMeta(data, {
+        type: 'guide_pratique',
+        sources: resolveSourcesFromList(obligations.map((o) => o.base_legale)),
+        source: META_CALENDRIER_SOURCE,
+        avertissement: META_CALENDRIER_AVERTISSEMENT,
+      });
+    }
+
+    case 'get_risque_inspection': {
+      const rawType =
+        typeof params.type_etablissement === 'string'
+          ? params.type_etablissement.toLowerCase().trim()
+          : '';
+      const rawDep = typeof params.departement === 'string' ? params.departement : '';
+      if (!rawType) throw new Error("Le paramètre 'type_etablissement' est requis.");
+      if (!rawDep) throw new Error("Le paramètre 'departement' est requis (code département français).");
+
+      const typeKey = RISQUE_INSPECTION_ALIASES[rawType];
+      if (!typeKey) {
+        throw new Error(
+          `Type d'établissement inconnu : '${rawType}'. Valeurs : ${Object.keys(
+            RISQUE_INSPECTION,
+          ).join(', ')}.`,
+        );
+      }
+      const ri = RISQUE_INSPECTION[typeKey];
+      const depKey = normalizeDepartement(rawDep);
+      const nom_departement = DEPARTEMENTS[depKey] ?? 'Département inconnu';
+      const freqMoyenne = Math.round((ri.frequence_min_mois + ri.frequence_max_mois) / 2);
+
+      const now = new Date();
+      const last = parseIsoDate(
+        typeof params.dernier_controle_ddpp === 'string' ? params.dernier_controle_ddpp : undefined,
+      );
+      const temps_depuis_dernier_controle_mois = last ? Math.round(monthsSince(last, now)) : null;
+
+      let score_risque: 'faible' | 'moyen' | 'eleve';
+      let probabilite_controle_6_mois: 'faible' | 'moyenne' | 'forte';
+      if (temps_depuis_dernier_controle_mois === null) {
+        score_risque = 'moyen';
+        probabilite_controle_6_mois = 'moyenne';
+      } else {
+        const ratio = temps_depuis_dernier_controle_mois / freqMoyenne;
+        if (ratio > 1) {
+          score_risque = 'eleve';
+          probabilite_controle_6_mois = 'forte';
+        } else if (ratio >= 0.5) {
+          score_risque = 'moyen';
+          probabilite_controle_6_mois = 'moyenne';
+        } else {
+          score_risque = 'faible';
+          probabilite_controle_6_mois = 'faible';
+        }
+      }
+
+      const recommandations = [...ri.recommandations_base];
+      if (temps_depuis_dernier_controle_mois === null) {
+        recommandations.push(
+          "Aucune date de dernier contrôle fournie : renseignez-la pour affiner l'estimation du risque.",
+        );
+      } else if (temps_depuis_dernier_controle_mois > freqMoyenne) {
+        recommandations.push(
+          `Votre dernier contrôle remonte à ${temps_depuis_dernier_controle_mois} mois, au-delà de la fréquence moyenne (${freqMoyenne} mois) : un contrôle est probable, tenez le dossier HACCP prêt.`,
+        );
+      }
+      recommandations.push(`Mois d'intensification connus pour votre activité : ${ri.mois_a_risque.join(', ')}.`);
+
+      const data: RisqueInspection = {
+        type_etablissement: rawType,
+        departement: depKey,
+        nom_departement,
+        score_risque,
+        frequence_moyenne_inspection_mois: freqMoyenne,
+        mois_a_risque: ri.mois_a_risque,
+        temps_depuis_dernier_controle_mois,
+        probabilite_controle_6_mois,
+        recommandations,
+        source: META_RISQUE_SOURCE,
+        avertissement: META_RISQUE_AVERTISSEMENT,
+      };
+      return wrapMeta(data, {
+        type: 'guide_pratique',
+        sources: srcLinks('alimconfiance_portal', 'code_rural', 'ce_882'),
+        source: META_RISQUE_SOURCE,
+        avertissement: META_RISQUE_AVERTISSEMENT,
       });
     }
 

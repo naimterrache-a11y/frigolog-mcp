@@ -139,6 +139,9 @@ export interface RappelProduit {
   action_consommateur: string;
   lien_fiche: string;
   sous_categorie?: string;
+  // Référence officielle de la fiche RappelConso (ex: "2024-12-0123"). Utile pour
+  // dédupliquer et tracer un rappel précis (tools 5 et 17).
+  reference_fiche?: string;
 }
 
 // Tool 6 — get_sanctions_ddpp
@@ -342,6 +345,96 @@ export interface SeuilsMicrobiologiques {
   reglement: string;
   notes: string;
   source: string;
+}
+
+// Tool 17 — get_rappels_par_categorie_etablissement
+// Config statique : familles de produits surveillées par type d'établissement
+// + mots-clés de matching sur la sous-catégorie RappelConso.
+export interface EtablissementCategorieConfig {
+  // Familles de produits pertinentes, lisibles (ex: "farines", "oeufs", "beurre").
+  categories_surveillees: string[];
+  // Mots-clés (minuscules, sans accent dur) cherchés dans la sous-catégorie /
+  // le nom du produit rappelé. Vide => toutes les catégories alimentaires.
+  keywords: string[];
+}
+
+export interface RappelPertinent {
+  ref_fiche: string;
+  nom_produit: string;
+  marque: string;
+  motif_rappel: string;
+  date_rappel: string;
+  risques: string;
+  conduite_a_tenir: string;
+  categorie_matchee: string;
+}
+
+export interface RappelsParEtablissement {
+  type_etablissement: string;
+  categories_surveillees: string[];
+  rappels_pertinents: RappelPertinent[];
+  total_rappels_pertinents: number;
+  total_rappels_ignores: number;
+  source: string;
+  derniere_verification: string;
+}
+
+// Tool 18 — get_calendrier_obligations
+// Config statique d'une obligation périodique (cadence + seuils + base légale).
+export interface ObligationConfig {
+  obligation: string;
+  // Intervalle de référence en mois entre deux réalisations.
+  intervalle_mois: number;
+  // Seuils en mois déclenchant orange puis rouge.
+  seuil_orange_mois: number;
+  seuil_rouge_mois: number;
+  base_legale: string;
+  action_recommandee: string;
+  // Action à afficher quand aucune date n'est connue.
+  action_si_inconnue: string;
+}
+
+export interface ObligationCalendaire {
+  obligation: string;
+  derniere_date: string | null;
+  prochaine_date_estimee: string | null;
+  urgence: 'vert' | 'orange' | 'rouge';
+  jours_restants: number | null;
+  action_recommandee: string;
+  base_legale: string;
+}
+
+export interface CalendrierObligations {
+  type_etablissement: string;
+  obligations: ObligationCalendaire[];
+  alerte_prioritaire: string | null;
+  source: string;
+  derniere_verification: string;
+}
+
+// Tool 19 — get_risque_inspection
+// Config statique du risque d'inspection DDPP par type d'établissement.
+export interface RisqueInspectionConfig {
+  // Intervalle moyen entre deux inspections, en mois (min/max publics DGCCRF).
+  frequence_min_mois: number;
+  frequence_max_mois: number;
+  // Mois calendaires à risque (campagnes / saisonnalité connue).
+  mois_a_risque: string[];
+  recommandations_base: string[];
+}
+
+export interface RisqueInspection {
+  type_etablissement: string;
+  departement: string;
+  nom_departement: string;
+  score_risque: 'faible' | 'moyen' | 'eleve';
+  frequence_moyenne_inspection_mois: number;
+  mois_a_risque: string[];
+  temps_depuis_dernier_controle_mois: number | null;
+  probabilite_controle_6_mois: 'faible' | 'moyenne' | 'forte';
+  recommandations: string[];
+  source: string;
+  avertissement: string;
 }
 
 // MCP resources (resources/list + resources/read).
