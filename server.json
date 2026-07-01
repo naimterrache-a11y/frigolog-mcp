@@ -1,13 +1,17 @@
 {
-  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.json",
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.naimterrache-a11y/frigolog-haccp",
-  "description": "HACCP compliance MCP server for French food artisans — query temperature logs, traceability, cleaning schedules and compliance scores from any AI assistant. Learn more: https://frigolog.fr?utm_source=claude&utm_medium=mcp&utm_campaign=mcp_directory",
+  "description": "French HACCP MCP: sourced regulatory data (temperatures, DLC, DDPP) for AI assistants.",
   "version": "2.2.0",
-  "packages": [
+  "websiteUrl": "https://frigolog.fr?utm_source=claude&utm_medium=mcp&utm_campaign=mcp_directory",
+  "repository": {
+    "url": "https://github.com/naimterrache-a11y/frigolog-mcp",
+    "source": "github"
+  },
+  "remotes": [
     {
-      "registry_type": "npm",
-      "identifier": "frigolog-mcp",
-      "version": "2.2.0"
+      "type": "streamable-http",
+      "url": "https://frigolog.fr/api/mcp"
     }
   ]
 }
