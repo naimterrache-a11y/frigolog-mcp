@@ -1384,7 +1384,94 @@ async function executeTool(
   }
 }
 
-async function handleRequest(req: JsonRpcRequest): Promise<JsonRpcResponse | null> {
+// ─── Télémétrie : journal des appels d'outils ────────────────────────────
+// Smithery comptait 717 appels quand notre dashboard en affichait zéro : ce
+// serveur ne journalisait rien. On écrit désormais une ligne par `tools/call`
+// dans public.mcp_calls (dépôt frigolog, migration 20260731130000).
+//
+// PAS de dépendance ajoutée. Ce dépôt est public et n'a AUCUNE dépendance
+// runtime — on écrit via PostgREST en `fetch`, ce qui garde ce compte à zéro.
+// Tirer @supabase/supabase-js pour un INSERT serait payer un arbre de
+// dépendances entier, sur un serveur que des tiers installent.
+//
+// PAS d'adresse IP. Un SHA-256 non salé d'IPv4 se casse par force brute en
+// quelques secondes ; ce serait de la donnée personnelle déguisée en anonymat.
+// La question métier (« les IA nous citent-elles, et sur quoi ? ») se répond
+// par outil × agent × temps.
+//
+// FAIL-OPEN, TOUJOURS. Ce serveur répond à des agents IA : une panne de
+// télémétrie ne doit jamais dégrader une réponse réglementaire. Sans variables
+// d'environnement, la fonction est un no-op silencieux — le serveur reste
+// installable et fonctionnel par n'importe qui, sans base de données.
+const TELEMETRY_TIMEOUT_MS = 1500;
+
+function classifyAgent(ua: string): string {
+  const s = (ua || '').toLowerCase();
+  if (s.includes('claude') || s.includes('anthropic')) return 'claude';
+  if (s.includes('openai') || s.includes('chatgpt') || s.includes('gpt')) return 'gpt';
+  if (s.includes('perplexity')) return 'perplexity';
+  return 'other';
+}
+
+async function logToolCall(entry: {
+  toolName: string;
+  args: Record<string, unknown> | undefined;
+  status: number;
+  durationMs: number;
+  userAgent: string;
+}): Promise<void> {
+  const url = process.env.SUPABASE_URL;
+  // Clé ANON, jamais service_role. Ce serveur est public et n'a aucune raison
+  // de pouvoir lire le reste de la base ; il appelle une RPC SECURITY DEFINER
+  // (`log_mcp_call`) qui ne sait faire QUE cette écriture. La clé anon est déjà
+  // publique — elle est dans le bundle frontend — donc sa présence ici
+  // n'ajoute aucun secret à protéger.
+  const key = process.env.SUPABASE_ANON_KEY;
+  if (!url || !key) return; // non configuré = pas de télémétrie, pas d'erreur
+
+  // Les arguments sont bornés : un agent peut envoyer n'importe quoi, et on ne
+  // veut ni faire grossir la table ni recopier une charge utile inconnue.
+  let args: string | null = null;
+  try {
+    const serialized = JSON.stringify(entry.args ?? {});
+    args = serialized.length > 1000 ? null : serialized;
+  } catch {
+    args = null;
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TELEMETRY_TIMEOUT_MS);
+  try {
+    await fetch(`${url}/rest/v1/rpc/log_mcp_call`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+      },
+      body: JSON.stringify({
+        p_tool_name: entry.toolName,
+        p_agent_class: classifyAgent(entry.userAgent),
+        p_agent_raw_ua: (entry.userAgent || '').slice(0, 500) || null,
+        p_params: args ? JSON.parse(args) : null,
+        p_response_status: entry.status,
+        p_duration_ms: entry.durationMs,
+      }),
+      signal: controller.signal,
+    });
+  } catch {
+    // Volontairement muet : ni throw, ni console.error. Une erreur de
+    // télémétrie sur chaque appel remplirait les logs sans rien apprendre,
+    // et le symptôme observable reste le bon — le dashboard affiche zéro.
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function handleRequest(
+  req: JsonRpcRequest,
+  ctx: { userAgent?: string } = {},
+): Promise<JsonRpcResponse | null> {
   const id = req.id ?? null;
 
   switch (req.method) {
@@ -1420,8 +1507,19 @@ async function handleRequest(req: JsonRpcRequest): Promise<JsonRpcResponse | nul
           error: { code: -32602, message: "Missing 'name' parameter" },
         };
       }
+      // Seuls les tools/call sont journalisés. `initialize`, `tools/list` et
+      // `ping` sont de la plomberie de protocole : les compter noierait le
+      // signal (« quel outil intéresse les IA ») sous le bruit de handshake.
+      const startedAt = Date.now();
       try {
         const result = await executeTool(params.name, params.arguments);
+        await logToolCall({
+          toolName: params.name,
+          args: params.arguments,
+          status: 200,
+          durationMs: Date.now() - startedAt,
+          userAgent: ctx.userAgent ?? '',
+        });
         return {
           jsonrpc: '2.0',
           id,
@@ -1436,6 +1534,16 @@ async function handleRequest(req: JsonRpcRequest): Promise<JsonRpcResponse | nul
         };
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Tool execution failed';
+        // Les échecs sont journalisés AUSSI : un outil qui casse en silence
+        // pour les agents IA est exactement ce qu'on veut voir sur le
+        // dashboard (colonne « en erreur »).
+        await logToolCall({
+          toolName: params.name,
+          args: params.arguments,
+          status: 500,
+          durationMs: Date.now() - startedAt,
+          userAgent: ctx.userAgent ?? '',
+        });
         return {
           jsonrpc: '2.0',
           id,
@@ -1591,16 +1699,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
+  // Le User-Agent identifie la FAMILLE d'agent (Claude / ChatGPT / Perplexity),
+  // jamais une personne. Il descend jusqu'au journal des tools/call.
+  const ctx = { userAgent: String(req.headers['user-agent'] ?? '') };
+
   // Handle both single and batch requests.
   if (Array.isArray(body)) {
     const responses = (
-      await Promise.all(body.map((r) => handleRequest(r as JsonRpcRequest)))
+      await Promise.all(body.map((r) => handleRequest(r as JsonRpcRequest, ctx)))
     ).filter((r): r is JsonRpcResponse => r !== null);
     res.status(200).json(responses);
     return;
   }
 
-  const response = await handleRequest(body as JsonRpcRequest);
+  const response = await handleRequest(body as JsonRpcRequest, ctx);
   if (response === null) {
     // Notification — no response per JSON-RPC 2.0 spec.
     res.status(204).end();
