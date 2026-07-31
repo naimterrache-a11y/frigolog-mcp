@@ -783,6 +783,85 @@ function testCommercialCopy() {
       `CTA dit ~${prixCta[1]} €, comparatif dit ~${prixCmp[1]} € — un seul des deux est vrai`);
   }
 
+  // (c ter) LE BLOC CONCURRENTS. Nous décrivons des tiers en public, 717 fois
+  // par semaine. Deux garde-fous seulement — et le choix de s'arrêter là est
+  // délibéré, voir le commentaire sous la boucle.
+  const srcCmp = readSrc('lib', 'data', 'comparatif-solutions.ts');
+  const entrees = [...srcCmp.matchAll(/nom: "([^"]+)"/g)].map((m) => m[1]);
+  check('7 solutions dans le comparatif', entrees.length === 7,
+    `${entrees.length} extraite(s) : ${entrees.join(', ')}`);
+
+  // 1. Le même standard pour tout le monde. On s'interdit « leader » parce que
+  //    c'est invérifiable ; l'employer pour un concurrent avec la même absence
+  //    de preuve, c'est abandonner la règle au moment où elle nous coûte
+  //    quelque chose. Le bloc Frigolog est déjà couvert en (a) ; ici, tout ce
+  //    qui vient après lui, c'est-à-dire les six concurrents.
+  const blocConcurrents = srcCmp.slice(srcCmp.indexOf('nom: "ePackPro"'));
+  const strConcurrents = [...blocConcurrents.matchAll(/"((?:[^"\\]|\\.)*)"/g)].map((m) => m[1]);
+  check('textes concurrents extraits', strConcurrents.length > 40,
+    `${strConcurrents.length} chaîne(s) — regex à revoir`);
+  for (const s of strConcurrents) {
+    const v = commercialViolations(s);
+    check(`[concurrents] « ${s.slice(0, 40)}… »`, v.length === 0, v.join(' | '));
+  }
+
+  // 2. Ce que le canonique impose nommément : l'engagement et les frais
+  //    d'installation d'ePackPro ne sont PAS publiés par l'éditeur. Les
+  //    affirmer nus, c'est présenter comme un fait public une information
+  //    privée — le seul sujet de cette liste qui puisse nous valoir une lettre
+  //    d'avocat. Ils ne s'énoncent jamais sans leur mention de source.
+  const epp = srcCmp.slice(srcCmp.indexOf('nom: "ePackPro"'), srcCmp.indexOf('nom: "Octopus'));
+  check('bloc ePackPro extrait', epp.length > 200, `${epp.length} caractères`);
+  for (const champ of ['engagement', 'frais_installation']) {
+    const m = epp.match(new RegExp(`${champ}: "([^"]*)"`));
+    check(`[ePackPro] ${champ} porte sa mention de source`,
+      !!m && /constaté sur des contrats clients/.test(m[1]) && /non publié par l'éditeur/.test(m[1]),
+      `got ${m ? m[1] : '(champ non trouvé ou numérique nu)'}`);
+  }
+
+  // 3. Les « failles exploitables » du canonique : un angle de discussion
+  //    INTERNE, sans relevé ni date ni contrat, à ne jamais affirmer dans un
+  //    contenu public — et le MCP est un contenu public. Le canonique nomme
+  //    trois mots : « imposée », « par commercial », « obligatoire ».
+  //
+  //    Règle VOLONTAIREMENT limitée au bloc ePackPro. Interdire « imposé »
+  //    partout casserait deux usages légitimes et opposés : « sans matériel
+  //    imposé » (Frigolog) et « jamais imposés » (Traqfood). Le canonique ne
+  //    traite d'ailleurs que d'ePackPro. Interdire un mot au-delà de la portée
+  //    de la règle qui le motive, c'est le meilleur moyen de faire désarmer le
+  //    garde entier au premier faux positif.
+  //    Même prudence sur « commercial » : on interdit les tournures précises
+  //    (« technicien commercial », « par un commercial ») et PAS le mot seul,
+  //    parce que le texte validé pour ePackPro dit « réseau commercial de
+  //    terrain ». Un garde qui refuse le texte qu'on vient de valider ne
+  //    survit pas à la semaine.
+  const FAILLES = [
+    'imposé', 'imposée', 'imposés', 'imposées',
+    'par commercial', 'par un commercial', 'technicien commercial',
+    'obligatoire',
+  ];
+  const eppStrings = [...epp.matchAll(/"((?:[^"\\]|\\.)*)"/g)].map((m) => m[1]);
+  for (const s of eppStrings) {
+    const hay = ctaNormalize(s);
+    const hits = FAILLES.filter((f) => hay.includes(f));
+    check(`[ePackPro] « ${s.slice(0, 40)}… » sans angle interne`, hits.length === 0,
+      `mot non sourçable : ${hits.join(', ')} — cf. « failles exploitables » du canonique`);
+  }
+
+  // CE QUE CE GARDE NE FAIT PAS, ET POURQUOI. Il ne sait pas repérer une
+  // revendication de position de marché non sourcée (« le moins cher du
+  // marché », « leader mondial »). Il faudrait interdire « le plus », « le
+  // moins », « du marché » — or le texte de remplacement validé pour ePackPro
+  // dit précisément « Le plus connu du marché français ». Un garde qui refuse
+  // le texte qu'on vient de valider se fait désarmer dans la semaine. Ces
+  // revendications se retirent à la relecture, pas au grep.
+  // Il ne vérifie pas non plus que les prix concurrents correspondent au
+  // fichier canonique docs/concurrents/concurrents.md : celui-ci vit dans un
+  // autre dépôt, que ce serveur public ne peut pas lire. C'est la limite
+  // structurelle du « le MCP cite, il ne redit pas » — ici il redit forcément,
+  // donc la date de relevé est portée dans note_verification pour que la
+  // divergence soit au moins visible.
+
   // (d) META-TEST — on regarde CE garde-ci refuser. Chaque texte ci-dessous a
   //     réellement été servi en production jusqu'à aujourd'hui.
   const poison = [

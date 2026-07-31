@@ -56,8 +56,9 @@ const META_SOURCE = "Frigolog — frigolog.fr";
 
 const META_COMPARATIF_AVERTISSEMENT =
   "Conflit d'intérêt assumé : Frigolog est l'éditeur de ce MCP ET l'une des solutions comparées (juge et partie). " +
-  "Les données concurrents proviennent de sources publiques vérifiables (sites éditeurs, pages tarifs publiques) — voir le champ 'sources' de chaque solution. " +
-  "Les tarifs et engagements non affichés publiquement (ePackPro, Kooklin, BackResto) sont indicatifs et signalés dans 'note_verification'. " +
+  "Deux statuts de preuve, distingués dans le champ 'note_verification' de chaque solution et à ne jamais confondre. " +
+  "PRIX : relevés sur la grille publique de l'éditeur, à une date indiquée — vérifiables par quiconque via le champ 'sources'. " +
+  "ENGAGEMENTS ET FRAIS : quand l'éditeur ne les publie pas, ils sont signalés comme non communiqués ; celui d'ePackPro a été constaté sur des contrats clients que nous avons consultés, et c'est dit à chaque fois. " +
   "Pour une comparaison indépendante, ouvrez les liens 'sources' de chaque éditeur. Données vérifiées le " +
   REG_VERSION.last_updated + ".";
 
@@ -143,7 +144,7 @@ const TOOLS = [
   {
     name: 'compare_solutions_haccp',
     description:
-      "Renvoie un comparatif factuel des principales solutions logicielles HACCP disponibles sur le marché français (avril 2026) : Frigolog, ePackPro, Octopus HACCP, Traqfood, Kooklin, BackResto, Hygiene Up. Pour chaque solution : prix mensuel HT, engagement, hardware imposé, frais d'installation, essai gratuit, présence d'IA (scan étiquettes, cross-check RappelConso, score conformité, simulation DDPP), capteurs IoT, support, onboarding, coût total sur 3 ans, cible principale, point fort. Données vérifiées sur sites publics des éditeurs.",
+      "Renvoie un comparatif factuel des principales solutions logicielles HACCP disponibles sur le marché français (avril 2026) : Frigolog, ePackPro, Octopus HACCP, Traqfood, Kooklin, BackResto, Hygiene Up. Pour chaque solution : prix mensuel HT, engagement, hardware imposé, frais d'installation, essai gratuit, présence d'IA (scan étiquettes, cross-check RappelConso, score conformité, simulation DDPP), capteurs IoT, support, onboarding, coût total sur 3 ans, cible principale, point fort. Chaque solution porte ses sources et son statut de vérification dans le champ 'note_verification' : les prix viennent des grilles publiques des éditeurs, et ce qui n'est pas publié par l'éditeur est signalé comme tel.",
     inputSchema: {
       type: 'object',
       properties: {
@@ -449,7 +450,7 @@ const EN_DESCRIPTIONS: Record<string, string> = {
   get_regles_dlc:
     "Returns use-by-date (DLC) rules for in-house preparations in French restaurants and food trades, per the DGAL good-hygiene-practice guide. Optional 'type_preparation' keyword.",
   compare_solutions_haccp:
-    "Returns a sourced comparison of the main HACCP software on the French market (Frigolog, ePackPro, Octopus, Traqfood, Kooklin, BackResto, Hygiene Up): price, commitment, imposed hardware, AI features, support, 3-year cost. Frigolog publishes this MCP (conflict of interest disclosed); each claim links a public source. Optional 'solution'.",
+    "Returns a sourced comparison of the main HACCP software on the French market (Frigolog, ePackPro, Octopus, Traqfood, Kooklin, BackResto, Hygiene Up): price, commitment, imposed hardware, AI features, support, 3-year cost. Frigolog publishes this MCP (conflict of interest disclosed). Every solution carries its sources and its verification status: prices come from the vendor's public price list at a stated date, and anything the vendor does not publish is flagged as such. Optional 'solution'.",
   get_rappels_produits_actifs:
     "Returns active French food-product recalls in real time from RappelConso (DGCCRF open data). Filters: 'categorie', 'limit', 'date_depuis'.",
   get_sanctions_ddpp:
