@@ -864,6 +864,51 @@ function testCommercialCopy() {
       'champ prix_releve_le absent — un chiffre concurrent nu se recopie sans être vu');
   }
 
+  // 5. ON RAPPORTE, ON N'AFFIRME PAS. « Le concurrent X n'a pas Y » est une
+  //    affirmation sur le produit d'un tiers : invérifiable de l'extérieur,
+  //    contestable, et surtout elle devient fausse TOUTE SEULE le jour où il
+  //    livre la fonctionnalité, sans que personne n'ait rien modifié.
+  //    « Leur site public ne le mentionne pas (consulté le JJ/MM) » est un
+  //    constat : vérifiable par quiconque en trente secondes, daté par
+  //    construction, et il reste vrai pour sa date.
+  //
+  //    (a) chaque concurrent porte ses constats ET leur date de consultation.
+  const ISO = /^\d{4}-\d{2}-\d{2}$/;
+  for (const b of blocsConcurrents) {
+    const nom = (b.match(/nom: "([^"]+)"/) || [])[1] || '(inconnu)';
+    const d = (b.match(/site_consulte_le: "([^"]*)"/) || [])[1];
+    check(`[${nom}] constats datés (site_consulte_le ISO)`, !!d && ISO.test(d),
+      `got ${d === undefined ? '(champ absent)' : d} — un « non mentionné » sans date est une affirmation déguisée`);
+    check(`[${nom}] rapporte via mentions_site_public`, /mentions_site_public: \{/.test(b),
+      'aucun constat structuré : le comparatif affirmerait de nouveau ce que fait le produit d’un tiers');
+    // Les booléens de fonctionnalités affirment ce qu'un produit FAIT. Ils sont
+    // réservés à Frigolog — sur un concurrent, ils n'ont aucune source possible.
+    // On cherche la forme BOOLÉENNE (`champ: true|false`) : dans
+    // mentions_site_public, les mêmes clés portent une chaîne (« mentionné »),
+    // et c'est précisément la forme qu'on veut.
+    for (const champ of [
+      'scan_ia_etiquettes', 'cross_check_rappelconso', 'score_conformite',
+      'simulation_ddpp', 'impression_etiquettes_dlc', 'capteurs_iot',
+    ]) {
+      check(`[${nom}] n'affirme pas ${champ}`, !new RegExp(`${champ}: (true|false)`).test(b),
+        'booléen de fonctionnalité sur un tiers — à remplacer par un constat daté');
+    }
+  }
+
+  //    (b) la forme affirmative est bannie du bloc concurrents, en toutes
+  //        lettres. C'est le VERBE qui portait le risque, pas la date.
+  const FORMES_AFFIRMATIVES = [
+    "n'a pas", 'na pas', 'ne propose pas', "n'offre pas", 'ne dispose pas',
+    'absent de leur offre', 'absente de leur offre', 'ne permet pas',
+    'ne gère pas', 'ne fait pas', 'aucune fonctionnalité',
+  ];
+  for (const s of strConcurrents) {
+    const hay = ctaNormalize(s);
+    const hits = FORMES_AFFIRMATIVES.filter((f) => hay.includes(f));
+    check(`[concurrents] « ${s.slice(0, 40)}… » rapporte au lieu d'affirmer`, hits.length === 0,
+      `forme affirmative sur un tiers : ${hits.join(', ')} — écrire « leur site public ne le mentionne pas (consulté le …) »`);
+  }
+
   // CE QUE CE GARDE NE FAIT PAS, ET POURQUOI. Il ne sait pas repérer une
   // revendication de position de marché non sourcée (« le moins cher du
   // marché », « leader mondial »). Il faudrait interdire « le plus », « le

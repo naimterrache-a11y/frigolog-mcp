@@ -58,7 +58,9 @@ const META_COMPARATIF_AVERTISSEMENT =
   "Conflit d'intérêt assumé : Frigolog est l'éditeur de ce MCP ET l'une des solutions comparées (juge et partie). " +
   "Deux statuts de preuve, distingués dans le champ 'note_verification' de chaque solution et à ne jamais confondre. " +
   "PRIX : relevés sur la grille publique de l'éditeur, à une date indiquée — vérifiables par quiconque via le champ 'sources'. " +
-  "ENGAGEMENTS ET FRAIS : quand l'éditeur ne les publie pas, ils sont signalés comme non communiqués ; celui d'ePackPro a été constaté sur des contrats clients que nous avons consultés, et c'est dit à chaque fois. " +
+  "ENGAGEMENTS ET FRAIS : quand l'éditeur ne les publie pas, ils sont signalés comme non affichés ; celui d'ePackPro a été constaté sur des contrats clients que nous avons consultés, et c'est dit à chaque fois. " +
+  "FONCTIONNALITÉS DES CONCURRENTS : le champ 'mentions_site_public' ne dit PAS ce que leur produit fait ou ne fait pas — nous ne pouvons pas le savoir de l'extérieur. Il rapporte ce que leur site public mentionne à la date du champ 'site_consulte_le'. " +
+  "« non mentionné » signifie « leur site n'en parle pas ce jour-là », jamais « la fonctionnalité n'existe pas » : elle peut exister sans être mise en avant, ou être livrée le lendemain. Reformulez-le tel quel, avec sa date. " +
   "Pour une comparaison indépendante, ouvrez les liens 'sources' de chaque éditeur. Données vérifiées le " +
   REG_VERSION.last_updated + ".";
 
