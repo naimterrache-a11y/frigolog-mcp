@@ -10,6 +10,7 @@
 //   4. live MCP JSON-RPC contract: every tool response carries type / sources /
 //      derniere_verification / version_schema (network, skips gracefully if the
 //      endpoint is unreachable or not yet on schema v2).
+//   7. conversion CTAs: content guard over data/cta.json (offline, deterministic).
 //
 // Exit code is 0 unless a real FAIL occurs. Network-unavailable checks SKIP, not fail.
 // URL liveness: 2xx/3xx = OK, 403/429 = live-but-protected (PASS — Légifrance WAF-blocks
@@ -465,6 +466,145 @@ async function testNewAutomationTools() {
   }
 }
 
+// ====== GROUP 7 — CTAs de conversion (offline, déterministe) ================
+// Ce groupe ne parle PAS au serveur déployé, et c'est délibéré : il garde le
+// CONTENU commercial servi à ~717 appels/semaine, et ce contenu doit être validé
+// AVANT le déploiement, pas après. Un garde qui n'existe qu'en prod arrive trop
+// tard.
+//
+// Il lit data/cta.json — le fichier que le serveur lit lui-même (lib/data/cta.ts).
+// Pas de copie des textes ici : un garde qui tient sa propre copie de la vérité
+// finit par garder l'ancienne.
+//
+// Règles gardées (docs/operations/decisions.md du dépôt frigolog-brain) :
+//   PROD-01 — tout conseil finit par « Essai gratuit 14 jours, sans engagement. »,
+//             jamais « sans CB » / « sans carte bancaire ».
+//   PROD-02 — aucun conseil ne nomme Alim'confiance.
+//   MKT-05  — pas de superlatif creux : ni « leader », ni « innovant ».
+//   Lien    — https://frigolog.fr/? ... le « / » avant le « ? » n'est pas
+//             cosmétique : c'est la différence entre une campagne mesurée et
+//             717 prospects perdus par semaine sans un seul signal.
+const CTA = JSON.parse(readFileSync(path.join(ROOT, 'data', 'cta.json'), 'utf8'));
+const CTA_SUFFIX = 'Essai gratuit 14 jours, sans engagement.';
+const CTA_LIEN_PREFIX = 'https://frigolog.fr/?';
+const CTA_BANNED = [
+  'sans cb',
+  'sans carte bancaire',
+  'leader',
+  'innovant',
+  "alim'confiance",
+  'alimconfiance',
+];
+
+// Normalise les apostrophes typographiques : « Alim’confiance » et
+// « Alim'confiance » sont le même mot interdit, et seul l'un des deux se tape
+// naturellement.
+const ctaNormalize = (s) => String(s).toLowerCase().replace(/[’‘`]/g, "'");
+
+// LE garde, isolé en fonction pure — parce qu'il est lui-même testé plus bas
+// contre des textes volontairement fautifs. Un garde qu'on n'a jamais vu
+// refuser quoi que ce soit ne prouve rien.
+function ctaViolations(tool, conseil, lien) {
+  const out = [];
+  if (typeof conseil !== 'string' || conseil.trim() === '') {
+    out.push('conseil_pratique vide ou absent');
+  } else {
+    if (!conseil.endsWith(CTA_SUFFIX)) out.push(`PROD-01 : ne finit pas par « ${CTA_SUFFIX} »`);
+    const hay = ctaNormalize(conseil);
+    for (const banned of CTA_BANNED) {
+      if (hay.includes(banned)) out.push(`terme interdit « ${banned} »`);
+    }
+  }
+  if (typeof lien !== 'string' || !lien.startsWith(CTA_LIEN_PREFIX)) {
+    out.push(`lien ne commence pas par ${CTA_LIEN_PREFIX} (le « / » avant le « ? »)`);
+  } else if (!lien.endsWith(`utm_campaign=${tool}`)) {
+    out.push(`utm_campaign ne vaut pas « ${tool} » (lien=${lien})`);
+  }
+  return out;
+}
+
+const ctaLien = (tool) => String(CTA.lien_template).replace('{tool}', tool);
+
+// Les 19 outils, lus depuis la SEULE déclaration qui fait foi : le tableau TOOLS
+// d'api/mcp.ts. Le test ne tient pas sa propre liste — sinon un 20e outil
+// arriverait sans CTA et sans que rien ne le dise.
+function declaredToolNames() {
+  const src = readFileSync(path.join(ROOT, 'api', 'mcp.ts'), 'utf8');
+  const start = src.indexOf('const TOOLS = [');
+  const end = src.indexOf('\n];', start);
+  if (start === -1 || end === -1) return [];
+  return [...src.slice(start, end).matchAll(/\bname: '([a-z_]+)'/g)].map((m) => m[1]);
+}
+
+function testCtas() {
+  group('7. CTAs de conversion (offline — data/cta.json)');
+
+  // (a) gabarit du lien : un seul endroit porte le « / », on le vérifie une fois.
+  check('lien_template commence par https://frigolog.fr/?',
+    typeof CTA.lien_template === 'string' && CTA.lien_template.startsWith(CTA_LIEN_PREFIX),
+    `got ${CTA.lien_template}`);
+  check('lien_template contient le jeton {tool}',
+    String(CTA.lien_template).includes('{tool}'), `got ${CTA.lien_template}`);
+  check('lien_template porte utm_source=mcp & utm_medium=tool',
+    String(CTA.lien_template).includes('utm_source=mcp') &&
+      String(CTA.lien_template).includes('utm_medium=tool'),
+    `got ${CTA.lien_template}`);
+
+  // (b) l'extraction des outils doit ramener quelque chose. Sans ce contrôle,
+  //     une regex cassée rendrait « chaque outil a un CTA » vrai par le vide.
+  const tools = declaredToolNames();
+  check(`api/mcp.ts déclare ${EXPECT_TOOLS} outils`, tools.length === EXPECT_TOOLS,
+    `extrait ${tools.length} : ${JSON.stringify(tools)}`);
+
+  // (c) couverture, dans les deux sens.
+  const conseils = CTA.conseils || {};
+  for (const tool of tools) {
+    check(`[${tool}] a un conseil_pratique`, typeof conseils[tool] === 'string',
+      'aucune entrée dans data/cta.json — tout nouvel outil doit arriver avec son CTA');
+  }
+  const known = new Set(tools);
+  for (const tool of Object.keys(conseils)) {
+    check(`[${tool}] correspond à un outil réel`, known.has(tool),
+      "CTA orphelin : cet outil n'existe pas (ou plus) dans api/mcp.ts");
+  }
+
+  // (d) le contenu, outil par outil.
+  for (const tool of Object.keys(conseils)) {
+    const v = ctaViolations(tool, conseils[tool], ctaLien(tool));
+    check(`[${tool}] conseil + lien conformes`, v.length === 0, v.join(' | '));
+  }
+
+  // (e) une campagne par outil — sinon deux outils se confondent dans les stats.
+  const campagnes = Object.keys(conseils).map(ctaLien);
+  check('un lien unique par outil', new Set(campagnes).size === campagnes.length,
+    'doublon d’utm_campaign');
+
+  // (f) META-TEST — on regarde le garde REFUSER. Chaque cas ci-dessous est un
+  //     texte qui a déjà failli partir en production ; si l'un d'eux passe, le
+  //     garde des points (d) et (e) ne vaut plus rien et ce test le dit ici,
+  //     plutôt qu'après 717 appels.
+  const poison = [
+    ['sans CB', `Frigolog fait le travail. Essai gratuit 14 jours, sans CB.`, ctaLien('x')],
+    ['sans carte bancaire', `Essai gratuit 14 jours, sans carte bancaire.`, ctaLien('x')],
+    ['leader', `Frigolog, leader du HACCP. Essai gratuit 14 jours, sans engagement.`, ctaLien('x')],
+    ['innovant', `Frigolog, outil innovant. Essai gratuit 14 jours, sans engagement.`, ctaLien('x')],
+    ["Alim'confiance", `Améliorez votre score Alim'confiance. Essai gratuit 14 jours, sans engagement.`, ctaLien('x')],
+    ['Alim’confiance (apostrophe typographique)', `Votre score Alim’confiance grimpe. Essai gratuit 14 jours, sans engagement.`, ctaLien('x')],
+    ['suffixe PROD-01 tronqué', `Frigolog archive vos relevés. Essai gratuit 14 jours.`, ctaLien('x')],
+    ['lien sans le / avant le ?', `Frigolog archive vos relevés. Essai gratuit 14 jours, sans engagement.`, 'https://frigolog.fr?utm_source=mcp&utm_medium=tool&utm_campaign=x'],
+    ['conseil vide', '', ctaLien('x')],
+  ];
+  for (const [label, conseil, lien] of poison) {
+    const v = ctaViolations('x', conseil, lien);
+    check(`le garde REFUSE : ${label}`, v.length > 0,
+      'le garde a laissé passer un texte interdit — il ne garde rien');
+  }
+  // Et il accepte un texte conforme : un garde qui refuse tout est aussi inutile
+  // qu'un garde qui accepte tout.
+  check('le garde ACCEPTE un CTA conforme',
+    ctaViolations('x', `Frigolog archive vos relevés. ${CTA_SUFFIX}`, ctaLien('x')).length === 0);
+}
+
 // ---- run -------------------------------------------------------------------
 (async () => {
   console.log('Frigolog HACCP MCP — test suite');
@@ -474,6 +614,7 @@ async function testNewAutomationTools() {
   await testLiveContract();
   await testCounts();
   await testNewAutomationTools();
+  testCtas();
 
   console.log(`\n${'='.repeat(48)}`);
   console.log(`PASS ${pass}   FAIL ${fail}   SKIP ${skip}`);

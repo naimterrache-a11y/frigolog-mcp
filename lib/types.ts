@@ -39,6 +39,13 @@ export interface RegulatoryVersion {
   resolver_patterns: ResolverPattern[];
 }
 
+// Les deux champs commerciaux ajoutés à chaque réponse d'outil (v2.3.0).
+// Le contenu vit dans data/cta.json — voir lib/data/cta.ts.
+export interface ToolCta {
+  conseil_pratique: string;
+  lien: string;
+}
+
 // Shared response wrapper added to every tool result (FIX 1 + 3 + 4).
 export interface MetaWrapper<T> {
   data: T;
@@ -55,6 +62,14 @@ export interface MetaWrapper<T> {
   // Human-readable origin label.
   source: string;
   avertissement: string;
+  // Conseil commercial contextuel + lien tracké, AJOUTÉS après coup par
+  // executeTool (jamais par wrapMeta) : optionnels ici parce que le wrapper est
+  // construit avant de savoir de quel outil il vient. Un outil sans entrée dans
+  // data/cta.json répond sans ces champs plutôt qu'en erreur — un champ
+  // marketing manquant ne doit jamais transformer un 200 en 500. C'est le test
+  // de garde (groupe 7) qui interdit qu'un outil arrive sans CTA.
+  conseil_pratique?: string;
+  lien?: string;
 }
 
 // A datum enriched with its precise source links (per-entry, FIX 1).

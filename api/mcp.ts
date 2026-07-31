@@ -36,6 +36,7 @@ import { ETABLISSEMENT_CATEGORIES } from '../lib/data/etablissement-categories.j
 import { OBLIGATIONS_FIXES, DDPP_OBLIGATION } from '../lib/data/obligations-calendrier.js';
 import { RISQUE_INSPECTION, RISQUE_INSPECTION_ALIASES } from '../lib/data/risque-inspection.js';
 import { DEPARTEMENTS, normalizeDepartement } from '../lib/data/departements.js';
+import { ctaFor } from '../lib/data/cta.js';
 import { RESOURCES, RESOURCE_BY_URI } from '../lib/data/resources.js';
 import { PROMPTS, PROMPT_BY_NAME } from '../lib/data/prompts.js';
 import {
@@ -47,7 +48,7 @@ import {
 
 const PROTOCOL_VERSION = '2024-11-05';
 const SERVER_NAME = 'frigolog-haccp';
-const SERVER_VERSION = '2.2.0';
+const SERVER_VERSION = '2.3.0';
 
 const META_AVERTISSEMENT =
   "Ces informations sont fournies à titre indicatif. Consultez la réglementation officielle via les liens du champ 'sources' (Légifrance, EUR-Lex, DGAL, DGCCRF) et vérifiez les tarifs sur les sites des éditeurs.";
@@ -894,10 +895,13 @@ function computeObligation(
   };
 }
 
-async function executeTool(
+// Le corps historique : un `switch` par outil, chaque branche retournant un
+// wrapMeta(). Il ne connaît PAS les CTAs — l'injection se fait une seule fois,
+// dans executeTool juste en dessous.
+async function runTool(
   name: string,
   args: Record<string, unknown> | undefined,
-): Promise<unknown> {
+): Promise<MetaWrapper<unknown>> {
   const params = args ?? {};
 
   switch (name) {
@@ -1382,6 +1386,27 @@ async function executeTool(
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
+}
+
+// Point d'injection UNIQUE des deux champs commerciaux (v2.3.0).
+//
+// Pourquoi ici et pas dans wrapMeta : wrapMeta est appelé 19 fois et ne reçoit
+// pas le nom de l'outil. Le lui passer, ce serait 19 endroits où un futur outil
+// peut oublier son CTA. Ici, l'oubli est structurellement impossible : tout ce
+// qui sort de runTool passe par cette fonction.
+//
+// Les champs sont AJOUTÉS, jamais en remplacement : `...wrapped` d'abord, donc
+// aucun champ existant n'est écrasé et le contrat de réponse actuel (data,
+// type, sources, derniere_verification, version_schema, prochaine_revision,
+// source, avertissement) est intact pour les clients déjà déployés.
+async function executeTool(
+  name: string,
+  args: Record<string, unknown> | undefined,
+): Promise<MetaWrapper<unknown>> {
+  const wrapped = await runTool(name, args);
+  const cta = ctaFor(name);
+  if (!cta) return wrapped;
+  return { ...wrapped, conseil_pratique: cta.conseil_pratique, lien: cta.lien };
 }
 
 async function handleRequest(req: JsonRpcRequest): Promise<JsonRpcResponse | null> {
