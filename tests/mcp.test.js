@@ -11,6 +11,9 @@
 //      derniere_verification / version_schema (network, skips gracefully if the
 //      endpoint is unreachable or not yet on schema v2).
 //   7. conversion CTAs: content guard over data/cta.json (offline, deterministic).
+//   8. commercial copy outside the CTAs: same guard applied to the Frigolog entry
+//      of the comparison, the two frigolog_* advice fields and server.json
+//      (offline, deterministic).
 //
 // Exit code is 0 unless a real FAIL occurs. Network-unavailable checks SKIP, not fail.
 // URL liveness: 2xx/3xx = OK, 403/429 = live-but-protected (PASS — Légifrance WAF-blocks
@@ -605,6 +608,218 @@ function testCtas() {
     ctaViolations('x', `Frigolog archive vos relevés. ${CTA_SUFFIX}`, ctaLien('x')).length === 0);
 }
 
+// ====== GROUP 8 — copie commerciale hors CTAs (offline, déterministe) =======
+// Le groupe 7 ne garde que data/cta.json. Ça ne suffisait pas : le MCP servait
+// « 14 jours sans carte bancaire » dans la MÊME réponse JSON qu'un CTA réécrit
+// pour éviter exactement cette formule. Un garde dont on ne sait pas ce qu'il
+// ne couvre pas finit par faire passer son vert pour une preuve de conformité.
+//
+// Ce groupe garde les textes commerciaux servis par le MCP en DEHORS des CTAs.
+//
+// PÉRIMÈTRE, et pourquoi il est étroit exprès. On ne scanne PAS tout le jeu de
+// données. Ce serveur cite légitimement Alim'confiance, RappelConso, la DGAL et
+// la DGCCRF : ce sont ses sources officielles, un outil s'appelle même
+// get_score_alimconfiance. Interdire ces mots partout rendrait le test rouge sur
+// de la donnée réglementaire correcte, et un test rouge qu'on apprend à ignorer
+// ne revient jamais au vert. On garde donc les endroits où Frigolog PARLE DE
+// FRIGOLOG :
+//   - l'entrée Frigolog du comparatif (tous ses textes, champs futurs compris) ;
+//   - sanctions.ts    -> conseil_frigolog ;
+//   - alimconfiance.ts -> frigolog_et_alimconfiance ;
+//   - server.json     -> websiteUrl (la vitrine du registre MCP officiel).
+//
+// NON couvert, et c'est délibéré : les `point_fort` des CONCURRENTS. Celui
+// d'ePackPro dit « Leader historique du marché » — c'est une description d'un
+// tiers dans un comparatif, pas une revendication de Frigolog sur Frigolog.
+// À trancher côté business, pas ici.
+const COM_BANNED_PHRASES = [
+  'sans cb',
+  'sans carte bancaire',
+  'leader',
+  'innovant',
+  'unique solution',
+  "alim'confiance",
+  'alimconfiance',
+];
+
+// Fournisseurs techniques : on dit ce que ça fait, jamais avec quoi (MKT-05).
+// Nommer notre fournisseur d'IA en clair renseignait gratuitement ceux qui nous
+// copient. Comparaison par MOT ENTIER — en sous-chaîne, « react » mordrait dans
+// n'importe quel mot français, et un garde qui crie à tort finit désarmé.
+const COM_BANNED_VENDORS = [
+  'claude', 'anthropic', 'openai', 'chatgpt', 'gpt', 'gemini', 'mistral',
+  'supabase', 'vercel', 'postgres', 'postgresql', 'react', 'next.js', 'nextjs',
+  'stripe', 'twilio', 'cloudflare',
+];
+
+// Promesses de résultat et preuve sociale fabriquée. Deux des cinq textes
+// retirés aujourd'hui ne contenaient AUCUN mot interdit — « les clients
+// obtiennent systématiquement Très satisfaisant » et « réduit le risque à quasi
+// zéro » passaient le garde lexical sans broncher. C'est la famille la plus
+// coûteuse (on affirme un résultat qu'on ne mesure pas) et la plus invisible.
+// Ces marqueurs n'attrapent pas l'intention, seulement ses formulations
+// habituelles : un absolu sur ce que produit Frigolog. C'est un filet, pas une
+// preuve — une relecture humaine reste la vraie défense.
+const COM_BANNED_PROMISES = [
+  'systématiquement',
+  'quasi zéro',
+  'zéro risque',
+  'à coup sûr',
+  'garantit',
+  'garantie de résultat',
+  'sans aucun risque',
+];
+
+// Le « / » avant le « ? ». Même règle que pour les liens de CTA : un lien de
+// campagne cassé ne se signale jamais, il perd les prospects en silence.
+const COM_BAD_LINK = 'frigolog.fr?';
+
+function commercialViolations(texte) {
+  const out = [];
+  const brut = ctaNormalize(texte);
+
+  // La règle du lien se lit sur le texte BRUT : c'est justement le « ? » qu'on
+  // cherche. Elle passe donc avant tout nettoyage.
+  if (brut.includes(COM_BAD_LINK)) out.push('lien sans le « / » avant le « ? »');
+
+  // Les paramètres de tracking ne sont PAS de la copie. `utm_source=claude` dit
+  // d'où vient le visiteur, il n'est jamais lu par un prospect — l'interdire
+  // reviendrait à choisir entre mesurer nos campagnes et respecter MKT-05.
+  // On retire donc la query string avant de chercher des mots.
+  const prose = brut.replace(/(https?:\/\/[^\s"]*?)\?[^\s"]*/g, '$1');
+
+  for (const p of COM_BANNED_PHRASES) if (prose.includes(p)) out.push(`terme interdit « ${p} »`);
+  for (const p of COM_BANNED_PROMISES) {
+    if (prose.includes(p)) out.push(`promesse de résultat « ${p} »`);
+  }
+  for (const v of COM_BANNED_VENDORS) {
+    // Encadrement à la main : `\b` casse sur les noms à point (« next.js »).
+    // La borne exclut les lettres et les chiffres, PAS le point — sans quoi un
+    // simple point final (« …sur Supabase. ») suffisait à passer au travers.
+    const re = new RegExp(`(^|[^a-z0-9])${v.replace(/\./g, '\\.')}($|[^a-z0-9])`);
+    if (re.test(prose)) out.push(`fournisseur technique nommé « ${v} »`);
+  }
+  return out;
+}
+
+// Extraction depuis les sources TypeScript. Le serveur lit ces fichiers en .ts ;
+// la suite de tests est du Node nu et ne sait pas les importer. On lit donc le
+// source — et CHAQUE extraction est vérifiée non vide juste en dessous, parce
+// qu'une regex qui ne matche plus rendrait tout ce groupe vert par le vide.
+function readSrc(...parts) {
+  return readFileSync(path.join(ROOT, ...parts), 'utf8');
+}
+
+// Toutes les chaînes littérales de l'entrée Frigolog du comparatif. On prend le
+// BLOC entier plutôt qu'une liste de champs : un champ ajouté demain est gardé
+// sans que personne ait à y penser.
+function frigologBlockStrings() {
+  const src = readSrc('lib', 'data', 'comparatif-solutions.ts');
+  const start = src.indexOf('nom: "Frigolog"');
+  if (start === -1) return [];
+  const next = src.indexOf('nom: "', start + 10); // début de la solution suivante
+  const block = src.slice(start, next === -1 ? src.length : next);
+  return [...block.matchAll(/"((?:[^"\\]|\\.)*)"/g)].map((m) => m[1]);
+}
+
+// Valeur d'un champ texte nommé, dans un fichier de données.
+function tsFieldValue(file, field) {
+  const src = readSrc(...file);
+  const m = src.match(new RegExp(`${field}:\\s*\\n?\\s*"((?:[^"\\\\]|\\\\.)*)"`));
+  return m ? m[1] : null;
+}
+
+function testCommercialCopy() {
+  group('8. copie commerciale hors CTAs (offline)');
+
+  // (a) entrée Frigolog du comparatif.
+  const strings = frigologBlockStrings();
+  check('entrée Frigolog du comparatif extraite', strings.length > 5,
+    `${strings.length} chaîne(s) extraite(s) — regex à revoir`);
+  for (const s of strings) {
+    const v = commercialViolations(s);
+    check(`[comparatif/Frigolog] « ${s.slice(0, 44)}… »`, v.length === 0, v.join(' | '));
+  }
+
+  // (b) les deux conseils commerciaux nichés dans la donnée réglementaire.
+  const champs = [
+    [['lib', 'data', 'sanctions.ts'], 'conseil_frigolog'],
+    [['lib', 'data', 'alimconfiance.ts'], 'frigolog_et_alimconfiance'],
+  ];
+  for (const [file, field] of champs) {
+    const val = tsFieldValue(file, field);
+    check(`${field} extrait de ${file[file.length - 1]}`, typeof val === 'string' && val.length > 20,
+      `extraction vide — regex à revoir (got ${val})`);
+    if (typeof val === 'string') {
+      const v = commercialViolations(val);
+      check(`[${field}] conforme`, v.length === 0, v.join(' | '));
+    }
+  }
+
+  // (c) server.json — notre fiche sur le registre MCP officiel.
+  const server = JSON.parse(readSrc('server.json'));
+  check('server.json websiteUrl porte le « / » avant le « ? »',
+    typeof server.websiteUrl === 'string' && !server.websiteUrl.includes(COM_BAD_LINK),
+    `got ${server.websiteUrl}`);
+  check('server.json websiteUrl conforme', commercialViolations(server.websiteUrl || '').length === 0);
+  check('server.json description conforme',
+    commercialViolations(server.description || '').length === 0,
+    commercialViolations(server.description || '').join(' | '));
+
+  // (c bis) UN FAIT, UN FOYER. Le prix de l'imprimante était écrit à deux
+  // endroits — « ~39 € » dans le comparatif, « ~35 € » dans le CTA — donc deux
+  // chiffres concurrents dans la même réponse JSON. Aucun garde lexical ne voit
+  // ça : les deux textes sont irréprochables séparément. Ce test compare les
+  // deux foyers et échoue s'ils divergent, sans dire lequel a raison — c'est
+  // une question de fait, pas de copie.
+  const prixCta = (CTA.conseils?.get_regles_dlc || '').match(/~\s*(\d+)\s*€/);
+  const noteHw = strings.find((s) => s.includes('Imprimante')) || '';
+  const prixCmp = noteHw.match(/~\s*(\d+)\s*€/);
+  check('prix imprimante extrait des deux côtés',
+    !!prixCta && !!prixCmp, `cta=${prixCta && prixCta[1]} comparatif=${prixCmp && prixCmp[1]}`);
+  if (prixCta && prixCmp) {
+    check('prix imprimante cohérent entre le CTA et le comparatif',
+      prixCta[1] === prixCmp[1],
+      `CTA dit ~${prixCta[1]} €, comparatif dit ~${prixCmp[1]} € — un seul des deux est vrai`);
+  }
+
+  // (d) META-TEST — on regarde CE garde-ci refuser. Chaque texte ci-dessous a
+  //     réellement été servi en production jusqu'à aujourd'hui.
+  const poison = [
+    ['« sans carte bancaire » (le texte servi jusqu’ici)', '14 jours sans carte bancaire'],
+    ['« sans CB »', 'Essai 14 jours sans CB'],
+    ['« leader »', 'Leader historique du marché HACCP français.'],
+    ['« innovant »', 'Un outil innovant pour la restauration.'],
+    ['« unique solution »', 'Unique solution IA-first du marché français.'],
+    ['fournisseur d’IA nommé', 'Scan étiquettes 13 champs en 8 secondes via Claude Vision.'],
+    ['base de données nommée', 'Vos données sont stockées sur Supabase.'],
+    ["Alim'confiance en argument", "Améliorez votre score Alim'confiance avec Frigolog."],
+    ['Alim’confiance (apostrophe typographique)', 'Votre score Alim’confiance grimpe.'],
+    ['lien sans le « / »', 'https://frigolog.fr?utm_source=claude'],
+    // Les deux qui passaient le garde lexical — la raison de COM_BANNED_PROMISES.
+    ['preuve sociale fabriquée', "Les clients Frigolog obtiennent systématiquement 'Très satisfaisant'."],
+    ['garantie de résultat', 'Ce qui réduit le risque de mise en demeure à quasi zéro.'],
+  ];
+  for (const [label, texte] of poison) {
+    check(`le garde REFUSE : ${label}`, commercialViolations(texte).length > 0,
+      'texte interdit laissé passer — le garde ne garde rien');
+  }
+  // …et il laisse passer les textes légitimes. Un garde qui refuse tout est
+  // aussi inutile qu'un garde qui accepte tout — et celui-ci doit cohabiter
+  // avec de la donnée qui cite des sources officielles.
+  const licites = [
+    ['prix conforme', '14 jours, sans engagement'],
+    ['imprimante tierce nommée', 'Imprimante Niimbot B21 facultative (~35 € sur Amazon, achat libre).'],
+    ['lien correct', 'https://frigolog.fr/?utm_source=claude&utm_medium=mcp'],
+    ['UTM de tracking nommant une plateforme', 'https://frigolog.fr/?utm_source=claude&utm_campaign=mcp_directory'],
+    ['mot français contenant un nom de techno', 'Une réaction rapide du support, et un réactif de nettoyage adapté.'],
+  ];
+  for (const [label, texte] of licites) {
+    const v = commercialViolations(texte);
+    check(`le garde ACCEPTE : ${label}`, v.length === 0, v.join(' | '));
+  }
+}
+
 // ---- run -------------------------------------------------------------------
 (async () => {
   console.log('Frigolog HACCP MCP — test suite');
@@ -615,6 +830,7 @@ function testCtas() {
   await testCounts();
   await testNewAutomationTools();
   testCtas();
+  testCommercialCopy();
 
   console.log(`\n${'='.repeat(48)}`);
   console.log(`PASS ${pass}   FAIL ${fail}   SKIP ${skip}`);

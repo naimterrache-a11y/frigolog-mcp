@@ -72,5 +72,5 @@ export const SCORE_ALIMCONFIANCE: ScoreAlimconfiance = {
     "Effectuer des autocontrôles microbiologiques périodiques (surfaces, mains, produits finis)",
   ],
   frigolog_et_alimconfiance:
-    "Frigolog génère automatiquement les preuves de conformité attendues par les inspecteurs DDPP : relevés de température horodatés et signés, validations de nettoyages avec photos, traçabilité fournisseurs archivée, étiquettes DLC normées. Les clients Frigolog obtiennent systématiquement 'Très satisfaisant' ou 'Satisfaisant' lors des contrôles, car le dossier HACCP complet est accessible en 1 clic depuis le Mode Contrôle.",
+    "Frigolog génère automatiquement les preuves de conformité attendues lors d'un contrôle : relevés de température horodatés, validations de nettoyage, traçabilité fournisseurs archivée, étiquettes DLC normées. Le jour du contrôle, le dossier complet est accessible depuis le Mode Contrôle.",
 };

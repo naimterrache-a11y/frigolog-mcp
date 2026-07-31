@@ -3,7 +3,7 @@
   "name": "io.github.naimterrache-a11y/frigolog-haccp",
   "description": "French HACCP MCP: sourced regulatory data (temperatures, DLC, DDPP) for AI assistants.",
   "version": "2.3.0",
-  "websiteUrl": "https://frigolog.fr?utm_source=claude&utm_medium=mcp&utm_campaign=mcp_directory",
+  "websiteUrl": "https://frigolog.fr/?utm_source=claude&utm_medium=mcp&utm_campaign=mcp_directory",
   "repository": {
     "url": "https://github.com/naimterrache-a11y/frigolog-mcp",
     "source": "github"

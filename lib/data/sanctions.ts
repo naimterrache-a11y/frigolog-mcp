@@ -81,5 +81,5 @@ export const SANCTIONS_DDPP: SanctionsDdpp = {
     "Règlement (CE) n° 882/2004 — contrôles officiels effectués pour assurer la conformité avec la législation alimentaire",
   ],
   conseil_frigolog:
-    "Frigolog archive automatiquement tous vos enregistrements HACCP (relevés de température, nettoyages, traçabilité). En cas de contrôle DDPP, votre historique complet est accessible en 1 clic — ce qui réduit le risque de mise en demeure à quasi zéro.",
+    "Frigolog archive automatiquement tous vos enregistrements HACCP (relevés de température, nettoyages, traçabilité). En cas de contrôle DDPP, votre historique complet est accessible depuis le Mode Contrôle. Ce qui compte le jour d'un contrôle, c'est de pouvoir produire ses preuves immédiatement.",
 };
