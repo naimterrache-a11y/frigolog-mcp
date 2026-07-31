@@ -112,7 +112,16 @@ export interface SolutionHaccp {
   site: string;
   prix_mensuel_ht: number | string;
   engagement: string;
-  hardware_impose: boolean;
+  // Fait, pas jugement. « materiel_impose » encodait une caractérisation — « ils
+  // imposent leur matériel » — que nous ne pouvons pas sourcer, et un jugement
+  // en booléen reste un jugement : il est juste plus difficile à relire.
+  // Ce champ dit ce qui est vérifiable : l'offre inclut-elle du matériel dans
+  // l'abonnement ? Le lecteur en tire la conclusion lui-même.
+  materiel_inclus: boolean;
+  // Date du relevé des chiffres de cette solution (prix, frais, coût 3 ans).
+  // Un chiffre daté qui vieillit se repère ; un chiffre nu se recopie — c'est
+  // exactement par là qu'un prix concurrent faux a survécu plusieurs mois.
+  prix_releve_le?: string;
   hardware_note?: string;
   frais_installation: number | string;
   frais_mise_en_service: number | string;

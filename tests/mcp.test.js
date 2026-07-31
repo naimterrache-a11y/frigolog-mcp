@@ -819,33 +819,49 @@ function testCommercialCopy() {
       `got ${m ? m[1] : '(champ non trouvé ou numérique nu)'}`);
   }
 
-  // 3. Les « failles exploitables » du canonique : un angle de discussion
-  //    INTERNE, sans relevé ni date ni contrat, à ne jamais affirmer dans un
-  //    contenu public — et le MCP est un contenu public. Le canonique nomme
-  //    trois mots : « imposée », « par commercial », « obligatoire ».
+  // 3. Les caractérisations qu'on ne peut pas sourcer. Le canonique les range
+  //    sous « failles exploitables » : un angle de discussion INTERNE, sans
+  //    relevé ni date ni contrat, à ne jamais affirmer dans un contenu public —
+  //    et le MCP est un contenu public. Trois mots nommés : « imposée »,
+  //    « par commercial », « obligatoire ».
   //
-  //    Règle VOLONTAIREMENT limitée au bloc ePackPro. Interdire « imposé »
-  //    partout casserait deux usages légitimes et opposés : « sans matériel
-  //    imposé » (Frigolog) et « jamais imposés » (Traqfood). Le canonique ne
-  //    traite d'ailleurs que d'ePackPro. Interdire un mot au-delà de la portée
-  //    de la règle qui le motive, c'est le meilleur moyen de faire désarmer le
-  //    garde entier au premier faux positif.
-  //    Même prudence sur « commercial » : on interdit les tournures précises
-  //    (« technicien commercial », « par un commercial ») et PAS le mot seul,
-  //    parce que le texte validé pour ePackPro dit « réseau commercial de
-  //    terrain ». Un garde qui refuse le texte qu'on vient de valider ne
-  //    survit pas à la semaine.
+  //    La règle vaut pour LES SIX, pas seulement pour le concurrent que nous
+  //    documentons le mieux. Elle ne protège pas ePackPro : elle nous protège.
+  //    Affirmer sans source une caractérisation négative sur un tiers nommé
+  //    nous expose de la même façon, qu'il soit documenté chez nous ou pas.
+  //
+  //    Portée : les six concurrents, PAS le bloc Frigolog — qui dit « sans
+  //    matériel imposé », une phrase sur nous-mêmes, parfaitement légitime.
+  //    Et on interdit « technicien commercial », jamais « commercial » seul :
+  //    le texte validé dit « réseau commercial de terrain ». Un garde qui
+  //    refuse le texte qu'on vient de valider ne survit pas à la semaine.
   const FAILLES = [
     'imposé', 'imposée', 'imposés', 'imposées',
     'par commercial', 'par un commercial', 'technicien commercial',
     'obligatoire',
   ];
-  const eppStrings = [...epp.matchAll(/"((?:[^"\\]|\\.)*)"/g)].map((m) => m[1]);
-  for (const s of eppStrings) {
+  for (const s of strConcurrents) {
     const hay = ctaNormalize(s);
     const hits = FAILLES.filter((f) => hay.includes(f));
-    check(`[ePackPro] « ${s.slice(0, 40)}… » sans angle interne`, hits.length === 0,
+    check(`[concurrents] « ${s.slice(0, 40)}… » sans caractérisation non sourcée`,
+      hits.length === 0,
       `mot non sourçable : ${hits.join(', ')} — cf. « failles exploitables » du canonique`);
+  }
+
+  // 4. Tout chiffre concurrent servi en public porte sa date de relevé. Le
+  //    garde ne peut PAS comparer ces prix au fichier canonique — il vit dans
+  //    un autre dépôt, qu'un serveur public ne peut pas lire, et c'est
+  //    exactement par là qu'un prix faux a survécu. Faute de pouvoir fermer la
+  //    faille, on la rend visible : un chiffre daté qui vieillit se repère, un
+  //    chiffre nu se recopie. Le champ est obligatoire ; sa valeur peut dire
+  //    « non consigné », et c'est précisément le signal qu'on veut voir.
+  const blocsConcurrents = blocConcurrents.split(/\n  \{/);
+  check('six blocs concurrents découpés', blocsConcurrents.length === 6,
+    `${blocsConcurrents.length} bloc(s)`);
+  for (const b of blocsConcurrents) {
+    const nom = (b.match(/nom: "([^"]+)"/) || [])[1] || '(inconnu)';
+    check(`[${nom}] porte une date de relevé`, /prix_releve_le: "[^"]+"/.test(b),
+      'champ prix_releve_le absent — un chiffre concurrent nu se recopie sans être vu');
   }
 
   // CE QUE CE GARDE NE FAIT PAS, ET POURQUOI. Il ne sait pas repérer une
