@@ -91,7 +91,7 @@ export const SOLUTIONS_HACCP: SolutionHaccp[] = [
     capteurs_note: "6 € HT/mois par capteur + hub 12 € HT/mois, affichés sur leur grille publique",
     support: "Support personnalisé, experts HACCP",
     onboarding: "Configuration personnalisée + formation",
-    cout_3_ans: "≈ 3 200 (5 modules de base sur 36 mois + 448 € setup, hors capteurs et tablette en option)",
+    cout_3_ans: "Non calculable — aucun prix de base affiché sur leur grille publique",
     cible_principale: "Restaurants, chaînes, collectivités, crèches, écoles",
     point_fort: "Partenariat distribution Transgourmet, app au design ludique, OCR traçabilité, contenu pédagogique HACCP fourni. PMS PDF vierge gratuit.",
     sources: [
@@ -185,7 +185,7 @@ export const SOLUTIONS_HACCP: SolutionHaccp[] = [
     scan_ia_note: "Leur site annonce une reconnaissance par photo du nom du produit, de la DLC, des allergènes, du transporteur et du numéro de lot",
     support: "SAV en semaine, formation illimitée",
     onboarding: "Installation + formation sur site par l'équipe Kooklin",
-    cout_3_ans: "À confirmer",
+    cout_3_ans: "Non calculable — aucun prix affiché sur leur site public",
     cible_principale: "CHR, boucheries, collectivités, cuisines centrales, environnements humides",
     point_fort: "Tablette durcie IP65 offerte et garantie pendant le contrat, reconnaissance d'étiquette par photo, impression à la voix, formation illimitée.",
     sources: [
@@ -215,7 +215,7 @@ export const SOLUTIONS_HACCP: SolutionHaccp[] = [
     },
     support: "Non détaillé publiquement",
     onboarding: "Non détaillé publiquement",
-    cout_3_ans: "≈ 2200 (5 modules de base sur 36 mois, hors modules supplémentaires)",
+    cout_3_ans: "1 764 sur 36 mois (49 × 36, hors modules supplémentaires et matériel à l'achat)",
     cible_principale: "Petites structures cherchant une approche modulaire à la carte",
     point_fort: "Tarif d'entrée intermédiaire avec grille modulaire à la carte.",
     sources: [

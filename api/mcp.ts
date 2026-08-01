@@ -48,7 +48,7 @@ import {
 
 const PROTOCOL_VERSION = '2024-11-05';
 const SERVER_NAME = 'frigolog-haccp';
-const SERVER_VERSION = '2.3.0';
+const SERVER_VERSION = '3.0.0';
 
 const META_AVERTISSEMENT =
   "Ces informations sont fournies à titre indicatif. Consultez la réglementation officielle via les liens du champ 'sources' (Légifrance, EUR-Lex, DGAL, DGCCRF) et vérifiez les tarifs sur les sites des éditeurs.";

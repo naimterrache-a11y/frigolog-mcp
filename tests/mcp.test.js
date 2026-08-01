@@ -895,6 +895,33 @@ function testCommercialCopy() {
     }
   }
 
+  //    (a bis) UN COÛT DÉRIVÉ SE RECONCILIE AVEC SON PROPRE PRIX. Deux fiches
+  //    déclaraient « aucun prix de base affiché » puis affirmaient un coût sur
+  //    3 ans, et une troisième annonçait 49 €/mois avec un total de 2 200 €
+  //    (49 × 36 = 1 764). Un chiffre qui se contredit DANS SA PROPRE FICHE est
+  //    pire que pas de chiffre : le prospect fait la multiplication en dix
+  //    secondes et nous prend en défaut sur notre propre comparatif.
+  //    Règle : soit « Non calculable … », soit un total qui se retrouve à
+  //    partir d'un prix mensuel affiché × 36 (tolérance 15 % pour les frais).
+  const montants = (s) =>
+    [...String(s).matchAll(/\d[\d   ]*(?:,\d+)?/g)]
+      .map((m) => parseFloat(m[0].replace(/[   ]/g, '').replace(',', '.')))
+      .filter((n) => Number.isFinite(n));
+  for (const b of blocsConcurrents) {
+    const nom = (b.match(/nom: "([^"]+)"/) || [])[1] || '(inconnu)';
+    const cout = (b.match(/cout_3_ans: "?([^",]*(?:,\d+)?[^"]*)"?,/) || [])[1] || '';
+    if (/^Non calculable/i.test(cout.trim())) {
+      ok(`[${nom}] coût 3 ans : « Non calculable » assumé`);
+      continue;
+    }
+    const prix = montants((b.match(/prix_mensuel_ht: "?([^"]*)"?,/) || [])[1] || '');
+    const totaux = montants(cout);
+    const reconcilie = totaux.some((t) =>
+      prix.some((p) => p > 0 && Math.abs(t - p * 36) <= 0.15 * Math.max(t, 1)));
+    check(`[${nom}] coût 3 ans réconcilié avec son prix mensuel`, reconcilie,
+      `cout_3_ans="${cout}" ne se retrouve pas depuis prix_mensuel_ht (${prix.join(', ') || 'aucun prix chiffré'}) × 36`);
+  }
+
   //    (b) la forme affirmative est bannie du bloc concurrents, en toutes
   //        lettres. C'est le VERBE qui portait le risque, pas la date.
   const FORMES_AFFIRMATIVES = [
