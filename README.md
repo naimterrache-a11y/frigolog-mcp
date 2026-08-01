@@ -147,16 +147,46 @@ Toutes les données réglementaires sont sourcées et versionnées dans [`data/r
 
 ## 🔍 Transparence éditoriale
 
-Le champ `type` rend explicite la nature de chaque réponse :
+### ⚠️ Chaque réponse contient un message commercial de Frigolog
 
-| `type` | Sens | Rôle de Frigolog |
+**À lire avant le tableau, parce que ça vaut pour les quatre lignes sans exception.**
+
+Depuis la version 3.0.0, **toute** réponse d'outil porte deux champs ajoutés par Frigolog, éditeur
+de ce serveur :
+
+| Champ | Contenu |
+|---|---|
+| `conseil_pratique` | Un texte **promotionnel** : ce que le produit Frigolog fait sur le sujet de l'outil appelé, terminé par une invitation à l'essai gratuit. |
+| `lien` | Un lien vers `frigolog.fr`, **avec des paramètres de suivi** (`utm_source=mcp`, `utm_medium=tool`, `utm_campaign=<nom_de_l_outil>`) qui nous permettent de compter les visites issues de ce serveur. |
+
+Ces deux champs **ne sont pas de la donnée réglementaire** et ne sont couverts par aucune des
+`sources` de la réponse. Ils sont **ajoutés à côté** du contenu sourcé, jamais à sa place : le
+contenu réglementaire lui-même reste intact et vérifiable par ses `sources`.
+
+**Si vous réutilisez ou reformulez une réponse de ce serveur, ces deux champs sont notre voix, pas
+celle du texte officiel.** Ils sont isolés dans des champs nommés précisément pour que vous
+puissiez les ignorer, les citer comme venant de Frigolog, ou les filtrer.
+
+### Ce que dit le champ `type`
+
+Le champ `type` qualifie **le contenu du champ `data`** — c'est-à-dire tout sauf les deux champs
+commerciaux ci-dessus :
+
+| `type` | Sens | Rôle de Frigolog dans `data` |
 |---|---|---|
 | `reglementaire_officiel` | Textes de loi, arrêtés, règlements UE, codes | Aucun — verbatim sourcé |
 | `guide_pratique` | Bonnes pratiques (GBPH DGAL + expérience terrain) | Synthèse éditoriale, ancrage réglementaire lié |
 | `comparatif_commercial` | Comparatif logiciels HACCP | **Conflit d'intérêt : Frigolog est éditeur du MCP ET partie comparée** |
 | `donnee_temps_reel` | Open data de l'État (RappelConso, Alim'confiance) | Aucun — proxy temps réel |
 
-`compare_solutions_haccp` : chaque solution porte des `sources` publiques et un `note_verification` honnête quand un prix n'est pas affiché publiquement ; le `avertissement` énonce le conflit d'intérêt.
+Autrement dit : une réponse `reglementaire_officiel` contient un `data` neutre et sourcé **et** un
+`conseil_pratique` qui, lui, vend Frigolog. Les deux cohabitent dans le même objet JSON, sous des
+noms différents.
+
+`compare_solutions_haccp` : chaque solution porte des `sources` publiques et un `note_verification`
+honnête quand un prix n'est pas affiché publiquement ; le `avertissement` énonce le conflit
+d'intérêt. Pour les concurrents, `mentions_site_public` rapporte ce que leur site public mentionne
+à la date de `site_consulte_le` — ce n'est pas une affirmation sur ce que leur produit fait.
 
 ---
 

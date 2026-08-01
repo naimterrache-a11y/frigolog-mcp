@@ -20,6 +20,15 @@
     "ddpp",
     "frigolog"
   ],
+  "files": [
+    "api",
+    "lib",
+    "data",
+    "public",
+    "server.json",
+    "vercel.json",
+    "tsconfig.json"
+  ],
   "engines": {
     "node": ">=20.0.0"
   },
