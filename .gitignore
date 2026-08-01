@@ -3,6 +3,10 @@ node_modules
 .env
 .env.local
 .npmrc
+# Toute variante de .npmrc, pas seulement le nom exact : un jeton mis de côté
+# sous « .npmrc.jeton-expire-… » n'était plus couvert par la ligne ci-dessus et
+# serait parti dans le premier `git add -A` — dans un dépôt PUBLIC.
+.npmrc*
 *.log
 dist
 .DS_Store
