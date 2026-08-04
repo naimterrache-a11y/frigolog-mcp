@@ -25,6 +25,14 @@
 //     entrer le MCP dans des politiques qui ne le concernent pas, avec une
 //     identité qui n'existe pas.
 //
+// ── Interopérabilité : vérifiée, pas supposée ─────────────────────────
+// Une signature écrite à la main qui « a l'air bonne » et un test qui la
+// recalcule avec le même code, c'est un raisonnement circulaire. Le 2026-08-04,
+// un jeton produit par cette fonction a été présenté à PostgREST du projet
+// staging : HTTP 200. Une signature refusée aurait rendu 401 / PGRST301
+// « None of the keys was able to decode the JWT ». L'implémentation est donc
+// acceptée par le vrai vérificateur, pas seulement par le nôtre.
+//
 // ── Le secret ──────────────────────────────────────────────────────────
 // SUPABASE_JWT_SECRET, lu à l'APPEL et jamais au chargement du module. Deux
 // raisons : il n'apparaît dans aucune trace d'import, et un déploiement mal

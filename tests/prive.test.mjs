@@ -19,7 +19,7 @@
 //     C'est la contrainte n°1 du chantier, et elle se tient par construction.
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -227,6 +227,37 @@ ok('un 401 de PostgREST crie au lieu de rendre une liste vide', () => {
   const src = lire('lib', 'prive', 'contexte.ts');
   assert.ok(/res\.status === 401/.test(src), 'le cas 401 n\'est plus distingué');
   assert.ok(/SUPABASE_JWT_SECRET incohérent/.test(src), 'le diagnostic du 401 a disparu');
+});
+
+// ─── 6. Ce que le privé ne doit pas contaminer ─────────────────────────
+ok('aucun fichier de api/ n\'utilise la fabrique de test', () => {
+  // contexteDeTestSansVerification construit un Contexte pour n'importe quel
+  // établissement, SANS clé et SANS vérification. Indispensable aux tests,
+  // catastrophique ailleurs. Son nom le dit ; ce garde le prouve.
+  //
+  // Il est écrit MAINTENANT, avant que api/mcp-prive.ts existe. Un garde ajouté
+  // après coup ne protège que ce qu'on a pensé à relire ce jour-là.
+  const dir = path.join(ROOT, 'api');
+  const fichiers = readdirSync(dir, { recursive: true })
+    .filter((f) => typeof f === 'string' && /\.(ts|js|mjs)$/.test(f));
+  assert.ok(fichiers.length > 0, 'aucun fichier lu dans api/ — le garde ne garde rien');
+  for (const f of fichiers) {
+    const src = readFileSync(path.join(dir, f), 'utf8');
+    assert.ok(!src.includes('contexteDeTestSansVerification'),
+      `api/${f} appelle la fabrique de contexte réservée aux tests`);
+  }
+});
+
+ok('le MCP public reste intact, et sans authentification', () => {
+  // Contrainte absolue du chantier : les 19 outils publics ne doivent jamais
+  // être modifiés ni cassés, et /api/mcp doit continuer à répondre sans auth.
+  const src = lire('api', 'mcp.ts');
+  assert.ok(src.length > 40000, 'api/mcp.ts a maigri — extraction ou fichier à revoir');
+  assert.ok(!src.includes('prive/'), 'le MCP public importe du code privé');
+  assert.ok(!/contextePourCle|api_keys|SUPABASE_JWT_SECRET/.test(src),
+    'le MCP public a gagné une notion d\'authentification');
+  assert.ok(src.includes("'Access-Control-Allow-Origin', '*'"),
+    'le CORS du MCP public a changé — il doit rester ouvert à tous');
 });
 
 console.log(`\n${passed} tests OK — MCP privé : clés, jeton, point de passage\n`);
