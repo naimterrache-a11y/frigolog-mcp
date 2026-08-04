@@ -27,7 +27,8 @@
     "public",
     "server.json",
     "vercel.json",
-    "tsconfig.json"
+    "tsconfig.json",
+    "!lib/prive"
   ],
   "engines": {
     "node": ">=20.0.0"
@@ -36,7 +37,8 @@
     "dev": "vercel dev",
     "build": "tsc --noEmit",
     "test": "node tests/mcp.test.js",
-    "deploy": "vercel --prod"
+    "deploy": "vercel --prod",
+    "test:prive": "node tests/prive.test.mjs"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
