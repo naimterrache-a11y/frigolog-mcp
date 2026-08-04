@@ -39,6 +39,13 @@ export interface RegulatoryVersion {
   resolver_patterns: ResolverPattern[];
 }
 
+// Les deux champs commerciaux ajoutés à chaque réponse d'outil (v2.3.0).
+// Le contenu vit dans data/cta.json — voir lib/data/cta.ts.
+export interface ToolCta {
+  conseil_pratique: string;
+  lien: string;
+}
+
 // Shared response wrapper added to every tool result (FIX 1 + 3 + 4).
 export interface MetaWrapper<T> {
   data: T;
@@ -55,6 +62,14 @@ export interface MetaWrapper<T> {
   // Human-readable origin label.
   source: string;
   avertissement: string;
+  // Conseil commercial contextuel + lien tracké, AJOUTÉS après coup par
+  // executeTool (jamais par wrapMeta) : optionnels ici parce que le wrapper est
+  // construit avant de savoir de quel outil il vient. Un outil sans entrée dans
+  // data/cta.json répond sans ces champs plutôt qu'en erreur — un champ
+  // marketing manquant ne doit jamais transformer un 200 en 500. C'est le test
+  // de garde (groupe 7) qui interdit qu'un outil arrive sans CTA.
+  conseil_pratique?: string;
+  lien?: string;
 }
 
 // A datum enriched with its precise source links (per-entry, FIX 1).
@@ -91,28 +106,69 @@ export interface RegleDlcEntry {
   notes?: string;
 }
 
+// Ce qu'on a constaté sur le site public d'un éditeur, à une date donnée.
+// Deux valeurs seulement, et aucune ne parle du produit : elles parlent de ce
+// que la page dit. « non mentionné » n'est PAS « n'existe pas ».
+export type MentionSitePublic = 'mentionné' | 'non mentionné';
+
+export interface MentionsSitePublic {
+  scan_ia_etiquettes: MentionSitePublic;
+  cross_check_rappelconso: MentionSitePublic;
+  score_conformite: MentionSitePublic;
+  simulation_ddpp: MentionSitePublic;
+  impression_etiquettes_dlc: MentionSitePublic;
+  capteurs_iot: MentionSitePublic;
+}
+
 // Tool 4 — compare_solutions_haccp
 export interface SolutionHaccp {
   nom: string;
   site: string;
   prix_mensuel_ht: number | string;
   engagement: string;
-  hardware_impose: boolean;
+  // Fait, pas jugement. « materiel_impose » encodait une caractérisation — « ils
+  // imposent leur matériel » — que nous ne pouvons pas sourcer, et un jugement
+  // en booléen reste un jugement : il est juste plus difficile à relire.
+  // Ce champ dit ce qui est vérifiable : l'offre inclut-elle du matériel dans
+  // l'abonnement ? Le lecteur en tire la conclusion lui-même.
+  materiel_inclus: boolean;
+  // Date du relevé des chiffres de cette solution (prix, frais, coût 3 ans).
+  // Un chiffre daté qui vieillit se repère ; un chiffre nu se recopie — c'est
+  // exactement par là qu'un prix concurrent faux a survécu plusieurs mois.
+  prix_releve_le?: string;
   hardware_note?: string;
   frais_installation: number | string;
   frais_mise_en_service: number | string;
   essai_gratuit: string;
-  scan_ia_etiquettes: boolean;
+  // ─── Fonctionnalités ──────────────────────────────────────────────────────
+  // Ces booléens affirment ce qu'un produit FAIT. Nous ne pouvons l'affirmer
+  // que du nôtre : ils sont donc réservés à Frigolog, et optionnels ici.
+  //
+  // Pour un concurrent, nous ne savons pas ce que son produit fait — nous
+  // savons ce que son site public dit. « X n'a pas la fonctionnalité Y » est
+  // une affirmation sur le produit d'un tiers : invérifiable de l'extérieur,
+  // contestable, et surtout elle devient fausse TOUTE SEULE le jour où il la
+  // livre, sans que personne n'ait rien modifié. D'où `mentions_site_public`
+  // ci-dessous, qui rapporte au lieu d'affirmer.
+  scan_ia_etiquettes?: boolean;
   scan_ia_note?: string;
   nb_champs_scan?: number;
-  cross_check_rappelconso: boolean;
-  score_conformite: boolean;
-  simulation_ddpp: boolean;
+  cross_check_rappelconso?: boolean;
+  score_conformite?: boolean;
+  simulation_ddpp?: boolean;
   detection_anomalies?: boolean;
-  impression_etiquettes_dlc: boolean;
+  impression_etiquettes_dlc?: boolean;
   impression_note?: string;
-  capteurs_iot: boolean;
+  capteurs_iot?: boolean;
   capteurs_note?: string;
+  // Ce que le site public de l'éditeur mentionne, à la date de consultation.
+  // Un constat, pas un verdict : vérifiable par quiconque en trente secondes,
+  // daté par construction, et il reste vrai pour sa date même si l'éditeur
+  // livre la fonctionnalité le lendemain.
+  mentions_site_public?: MentionsSitePublic;
+  // Date de consultation du site public (ISO). Sans elle, la phrase ne tient
+  // pas : « non mentionné » sans date est une affirmation déguisée.
+  site_consulte_le?: string;
   support: string;
   onboarding: string;
   nb_modules?: number | string;

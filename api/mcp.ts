@@ -36,6 +36,7 @@ import { ETABLISSEMENT_CATEGORIES } from '../lib/data/etablissement-categories.j
 import { OBLIGATIONS_FIXES, DDPP_OBLIGATION } from '../lib/data/obligations-calendrier.js';
 import { RISQUE_INSPECTION, RISQUE_INSPECTION_ALIASES } from '../lib/data/risque-inspection.js';
 import { DEPARTEMENTS, normalizeDepartement } from '../lib/data/departements.js';
+import { ctaFor } from '../lib/data/cta.js';
 import { RESOURCES, RESOURCE_BY_URI } from '../lib/data/resources.js';
 import { PROMPTS, PROMPT_BY_NAME } from '../lib/data/prompts.js';
 import {
@@ -47,7 +48,7 @@ import {
 
 const PROTOCOL_VERSION = '2024-11-05';
 const SERVER_NAME = 'frigolog-haccp';
-const SERVER_VERSION = '2.2.0';
+const SERVER_VERSION = '3.0.0';
 
 const META_AVERTISSEMENT =
   "Ces informations sont fournies à titre indicatif. Consultez la réglementation officielle via les liens du champ 'sources' (Légifrance, EUR-Lex, DGAL, DGCCRF) et vérifiez les tarifs sur les sites des éditeurs.";
@@ -55,8 +56,11 @@ const META_SOURCE = "Frigolog — frigolog.fr";
 
 const META_COMPARATIF_AVERTISSEMENT =
   "Conflit d'intérêt assumé : Frigolog est l'éditeur de ce MCP ET l'une des solutions comparées (juge et partie). " +
-  "Les données concurrents proviennent de sources publiques vérifiables (sites éditeurs, pages tarifs publiques) — voir le champ 'sources' de chaque solution. " +
-  "Les tarifs et engagements non affichés publiquement (ePackPro, Kooklin, BackResto) sont indicatifs et signalés dans 'note_verification'. " +
+  "Deux statuts de preuve, distingués dans le champ 'note_verification' de chaque solution et à ne jamais confondre. " +
+  "PRIX : relevés sur la grille publique de l'éditeur, à une date indiquée — vérifiables par quiconque via le champ 'sources'. " +
+  "ENGAGEMENTS ET FRAIS : quand l'éditeur ne les publie pas, ils sont signalés comme non affichés ; celui d'ePackPro a été constaté sur des contrats clients que nous avons consultés, et c'est dit à chaque fois. " +
+  "FONCTIONNALITÉS DES CONCURRENTS : le champ 'mentions_site_public' ne dit PAS ce que leur produit fait ou ne fait pas — nous ne pouvons pas le savoir de l'extérieur. Il rapporte ce que leur site public mentionne à la date du champ 'site_consulte_le'. " +
+  "« non mentionné » signifie « leur site n'en parle pas ce jour-là », jamais « la fonctionnalité n'existe pas » : elle peut exister sans être mise en avant, ou être livrée le lendemain. Reformulez-le tel quel, avec sa date. " +
   "Pour une comparaison indépendante, ouvrez les liens 'sources' de chaque éditeur. Données vérifiées le " +
   REG_VERSION.last_updated + ".";
 
@@ -142,7 +146,7 @@ const TOOLS = [
   {
     name: 'compare_solutions_haccp',
     description:
-      "Renvoie un comparatif factuel des principales solutions logicielles HACCP disponibles sur le marché français (avril 2026) : Frigolog, ePackPro, Octopus HACCP, Traqfood, Kooklin, BackResto, Hygiene Up. Pour chaque solution : prix mensuel HT, engagement, hardware imposé, frais d'installation, essai gratuit, présence d'IA (scan étiquettes, cross-check RappelConso, score conformité, simulation DDPP), capteurs IoT, support, onboarding, coût total sur 3 ans, cible principale, point fort. Données vérifiées sur sites publics des éditeurs.",
+      "Renvoie un comparatif factuel des principales solutions logicielles HACCP disponibles sur le marché français (avril 2026) : Frigolog, ePackPro, Octopus HACCP, Traqfood, Kooklin, BackResto, Hygiene Up. Pour chaque solution : prix mensuel HT, engagement, matériel inclus dans l'abonnement, frais d'installation, essai gratuit, présence d'IA (scan étiquettes, cross-check RappelConso, score conformité, simulation DDPP), capteurs IoT, support, onboarding, coût total sur 3 ans, cible principale, point fort. Chaque solution porte ses sources et son statut de vérification dans le champ 'note_verification' : les prix viennent des grilles publiques des éditeurs, et ce qui n'est pas publié par l'éditeur est signalé comme tel.",
     inputSchema: {
       type: 'object',
       properties: {
@@ -448,7 +452,7 @@ const EN_DESCRIPTIONS: Record<string, string> = {
   get_regles_dlc:
     "Returns use-by-date (DLC) rules for in-house preparations in French restaurants and food trades, per the DGAL good-hygiene-practice guide. Optional 'type_preparation' keyword.",
   compare_solutions_haccp:
-    "Returns a sourced comparison of the main HACCP software on the French market (Frigolog, ePackPro, Octopus, Traqfood, Kooklin, BackResto, Hygiene Up): price, commitment, imposed hardware, AI features, support, 3-year cost. Frigolog publishes this MCP (conflict of interest disclosed); each claim links a public source. Optional 'solution'.",
+    "Returns a sourced comparison of the main HACCP software on the French market (Frigolog, ePackPro, Octopus, Traqfood, Kooklin, BackResto, Hygiene Up): price, commitment, whether hardware is included in the subscription, AI features, support, 3-year cost. Frigolog publishes this MCP (conflict of interest disclosed). Every solution carries its sources and its verification status: prices come from the vendor's public price list at a stated date, and anything the vendor does not publish is flagged as such. Optional 'solution'.",
   get_rappels_produits_actifs:
     "Returns active French food-product recalls in real time from RappelConso (DGCCRF open data). Filters: 'categorie', 'limit', 'date_depuis'.",
   get_sanctions_ddpp:
@@ -894,10 +898,13 @@ function computeObligation(
   };
 }
 
-async function executeTool(
+// Le corps historique : un `switch` par outil, chaque branche retournant un
+// wrapMeta(). Il ne connaît PAS les CTAs — l'injection se fait une seule fois,
+// dans executeTool juste en dessous.
+async function runTool(
   name: string,
   args: Record<string, unknown> | undefined,
-): Promise<unknown> {
+): Promise<MetaWrapper<unknown>> {
   const params = args ?? {};
 
   switch (name) {
@@ -1468,6 +1475,31 @@ async function logToolCall(entry: {
   }
 }
 
+// Point d'injection UNIQUE des deux champs commerciaux (v2.3.0).
+//
+// Pourquoi ici et pas dans wrapMeta : wrapMeta est appelé 19 fois et ne reçoit
+// pas le nom de l'outil. Le lui passer, ce serait 19 endroits où un futur outil
+// peut oublier son CTA. Ici, l'oubli est structurellement impossible : tout ce
+// qui sort de runTool passe par cette fonction.
+//
+// Les champs sont AJOUTÉS, jamais en remplacement : `...wrapped` d'abord, donc
+// aucun champ existant n'est écrasé et le contrat de réponse actuel (data,
+// type, sources, derniere_verification, version_schema, prochaine_revision,
+// source, avertissement) est intact pour les clients déjà déployés.
+async function executeTool(
+  name: string,
+  args: Record<string, unknown> | undefined,
+): Promise<MetaWrapper<unknown>> {
+  const wrapped = await runTool(name, args);
+  const cta = ctaFor(name);
+  if (!cta) return wrapped;
+  return { ...wrapped, conseil_pratique: cta.conseil_pratique, lien: cta.lien };
+}
+
+// `ctx` porte le User-Agent jusqu'au journal des appels. Il est optionnel :
+// les appels par lot et les tests construisent la requête sans contexte, et
+// une télémétrie qui exigerait son contexte ferait tomber le serveur au lieu
+// de perdre une ligne de statistique.
 async function handleRequest(
   req: JsonRpcRequest,
   ctx: { userAgent?: string } = {},

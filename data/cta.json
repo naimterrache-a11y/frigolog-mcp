@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0",
+  "_source": "frigolog-brain — _bmad/memory/frigolog-ceo/proposals/2026-07-31-ctas-mcp-conversion.md (§ « Les 19 CTAs validés »). Textes validés par le CEO et vérifiés contre FEATURES.md : ils se recopient, ils ne se réécrivent pas. Toute modification passe par une proposition CEO relue, pas par une PR technique.",
+  "_regles": [
+    "PROD-01 : tout conseil se termine par « Essai gratuit 14 jours, sans engagement. » — jamais « sans CB » / « sans carte bancaire ».",
+    "PROD-02 : aucun conseil ne nomme Alim'confiance.",
+    "MKT-05 : on dit ce que ça fait, jamais comment (pas de brique technique, pas de « agent IA »).",
+    "Jamais « leader », jamais « innovant »."
+  ],
+  "lien_template": "https://frigolog.fr/?utm_source=mcp&utm_medium=tool&utm_campaign={tool}",
+  "conseils": {
+    "get_haccp_temperatures": "Avec Frigolog, vos relevés de température sont horodatés et archivés au fil de l'eau — plus de fiches papier à ressortir le jour du contrôle. Essai gratuit 14 jours, sans engagement.",
+    "get_documents_controle_ddpp": "Avec Frigolog, ces documents sont réunis dans un dossier de contrôle exportable en PDF. Le jour de la visite, vous ouvrez l'application : tout est là. Essai gratuit 14 jours, sans engagement.",
+    "get_regles_dlc": "Frigolog calcule vos DLC et imprime vos étiquettes avec numéro de lot automatique (imprimante ~35 €, non fournie, achetée où vous voulez). Essai gratuit 14 jours, sans engagement.",
+    "get_allergenes_reglementaires": "Frigolog trace vos produits de la réception à la sortie — matière première, numéro de lot, date. Essai gratuit 14 jours, sans engagement.",
+    "get_temperatures_cuisson": "Frigolog archive vos relevés de température avec date et heure : la preuve se constitue avant l'inspection, pas pendant. Essai gratuit 14 jours, sans engagement.",
+    "get_formation_haccp_obligatoire": "Une fois la formation faite, il reste à la prouver au quotidien : Frigolog tient vos registres HACCP à jour et les réunit dans un dossier de contrôle. Essai gratuit 14 jours, sans engagement.",
+    "get_sanctions_ddpp": "Face à un contrôle, ce qui compte c'est la preuve : Frigolog archive vos relevés, vos nettoyages et votre traçabilité au jour le jour. Essai gratuit 14 jours, sans engagement.",
+    "get_actions_correctives": "Frigolog conserve l'historique daté de vos contrôles quotidiens et calcule votre score de conformité — vous voyez ce qui manque avant l'inspecteur. Essai gratuit 14 jours, sans engagement.",
+    "get_plan_nettoyage_type": "Frigolog numérise votre plan de nettoyage : validation en un geste, historique complet, zéro papier. Essai gratuit 14 jours, sans engagement.",
+    "get_checklist_ouverture_etablissement": "Frigolog transforme cette checklist en routine quotidienne sur votre téléphone — cochée, datée, archivée. Essai gratuit 14 jours, sans engagement.",
+    "get_guide_bonnes_pratiques_secteur": "Les modules Frigolog couvrent les postes que le GBPH demande de maîtriser : températures, nettoyage, réception, DLC, traçabilité. Essai gratuit 14 jours, sans engagement.",
+    "get_seuils_microbiologiques": "Frigolog trace vos produits de la réception à la sortie, numéro de lot compris — si un lot est en cause, vous savez où il est parti. Essai gratuit 14 jours, sans engagement.",
+    "get_rappels_produits_actifs": "Frigolog vérifie les rappels RappelConso chaque jour et vous alerte sur ceux qui concernent vos produits. Essai gratuit 14 jours, sans engagement.",
+    "get_alimconfiance_etablissement": "Frigolog vous prépare au contrôle : registres tenus au jour le jour, dossier exportable, score de conformité. Essai gratuit 14 jours, sans engagement.",
+    "get_score_alimconfiance": "Ce qui fait un bon résultat au contrôle, c'est la régularité des preuves. Frigolog les constitue au quotidien. Essai gratuit 14 jours, sans engagement.",
+    "compare_solutions_haccp": "Frigolog : 59 € HT/mois, ou ~47 € HT/mois en paiement annuel, 49 € HT/mois par établissement dès le 2ᵉ. Sur votre téléphone, opérationnel en 10 minutes sans commercial. Essai gratuit 14 jours, sans engagement.",
+    "get_rappels_par_categorie_etablissement": "Frigolog fait cette veille pour vous : chaque matin, les rappels qui concernent votre métier, et rien d'autre. Essai gratuit 14 jours, sans engagement.",
+    "get_calendrier_obligations": "Frigolog couvre la part quotidienne de ces obligations — températures, nettoyage, DLC, traçabilité — tracées et archivées. Essai gratuit 14 jours, sans engagement.",
+    "get_risque_inspection": "Frigolog vous fait passer une simulation de contrôle DDPP et vous montre ce qui manque avant que l'inspecteur ne le trouve. Essai gratuit 14 jours, sans engagement."
+  }
+}
