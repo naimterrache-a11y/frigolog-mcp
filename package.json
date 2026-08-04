@@ -28,7 +28,8 @@
     "server.json",
     "vercel.json",
     "tsconfig.json",
-    "!lib/prive"
+    "!lib/prive",
+    "!scripts"
   ],
   "engines": {
     "node": ">=20.0.0"
@@ -38,7 +39,8 @@
     "build": "tsc --noEmit",
     "test": "node tests/mcp.test.js",
     "deploy": "vercel --prod",
-    "test:prive": "node tests/prive.test.mjs"
+    "test:prive": "node tests/prive.test.mjs",
+    "preuve:isolation": "node scripts/preuve-isolation.mjs"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
