@@ -32,6 +32,7 @@ const {
   PREFIXE_CLE, genererCle, empreinteCle, formeValide, prefixeDe, cleLisible, cleDepuisEnTete,
 } = await import('../lib/prive/cles.ts');
 const { signerJetonEtablissement, TTL_JETON_SECONDES } = await import('../lib/prive/jwt.ts');
+const { VAR_HOTES, hoteDeLaRequete, deploiementAutorise } = await import('../lib/prive/hote.ts');
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const lire = (...p) => readFileSync(path.join(ROOT, ...p), 'utf8');
@@ -258,6 +259,67 @@ ok('le MCP public reste intact, et sans authentification', () => {
     'le MCP public a gagné une notion d\'authentification');
   assert.ok(src.includes("'Access-Control-Allow-Origin', '*'"),
     'le CORS du MCP public a changé — il doit rester ouvert à tous');
+});
+
+// ─── 7. Un seul déploiement sert des données client ────────────────────
+// Ce dépôt est déployé par DEUX projets Vercel : frigologmcp (le vrai, cible du
+// rewrite frigolog.fr/api/mcp) et frigolog-mcp (un doublon que RIEN ne
+// référence). Inoffensif pour 19 outils réglementaires publics ; piégeux dès
+// qu'il s'agit des relevés d'un client.
+const restaurerHotes = (garde) => {
+  if (garde === undefined) delete process.env[VAR_HOTES];
+  else process.env[VAR_HOTES] = garde;
+};
+
+ok('sans déclaration, aucun déploiement ne sert le privé', () => {
+  // « On autorise tout si rien n'est déclaré » transformerait un oubli de
+  // configuration en autorisation.
+  const garde = process.env[VAR_HOTES];
+  try {
+    delete process.env[VAR_HOTES];
+    assert.equal(deploiementAutorise({ host: 'frigologmcp.vercel.app' }), false);
+    process.env[VAR_HOTES] = '';
+    assert.equal(deploiementAutorise({ host: 'frigologmcp.vercel.app' }), false);
+    process.env[VAR_HOTES] = '  ,  , ';
+    assert.equal(deploiementAutorise({ host: 'frigologmcp.vercel.app' }), false);
+  } finally { restaurerHotes(garde); }
+});
+
+ok('le doublon reste dehors, et les previews aussi', () => {
+  const garde = process.env[VAR_HOTES];
+  try {
+    process.env[VAR_HOTES] = 'frigolog.fr,frigologmcp.vercel.app';
+    assert.equal(deploiementAutorise({ host: 'frigologmcp.vercel.app' }), true);
+    assert.equal(deploiementAutorise({ host: 'frigolog.fr' }), true);
+    assert.equal(deploiementAutorise({ host: 'frigolog-mcp.vercel.app' }), false,
+      'le doublon sert des données client');
+    assert.equal(deploiementAutorise({ host: 'frigolog-mcp-3n5w7.vercel.app' }), false,
+      'une preview sert des données client');
+    assert.equal(deploiementAutorise({}), false, 'une requête sans Host passe');
+  } finally { restaurerHotes(garde); }
+});
+
+ok('x-forwarded-host fait foi derrière le rewrite de frigolog.fr', () => {
+  // Derrière le rewrite, `host` porte le nom du déploiement Vercel ; c'est
+  // x-forwarded-host qui porte le nom demandé par le client.
+  const garde = process.env[VAR_HOTES];
+  try {
+    process.env[VAR_HOTES] = 'frigolog.fr';
+    assert.equal(deploiementAutorise({
+      host: 'frigologmcp.vercel.app', 'x-forwarded-host': 'frigolog.fr',
+    }), true);
+    assert.equal(deploiementAutorise({
+      host: 'frigolog.fr', 'x-forwarded-host': 'frigolog-mcp.vercel.app',
+    }), false, 'le host brut l\'emporte sur le nom réellement demandé');
+  } finally { restaurerHotes(garde); }
+});
+
+ok('le port et la casse ne font pas rater un hôte légitime', () => {
+  assert.equal(hoteDeLaRequete({ host: 'FrigoLog.FR:443' }), 'frigolog.fr');
+  assert.equal(hoteDeLaRequete({ host: '  localhost:3000 ' }), 'localhost');
+  assert.equal(hoteDeLaRequete({ host: ['frigolog.fr'] }), 'frigolog.fr');
+  assert.equal(hoteDeLaRequete({}), '');
+  assert.equal(hoteDeLaRequete({ host: 42 }), '');
 });
 
 console.log(`\n${passed} tests OK — MCP privé : clés, jeton, point de passage\n`);

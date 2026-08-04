@@ -21,6 +21,25 @@ Chaque réponse porte un champ `type` (officiel / guide / comparatif / temps ré
 | **Schéma données** | `2.0` — voir [`data/regulatory-version.json`](./data/regulatory-version.json) |
 | **Licence** | MIT |
 
+> ⚠️ **Ce dépôt est déployé par DEUX projets Vercel.** `frigologmcp` est le bon :
+> c'est lui que vise le rewrite `frigolog.fr/api/mcp`, c'est lui qui est cité
+> dans `server.json`, dans `INTEGRATION_ROADMAP.md` et dans le défaut de
+> `MCP_URL` des tests. `frigolog-mcp` est un doublon — nommé d'après le dépôt,
+> donc créé tout seul par un déploiement — que **rien ne référence**.
+>
+> Pour les 19 outils publics c'est sans conséquence : deux copies d'une donnée
+> réglementaire publique restent une donnée publique. Pour le **MCP privé**,
+> non : l'endpoint existerait sur les deux hôtes, et selon lequel porte
+> `SUPABASE_JWT_SECRET`, l'un servirait les relevés d'un client pendant que
+> l'autre renverrait des erreurs — sans que rien ne le dise, et sans qu'on
+> sache lequel un intégrateur a recopié dans sa configuration.
+>
+> D'où `MCP_PRIVE_HOTES` (cf. [`lib/prive/hote.ts`](./lib/prive/hote.ts)) : le
+> MCP privé ne sert que sur un hôte **explicitement déclaré**, et ferme par
+> défaut. Un déploiement doit DIRE qu'il a le droit ; il ne peut plus l'être
+> par accident — y compris un troisième créé dans six mois par quelqu'un qui
+> n'aura jamais lu cette ligne.
+
 ---
 
 ## 🧰 Tools (19)
