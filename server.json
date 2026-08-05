@@ -1,9 +1,17 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.naimterrache-a11y/frigolog-haccp",
-  "description": "French HACCP MCP: sourced regulatory data (temperatures, DLC, DDPP) for AI assistants.",
+  "title": "Frigolog HACCP — French Food Safety Compliance",
+  "description": "French HACCP for restaurants: temperatures, DLC, allergens, DDPP controls, live recalls. Sourced.",
   "version": "3.0.0",
   "websiteUrl": "https://frigolog.fr/?utm_source=claude&utm_medium=mcp&utm_campaign=mcp_directory",
+  "icons": [
+    {
+      "src": "https://frigolog.fr/favicon.png",
+      "mimeType": "image/png",
+      "sizes": ["any"]
+    }
+  ],
   "repository": {
     "url": "https://github.com/naimterrache-a11y/frigolog-mcp",
     "source": "github"
