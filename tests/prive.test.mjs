@@ -37,6 +37,15 @@ const { VAR_HOTES, hoteDeLaRequete, deploiementAutorise } = await import('../lib
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const lire = (...p) => readFileSync(path.join(ROOT, ...p), 'utf8');
 
+// Le source SANS ses commentaires. Indispensable dès qu'un garde cherche
+// l'ABSENCE de quelque chose : ce dépôt explique abondamment ce qu'il ne fait
+// pas, et un garde qui mord sur une explication est un garde qu'on finit par
+// désarmer. (Approximation volontairement simple : pas de parseur, on retire
+// les blocs et les lignes de commentaire.)
+const lireCode = (...p) => lire(...p)
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+  .split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n');
+
 let passed = 0;
 const ok = (label, fn) => { fn(); passed++; console.log('  ✓', label); };
 
@@ -320,6 +329,104 @@ ok('le port et la casse ne font pas rater un hôte légitime', () => {
   assert.equal(hoteDeLaRequete({ host: ['frigolog.fr'] }), 'frigolog.fr');
   assert.equal(hoteDeLaRequete({}), '');
   assert.equal(hoteDeLaRequete({ host: 42 }), '');
+});
+
+// ─── 8. Le point d'entrée ──────────────────────────────────────────────
+const ENDPOINT = () => lire('api', 'mcp-prive.ts');
+
+ok('le privé n\'ouvre PAS le CORS', () => {
+  // Le public répond `Access-Control-Allow-Origin: *` : il sert de la donnée
+  // réglementaire à qui la demande. Ici, une clé qui vivrait dans un navigateur
+  // serait déjà une clé perdue. Un `*` couplé à un en-tête Authorization
+  // inviterait à faire exactement ce qu'il ne faut pas.
+  const src = lireCode('api', 'mcp-prive.ts');
+  assert.ok(src.length > 1500, 'api/mcp-prive.ts introuvable ou tronqué');
+  assert.ok(!/Access-Control-Allow-Origin/.test(src), 'le privé ouvre le CORS');
+  assert.ok(!/Access-Control-Allow-Methods/.test(src), 'le privé négocie avec un navigateur');
+});
+
+ok('le garde d\'hôte passe AVANT la lecture de la clé', () => {
+  // Ainsi un déploiement non déclaré ne voit jamais passer un secret, même
+  // pour le rejeter.
+  const src = ENDPOINT();
+  const iHote = src.indexOf('deploiementAutorise(');
+  const iCle = src.indexOf('cleDepuisEnTete(');
+  assert.ok(iHote > -1 && iCle > -1, 'un des deux gardes a disparu');
+  assert.ok(iHote < iCle, 'la clé est lue avant que le déploiement soit autorisé');
+});
+
+ok('l\'authentification précède TOUTES les méthodes', () => {
+  // Pas seulement tools/call : initialize et tools/list aussi. Sans clé, on ne
+  // dit même pas quels outils existent — un inventaire est un renseignement.
+  const src = ENDPOINT();
+  const iAuth = src.indexOf('contextePourCle(');
+  const iSwitch = src.indexOf("switch (req_.method)");
+  assert.ok(iAuth > -1 && iSwitch > -1, 'extraction à revoir');
+  assert.ok(iAuth < iSwitch, 'une méthode JSON-RPC est servie avant authentification');
+  for (const m of ["case 'initialize'", "case 'tools/list'"]) {
+    assert.ok(src.indexOf(m) > iAuth, `${m} est traité avant l'authentification`);
+  }
+});
+
+ok('aucun message commercial dans les réponses privées', () => {
+  // Le public colle un conseil + un lien sur chacune de ses 19 réponses ; il
+  // parle à des inconnus. Ici l'appelant paie et lit ses propres relevés.
+  for (const f of [['api', 'mcp-prive.ts'], ['lib', 'prive', 'outils.ts']]) {
+    const src = lireCode(...f);
+    assert.ok(!/ctaFor|conseil_pratique|CONSEIL_BY_TOOL/.test(src),
+      `${f.join('/')} sert un message commercial à un client qui paie`);
+    assert.ok(!/essai gratuit|sans engagement/i.test(src.replace(/obtenir_une_cle[^\n]*/g, '')),
+      `${f.join('/')} contient une accroche commerciale`);
+  }
+});
+
+ok('la permission d\'écriture se vérifie en UN endroit', () => {
+  // Un outil ne porte pas la responsabilité de vérifier son propre droit
+  // d'écrire : c'est le genre de vérification qu'on oublie au vingtième.
+  const src = ENDPOINT();
+  assert.ok(/outil\.permission === 'write' && !ctx\.peutEcrire\(\)/.test(src),
+    'le contrôle central de la permission a disparu');
+  const outils = lireCode('lib', 'prive', 'outils.ts');
+  assert.ok(!/peutEcrire\(\)/.test(outils),
+    'un outil vérifie lui-même sa permission — ce contrôle doit rester central');
+});
+
+ok('les lots JSON-RPC sont refusés', () => {
+  const src = ENDPOINT();
+  assert.ok(/Array\.isArray\(corps\)/.test(src), 'les lots ne sont plus refusés');
+});
+
+ok('aucun outil ne filtre par établissement — et c\'est voulu', () => {
+  // L'isolation vient du claim, pas d'un filtre applicatif. Un filtre écrit à
+  // la main donnerait l'illusion que c'est LUI qui protège, et le jour où il
+  // manque quelque part on croirait avoir un garde là où il n'y en a pas.
+  const src = lireCode('lib', 'prive', 'outils.ts');
+  assert.ok(!/establishment_id=eq\./.test(src),
+    'un outil filtre par establishment_id — faux garde, à retirer');
+  assert.ok(src.includes('ctx.lire<'), 'les outils n\'utilisent plus le contexte');
+});
+
+ok('les outils bornent ce que l\'appelant demande', () => {
+  // Un `limite` négatif ou absurde partirait sinon tel quel dans l'URL PostgREST.
+  const src = lire('lib', 'prive', 'outils.ts');
+  assert.ok(/LIMITE_MAX\s*=\s*\d+/.test(src), 'plus de plafond sur le nombre de lignes');
+  assert.ok(/function borne\(/.test(src) && /function depuisIso\(/.test(src),
+    'les bornes sur limite/jours ont disparu');
+  const appels = [...src.matchAll(/limit=\$\{([^}]+)\}/g)].map((m) => m[1]);
+  assert.ok(appels.length > 0, 'extraction à revoir');
+  for (const a of appels) {
+    assert.ok(a.includes('borne('), `un limit non borné : ${a}`);
+  }
+});
+
+ok('aucun secret ni donnée de santé demandé par un outil', () => {
+  // Décision CEO D2 / RGPD art. 9 pour la santé ; pin et pin_hash sont de toute
+  // façon révoqués pour anon, mais on ne les demande pas non plus.
+  const src = lireCode('lib', 'prive', 'outils.ts');
+  for (const interdit of ['pin_hash', 'password', 'medical', 'sante_', 'certificat_aptitude']) {
+    assert.ok(!src.includes(interdit), `un outil demande « ${interdit} »`);
+  }
+  assert.ok(!/select=\*/.test(src), 'un outil fait un select=* — colonnes explicites obligatoires');
 });
 
 console.log(`\n${passed} tests OK — MCP privé : clés, jeton, point de passage\n`);
