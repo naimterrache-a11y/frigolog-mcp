@@ -1,0 +1,3366 @@
+{
+ "_a_propos": "Base de connaissance HACCP France — export des outils publics du serveur MCP Frigolog. Chaque bloc porte ses sources officielles et sa date de vérification. Ne contient AUCUNE donnée vivante : les rappels produits et les fiches d'inspection changent tous les jours et doivent être demandés en ligne, jamais lus ici.",
+ "_genere_le": "2026-08-05",
+ "_source": "https://frigolog.fr/api/mcp",
+ "_outils": [
+  {
+   "outil": "get_haccp_temperatures",
+   "description": "Renvoie les températures réglementaires françaises de conservation, refroidissement et service des denrées alimentaires par catégorie de produit, conformément à l'arrêté du 21 décembre 2009, au règlement (CE) n° 852/2004 et au règlement (CE) n° 853/2004 (denrées d'origine animale). Couvre viandes, poisson, produits laitiers, œufs, fruits et légumes, plats cuisinés, pâtisseries, surgelés, glaces, températures de service chaud et de refroidissement rapide.\n\n[EN] Returns French regulatory food temperatures (storage, cooling, serving) by product category, per the arrêté of 21 Dec 2009 and Regulations (EC) 852/2004 & 853/2004. Optional 'categorie' filter.",
+   "contenu": {
+    "data": [
+     {
+      "categorie": "viande",
+      "produit": "Viande hachée",
+      "temperature_max": 2,
+      "unite": "celsius",
+      "type": "conservation_froid",
+      "source_reglementaire": "Règlement (CE) n° 853/2004 — règles spécifiques d'hygiène applicables aux denrées alimentaires d'origine animale",
+      "notes": "DLC très courte 24-48h. Mesure au cœur du produit obligatoire.",
+      "sources": [
+       {
+        "titre": "Règlement (CE) n° 853/2004 — règles spécifiques d'hygiène applicables aux denrées d'origine animale",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0853"
+       }
+      ]
+     },
+     {
+      "categorie": "viande",
+      "produit": "Viandes fraîches (volailles, porc, agneau, bœuf)",
+      "temperature_max": 4,
+      "unite": "celsius",
+      "type": "conservation_froid",
+      "source_reglementaire": "Règlement (CE) n° 853/2004 — règles spécifiques d'hygiène applicables aux denrées alimentaires d'origine animale",
+      "notes": "Volailles et lapins ≤ +4 °C ; viandes rouges ≤ +4 °C en boucherie. Tolérance +2 °C pour boucheries spécialisées.",
+      "sources": [
+       {
+        "titre": "Règlement (CE) n° 853/2004 — règles spécifiques d'hygiène applicables aux denrées d'origine animale",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0853"
+       }
+      ]
+     },
+     {
+      "categorie": "viande",
+      "produit": "Préparations à base de viande",
+      "temperature_max": 4,
+      "unite": "celsius",
+      "type": "conservation_froid",
+      "source_reglementaire": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail",
+      "notes": "Préparations crues sous-vide, marinades, mêlées charcuterie maison.",
+      "sources": [
+       {
+        "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+        "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+       }
+      ]
+     },
+     {
+      "categorie": "viande",
+      "produit": "Abats",
+      "temperature_max": 3,
+      "unite": "celsius",
+      "type": "conservation_froid",
+      "source_reglementaire": "Règlement (CE) n° 853/2004 — règles spécifiques d'hygiène applicables aux denrées alimentaires d'origine animale",
+      "notes": "DLC courte ; conservation séparée des autres viandes recommandée.",
+      "sources": [
+       {
+        "titre": "Règlement (CE) n° 853/2004 — règles spécifiques d'hygiène applicables aux denrées d'origine animale",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0853"
+       }
+      ]
+     },
+     {
+      "categorie": "viande",
+      "produit": "Charcuterie",
+      "temperature_max": 4,
+      "unite": "celsius",
+      "type": "conservation_froid",
+      "source_reglementaire": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail",
+      "notes": "Charcuterie tranchée DLC très courte ; risque Listeria élevé.",
+      "sources": [
+       {
+        "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+        "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+       }
+      ]
+     },
+     {
+      "categorie": "poisson",
+      "produit": "Produits de la pêche frais (poissons, crustacés)",
+      "temperature_min": 0,
+      "temperature_max": 2,
+      "temperature_plage": "0 à +2 °C",
+      "unite": "celsius",
+      "type": "conservation_froid",
+      "source_reglementaire": "Règlement (CE) n° 853/2004 — règles spécifiques d'hygiène applicables aux denrées alimentaires d'origine animale",
+      "notes": "Conservation sous glace fondante obligatoire. Mesure au cœur du produit. Risque histamine sur thon, sardine, maquereau.",
+      "sources": [
+       {
+        "titre": "Règlement (CE) n° 853/2004 — règles spécifiques d'hygiène applicables aux denrées d'origine animale",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0853"
+       }
+      ]
+     },
+     {
+      "categorie": "poisson",
+      "produit": "Produits de la pêche congelés",
+      "temperature_max": -18,
+      "unite": "celsius",
+      "type": "conservation_negatif",
+      "source_reglementaire": "Règlement (CE) n° 853/2004 — règles spécifiques d'hygiène applicables aux denrées alimentaires d'origine animale",
+      "sources": [
+       {
+        "titre": "Règlement (CE) n° 853/2004 — règles spécifiques d'hygiène applicables aux denrées d'origine animale",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0853"
+       }
+      ]
+     },
+     {
+      "categorie": "poisson",
+      "produit": "Coquillages vivants",
+      "temperature_min": 5,
+      "temperature_max": 15,
+      "temperature_plage": "+5 à +15 °C",
+      "unite": "celsius",
+      "type": "conservation_froid",
+      "source_reglementaire": "Règlement (CE) n° 853/2004 — règles spécifiques d'hygiène applicables aux denrées alimentaires d'origine animale",
+      "notes": "Ne jamais immerger en eau douce. Étiquette d'identification individuelle conservée 60 jours.",
+      "sources": [
+       {
+        "titre": "Règlement (CE) n° 853/2004 — règles spécifiques d'hygiène applicables aux denrées d'origine animale",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0853"
+       }
+      ]
+     },
+     {
+      "categorie": "produits_laitiers",
+      "produit": "Produits laitiers frais (lait, crème, fromages frais)",
+      "temperature_max": 4,
+      "unite": "celsius",
+      "type": "conservation_froid",
+      "source_reglementaire": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail",
+      "sources": [
+       {
+        "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+        "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+       }
+      ]
+     },
+     {
+      "categorie": "produits_laitiers",
+      "produit": "Fromages affinés",
+      "temperature_max": 8,
+      "unite": "celsius",
+      "type": "conservation_froid",
+      "source_reglementaire": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail",
+      "notes": "Selon variété : pâtes pressées peuvent tolérer températures plus élevées en cave d'affinage. Vitrine vente ≤ +8 °C.",
+      "sources": [
+       {
+        "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+        "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+       }
+      ]
+     },
+     {
+      "categorie": "produits_laitiers",
+      "produit": "Lait cru en attente de transformation",
+      "temperature_max": 4,
+      "unite": "celsius",
+      "type": "conservation_froid",
+      "source_reglementaire": "Règlement (CE) n° 853/2004 — règles spécifiques d'hygiène applicables aux denrées alimentaires d'origine animale",
+      "notes": "Délai max 72 h entre collecte et transformation.",
+      "sources": [
+       {
+        "titre": "Règlement (CE) n° 853/2004 — règles spécifiques d'hygiène applicables aux denrées d'origine animale",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0853"
+       }
+      ]
+     },
+     {
+      "categorie": "oeufs",
+      "produit": "Œufs en coquille",
+      "temperature_min": 5,
+      "temperature_max": 8,
+      "temperature_plage": "+5 à +8 °C",
+      "unite": "celsius",
+      "type": "conservation_froid",
+      "source_reglementaire": "Guide des Bonnes Pratiques d'Hygiène en Restauration (DGAL)",
+      "notes": "Pas de rupture de la chaîne du froid ; température stable plus importante que valeur exacte.",
+      "sources": [
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "categorie": "oeufs",
+      "produit": "Ovoproduits liquides (œufs cassés industriels)",
+      "temperature_max": 4,
+      "unite": "celsius",
+      "type": "conservation_froid",
+      "source_reglementaire": "Règlement (CE) n° 853/2004 — règles spécifiques d'hygiène applicables aux denrées alimentaires d'origine animale",
+      "notes": "Pasteurisés ; DLC courte après ouverture (24-48 h).",
+      "sources": [
+       {
+        "titre": "Règlement (CE) n° 853/2004 — règles spécifiques d'hygiène applicables aux denrées d'origine animale",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0853"
+       }
+      ]
+     },
+     {
+      "categorie": "fruits_legumes",
+      "produit": "Fruits et légumes frais",
+      "temperature_min": 6,
+      "temperature_max": 10,
+      "temperature_plage": "+6 à +10 °C",
+      "unite": "celsius",
+      "type": "conservation_froid",
+      "source_reglementaire": "Guide des Bonnes Pratiques d'Hygiène en Restauration (DGAL)",
+      "notes": "Variable selon espèce ; bananes et tomates non réfrigérées.",
+      "sources": [
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "categorie": "plats_cuisines",
+      "produit": "Plats cuisinés réfrigérés",
+      "temperature_max": 3,
+      "unite": "celsius",
+      "type": "conservation_froid",
+      "source_reglementaire": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail",
+      "sources": [
+       {
+        "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+        "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+       }
+      ]
+     },
+     {
+      "categorie": "patisserie",
+      "produit": "Pâtisseries à la crème (crème pâtissière, chantilly, mousseline)",
+      "temperature_max": 3,
+      "unite": "celsius",
+      "type": "conservation_froid",
+      "source_reglementaire": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail",
+      "notes": "DLC très courte 24-48 h. Risque Salmonella sur crèmes à base d'œufs.",
+      "sources": [
+       {
+        "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+        "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+       }
+      ]
+     },
+     {
+      "categorie": "surgeles",
+      "produit": "Produits surgelés / congelés",
+      "temperature_max": -18,
+      "unite": "celsius",
+      "type": "conservation_negatif",
+      "source_reglementaire": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail",
+      "notes": "Tolérance jusqu'à -15 °C en vitrine vente courte durée. Stockage longue durée -18 °C strict.",
+      "sources": [
+       {
+        "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+        "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+       }
+      ]
+     },
+     {
+      "categorie": "glaces",
+      "produit": "Glaces / sorbets — stockage réserve",
+      "temperature_max": -18,
+      "unite": "celsius",
+      "type": "conservation_negatif",
+      "source_reglementaire": "Guide des Bonnes Pratiques d'Hygiène en Restauration (DGAL)",
+      "notes": "Stockage longue durée des bacs réserve.",
+      "sources": [
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "categorie": "glaces",
+      "produit": "Glaces / sorbets — vitrine vente",
+      "temperature_min": -14,
+      "temperature_max": -12,
+      "temperature_plage": "-12 à -14 °C",
+      "unite": "celsius",
+      "type": "conservation_negatif",
+      "source_reglementaire": "Guide des Bonnes Pratiques d'Hygiène en Restauration (DGAL)",
+      "notes": "Permet le portionnement à la boule sans recristallisation.",
+      "sources": [
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "categorie": "service_chaud",
+      "produit": "Préparations chaudes en service ou maintien",
+      "temperature_min": 63,
+      "unite": "celsius",
+      "type": "service_chaud",
+      "source_reglementaire": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail",
+      "notes": "Bain-marie, étuve, plaque chauffante. Contrôle horaire en service prolongé.",
+      "sources": [
+       {
+        "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+        "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+       }
+      ]
+     },
+     {
+      "categorie": "process",
+      "produit": "Remise en température après cuisson",
+      "temperature_min": 63,
+      "unite": "celsius",
+      "type": "process",
+      "source_reglementaire": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail",
+      "notes": "Atteindre +63 °C à cœur en moins d'1 h après sortie du froid.",
+      "sources": [
+       {
+        "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+        "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+       }
+      ]
+     },
+     {
+      "categorie": "process",
+      "produit": "Refroidissement rapide après cuisson",
+      "temperature_max": 10,
+      "unite": "celsius",
+      "type": "process",
+      "source_reglementaire": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail",
+      "notes": "Passage de +63 °C à +10 °C en moins de 2 h. Cellule de refroidissement rapide recommandée.",
+      "sources": [
+       {
+        "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+        "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+       }
+      ]
+     },
+     {
+      "categorie": "process",
+      "produit": "Pasteurisation lait / mix glace",
+      "temperature_min": 72,
+      "unite": "celsius",
+      "type": "process",
+      "source_reglementaire": "Règlement (CE) n° 853/2004 — règles spécifiques d'hygiène applicables aux denrées alimentaires d'origine animale",
+      "notes": "Cycle 72 °C / 15 secondes minimum (équivalent légal). Pasteurisation haute glace : 85 °C / 30 s.",
+      "sources": [
+       {
+        "titre": "Règlement (CE) n° 853/2004 — règles spécifiques d'hygiène applicables aux denrées d'origine animale",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0853"
+       }
+      ]
+     }
+    ],
+    "type": "reglementaire_officiel",
+    "sources": [
+     {
+      "titre": "Règlement (CE) n° 853/2004 — règles spécifiques d'hygiène applicables aux denrées d'origine animale",
+      "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0853"
+     },
+     {
+      "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+      "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+     },
+     {
+      "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+      "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+     }
+    ],
+    "derniere_verification": "2026-05-21",
+    "version_schema": "2.0",
+    "prochaine_revision": "2026-11-21",
+    "source": "Frigolog — frigolog.fr",
+    "avertissement": "Ces informations sont fournies à titre indicatif. Consultez la réglementation officielle via les liens du champ 'sources' (Légifrance, EUR-Lex, DGAL, DGCCRF) et vérifiez les tarifs sur les sites des éditeurs."
+   }
+  },
+  {
+   "outil": "get_documents_controle_ddpp",
+   "description": "Renvoie la liste des documents que l'inspecteur DDPP (Direction Départementale de la Protection des Populations) peut demander lors d'un contrôle sanitaire en France, par type d'établissement. Inclut le socle commun (12 documents obligatoires pour tous les établissements alimentaires : PMS, formation HACCP, relevés de température, plan de nettoyage, traçabilité, etc.) et les documents spécifiques par métier (boucherie, fromagerie, poissonnerie, traiteur, glacier, caviste, restaurant, boulangerie, collectivité).\n\n[EN] Returns the documents a French DDPP inspector may request during a sanitary inspection, by establishment type (the 12-document common base + business-specific documents). Optional 'type_etablissement'.",
+   "contenu": {
+    "data": [
+     {
+      "document": "Plan de Maîtrise Sanitaire (PMS)",
+      "obligatoire": true,
+      "source_reglementaire": "Règlement (CE) n° 852/2004 — hygiène des denrées alimentaires",
+      "applicable_a": [
+       "restaurant",
+       "boulangerie",
+       "boucherie",
+       "fromagerie",
+       "traiteur",
+       "poissonnerie",
+       "glacier",
+       "caviste",
+       "collectivite"
+      ],
+      "description": "Document écrit décrivant l'ensemble des dispositions prises pour maîtriser la sécurité sanitaire des aliments. Doit être à jour, daté, signé. Premier document demandé par l'inspecteur.",
+      "sources": [
+       {
+        "titre": "Règlement (CE) n° 852/2004 — hygiène des denrées alimentaires",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0852"
+       }
+      ]
+     },
+     {
+      "document": "Attestation de formation HACCP",
+      "obligatoire": true,
+      "source_reglementaire": "Décret n° 2011-731 du 24 juin 2011 — formation HACCP obligatoire",
+      "applicable_a": [
+       "restaurant",
+       "boulangerie",
+       "boucherie",
+       "fromagerie",
+       "traiteur",
+       "poissonnerie",
+       "glacier",
+       "caviste",
+       "collectivite"
+      ],
+      "description": "Au minimum une personne par établissement de restauration commerciale formée HACCP 14 heures par un organisme agréé. Diplômés CAP/BEP/Bac Pro hôtellerie-restauration ou métiers de bouche dispensés.",
+      "sources": [
+       {
+        "titre": "Décret n° 2011-731 du 24 juin 2011 — obligation de formation en hygiène alimentaire de certains établissements de restauration commerciale",
+        "url": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000024266465"
+       }
+      ]
+     },
+     {
+      "document": "Registres de relevés de températures",
+      "obligatoire": true,
+      "source_reglementaire": "Arrêté du 21 décembre 2009 — règles sanitaires applicables aux activités de commerce de détail",
+      "applicable_a": [
+       "restaurant",
+       "boulangerie",
+       "boucherie",
+       "fromagerie",
+       "traiteur",
+       "poissonnerie",
+       "glacier",
+       "caviste",
+       "collectivite"
+      ],
+      "description": "Tous frigos positifs (≤ +4 °C) et négatifs (≤ -18 °C) avec relevés horodatés et signés sur les 30 à 90 derniers jours. 2 relevés par jour minimum (matin + soir).",
+      "sources": [
+       {
+        "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+        "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+       }
+      ]
+     },
+     {
+      "document": "Plan de nettoyage et désinfection",
+      "obligatoire": true,
+      "source_reglementaire": "Arrêté du 21 décembre 2009 — règles sanitaires applicables aux activités de commerce de détail",
+      "applicable_a": [
+       "restaurant",
+       "boulangerie",
+       "boucherie",
+       "fromagerie",
+       "traiteur",
+       "poissonnerie",
+       "glacier",
+       "caviste",
+       "collectivite"
+      ],
+      "description": "Protocoles écrits par poste avec fréquences et produits utilisés, plus enregistrements signés par les opérateurs à chaque passage.",
+      "sources": [
+       {
+        "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+        "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+       }
+      ]
+     },
+     {
+      "document": "Fiches de traçabilité produits",
+      "obligatoire": true,
+      "source_reglementaire": "Règlement (CE) n° 178/2002 — traçabilité descendante article 18",
+      "applicable_a": [
+       "restaurant",
+       "boulangerie",
+       "boucherie",
+       "fromagerie",
+       "traiteur",
+       "poissonnerie",
+       "glacier",
+       "caviste",
+       "collectivite"
+      ],
+      "description": "Bons de livraison, factures fournisseurs, étiquettes fournisseurs avec photos, numéros de lots. Conservation minimum 12 mois (5 ans recommandé denrées d'origine animale).",
+      "sources": [
+       {
+        "titre": "Règlement (CE) n° 178/2002 — principes généraux, traçabilité (art. 18), retrait et rappel (art. 19)",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32002R0178"
+       }
+      ]
+     },
+     {
+      "document": "Résultats d'analyses microbiologiques",
+      "obligatoire": false,
+      "source_reglementaire": "Plan d'autocontrôle interne (recommandation DGAL)",
+      "applicable_a": [
+       "restaurant",
+       "boulangerie",
+       "boucherie",
+       "fromagerie",
+       "traiteur",
+       "poissonnerie",
+       "glacier",
+       "caviste",
+       "collectivite"
+      ],
+      "description": "Analyses périodiques sur surfaces, mains, produits finis. Recommandé au moins 1 fois par an. Obligatoire en cuisine collective et établissements à agrément CE.",
+      "sources": [
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "document": "Contrat de lutte contre les nuisibles",
+      "obligatoire": true,
+      "source_reglementaire": "Arrêté du 21 décembre 2009 — règles sanitaires applicables aux activités de commerce de détail",
+      "applicable_a": [
+       "restaurant",
+       "boulangerie",
+       "boucherie",
+       "fromagerie",
+       "traiteur",
+       "poissonnerie",
+       "glacier",
+       "caviste",
+       "collectivite"
+      ],
+      "description": "Contrat avec entreprise de désinsectisation/dératisation OU procédure interne écrite. Bordereaux de passage conservés. Pièges visibles et entretenus.",
+      "sources": [
+       {
+        "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+        "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+       }
+      ]
+     },
+     {
+      "document": "Fiches de Données de Sécurité (FDS) des produits d'entretien",
+      "obligatoire": true,
+      "source_reglementaire": "Code du travail R4624-22",
+      "applicable_a": [
+       "restaurant",
+       "boulangerie",
+       "boucherie",
+       "fromagerie",
+       "traiteur",
+       "poissonnerie",
+       "glacier",
+       "caviste",
+       "collectivite"
+      ],
+      "description": "Pour chaque produit chimique de nettoyage utilisé, FDS à jour. Stockage des produits chimiques séparé des denrées alimentaires.",
+      "sources": [
+       {
+        "titre": "Code du travail — prévention du risque chimique et fiches de données de sécurité (FDS) des produits d'entretien",
+        "url": "https://www.legifrance.gouv.fr/codes/texte_lc/LEGITEXT000006072050/"
+       }
+      ]
+     },
+     {
+      "document": "Procédure de gestion des non-conformités et actions correctives",
+      "obligatoire": true,
+      "source_reglementaire": "Règlement (CE) n° 852/2004 — hygiène des denrées alimentaires",
+      "applicable_a": [
+       "restaurant",
+       "boulangerie",
+       "boucherie",
+       "fromagerie",
+       "traiteur",
+       "poissonnerie",
+       "glacier",
+       "caviste",
+       "collectivite"
+      ],
+      "description": "Procédure écrite + registre des incidents (rupture chaîne du froid, présence nuisibles, contamination). Pour chaque incident : date, nature, action prise, opérateur, date de clôture.",
+      "sources": [
+       {
+        "titre": "Règlement (CE) n° 852/2004 — hygiène des denrées alimentaires",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0852"
+       }
+      ]
+     },
+     {
+      "document": "Procédure de retrait/rappel des produits",
+      "obligatoire": true,
+      "source_reglementaire": "Règlement (CE) n° 178/2002 article 19 + Code de la consommation L412-1",
+      "applicable_a": [
+       "restaurant",
+       "boulangerie",
+       "boucherie",
+       "fromagerie",
+       "traiteur",
+       "poissonnerie",
+       "glacier",
+       "caviste",
+       "collectivite"
+      ],
+      "description": "Procédure documentée pour identifier en moins de 30 minutes les lots concernés par un rappel et procéder au retrait. Cross-check RappelConso DGCCRF recommandé.",
+      "sources": [
+       {
+        "titre": "Règlement (CE) n° 178/2002 — principes généraux, traçabilité (art. 18), retrait et rappel (art. 19)",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32002R0178"
+       },
+       {
+        "titre": "Code de la consommation — obligations de sécurité, retrait et rappel des produits",
+        "url": "https://www.legifrance.gouv.fr/codes/texte_lc/LEGITEXT000006069565/"
+       }
+      ]
+     },
+     {
+      "document": "Registre du personnel et attestations médicales d'aptitude",
+      "obligatoire": true,
+      "source_reglementaire": "Arrêté du 21 décembre 2009 — règles sanitaires applicables aux activités de commerce de détail",
+      "applicable_a": [
+       "restaurant",
+       "boulangerie",
+       "boucherie",
+       "fromagerie",
+       "traiteur",
+       "poissonnerie",
+       "glacier",
+       "caviste",
+       "collectivite"
+      ],
+      "description": "Liste des employés manipulant des denrées alimentaires + visites médicales d'aptitude annuelles. Personnel symptomatique interdit en cuisine.",
+      "sources": [
+       {
+        "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+        "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+       }
+      ]
+     },
+     {
+      "document": "Protocole de gestion des allergènes",
+      "obligatoire": true,
+      "source_reglementaire": "Règlement (UE) n° 1169/2011 INCO",
+      "applicable_a": [
+       "restaurant",
+       "boulangerie",
+       "boucherie",
+       "fromagerie",
+       "traiteur",
+       "poissonnerie",
+       "glacier",
+       "caviste",
+       "collectivite"
+      ],
+      "description": "Liste des 14 allergènes majeurs identifiés sur la carte ou affichage en boutique. Procédure pour éviter contamination croisée. Personnel formé à répondre aux allergies.",
+      "sources": [
+       {
+        "titre": "Règlement (UE) n° 1169/2011 (INCO) — information du consommateur, 14 allergènes à déclaration obligatoire (annexe II)",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32011R1169"
+       }
+      ]
+     },
+     {
+      "document": "Fiches plats témoins",
+      "obligatoire": true,
+      "source_reglementaire": "Arrêté du 21 décembre 2009 — règles sanitaires applicables aux activités de commerce de détail",
+      "applicable_a": [
+       "restaurant",
+       "traiteur",
+       "collectivite"
+      ],
+      "description": "Conservation d'un échantillon de 80 g par préparation servie pendant 5 jours minimum à +3 °C. Obligatoire en restauration collective différée, fortement recommandé en traiteur événementiel.",
+      "sources": [
+       {
+        "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+        "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+       }
+      ]
+     },
+     {
+      "document": "Registre huiles de friture",
+      "obligatoire": true,
+      "source_reglementaire": "Décret n° 2008-184 du 26 février 2008",
+      "applicable_a": [
+       "restaurant",
+       "traiteur",
+       "collectivite"
+      ],
+      "description": "Suivi indice de polarité (≤ 25 %), changement d'huile documenté. Filtration entre changements.",
+      "sources": [
+       {
+        "titre": "Décret n° 2008-184 du 26 février 2008 — graisses et huiles comestibles (teneur en composés polaires ≤ 25 %)",
+        "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000018188420"
+       }
+      ]
+     },
+     {
+      "document": "Fiches recettes avec allergènes",
+      "obligatoire": true,
+      "source_reglementaire": "Règlement (UE) n° 1169/2011 INCO",
+      "applicable_a": [
+       "boulangerie",
+       "patisserie",
+       "traiteur"
+      ],
+      "description": "Pour chaque produit fini, liste des ingrédients avec allergènes déclarés (gluten, œufs, lait, fruits à coque, soja, sulfites). Affichage clients ou disponible sur demande.",
+      "sources": [
+       {
+        "titre": "Règlement (UE) n° 1169/2011 (INCO) — information du consommateur, 14 allergènes à déclaration obligatoire (annexe II)",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32011R1169"
+       }
+      ]
+     },
+     {
+      "document": "Registre températures vitrine pâtisserie",
+      "obligatoire": true,
+      "source_reglementaire": "Arrêté du 21 décembre 2009 — règles sanitaires applicables aux activités de commerce de détail",
+      "applicable_a": [
+       "boulangerie",
+       "patisserie"
+      ],
+      "description": "Vitrines réfrigérées pâtisseries crème ≤ +4 °C, relevés pluriquotidiens (matin/midi/soir) en service prolongé.",
+      "sources": [
+       {
+        "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+        "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+       }
+      ]
+     },
+     {
+      "document": "Agrément sanitaire CE (transformation)",
+      "obligatoire": true,
+      "source_reglementaire": "Arrêté du 8 juin 2006 — agrément sanitaire CE",
+      "applicable_a": [
+       "boucherie",
+       "fromagerie",
+       "poissonnerie",
+       "traiteur"
+      ],
+      "description": "Obligatoire dès qu'il y a transformation ET cession à d'autres commerces (restaurants, traiteurs, autres revendeurs). Numéro estampillé sur les emballages livrés. Audit initial sur site et inspections régulières.",
+      "sources": [
+       {
+        "titre": "Arrêté du 8 juin 2006 — agrément sanitaire des établissements mettant sur le marché des produits d'origine animale",
+        "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000819750"
+       }
+      ]
+     },
+     {
+      "document": "Registre traçabilité viande (lot, origine, abattoir)",
+      "obligatoire": true,
+      "source_reglementaire": "Règlement (CE) n° 852/2004 — hygiène des denrées alimentaires + Règlement (CE) n° 853/2004",
+      "applicable_a": [
+       "boucherie"
+      ],
+      "description": "Pour chaque pièce : numéro de lot abattoir, éleveur d'origine, date d'abattage, date de réception. Conservation 12 mois minimum.",
+      "sources": [
+       {
+        "titre": "Règlement (CE) n° 853/2004 — règles spécifiques d'hygiène applicables aux denrées d'origine animale",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0853"
+       },
+       {
+        "titre": "Règlement (CE) n° 852/2004 — hygiène des denrées alimentaires",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0852"
+       }
+      ]
+     },
+     {
+      "document": "Protocole Listeria",
+      "obligatoire": true,
+      "source_reglementaire": "Règlement (CE) n° 2073/2005 — critères microbiologiques",
+      "applicable_a": [
+       "fromagerie"
+      ],
+      "description": "Plan d'autocontrôles Listeria monocytogenes (absent dans 25 g) sur produits sensibles (pâtes molles, croûte fleurie/lavée). Surveillance particulière sur lait cru.",
+      "sources": [
+       {
+        "titre": "Règlement (CE) n° 2073/2005 — critères microbiologiques applicables aux denrées alimentaires",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32005R2073"
+       }
+      ]
+     },
+     {
+      "document": "Suivi affinage (température + hygrométrie)",
+      "obligatoire": true,
+      "source_reglementaire": "Guide des Bonnes Pratiques d'Hygiène en Restauration (DGAL)",
+      "applicable_a": [
+       "fromagerie"
+      ],
+      "description": "Relevés quotidiens température et hygrométrie par cave d'affinage. Seuils par famille de fromage (pâtes molles 90-95 % HR, pâtes pressées 85-90 % HR).",
+      "sources": [
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "document": "Registre liaison froide/chaude",
+      "obligatoire": true,
+      "source_reglementaire": "Arrêté du 21 décembre 2009 — liaison froide",
+      "applicable_a": [
+       "traiteur",
+       "collectivite"
+      ],
+      "description": "Pour chaque livraison : températures au départ et à l'arrivée, durée transport, opérateur. Liaison froide ≤ +4 °C, liaison chaude ≥ +63 °C.",
+      "sources": [
+       {
+        "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+        "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+       }
+      ]
+     },
+     {
+      "document": "Protocole transport (véhicule réfrigéré)",
+      "obligatoire": true,
+      "source_reglementaire": "Arrêté du 21 décembre 2009",
+      "applicable_a": [
+       "traiteur"
+      ],
+      "description": "Contrôle technique groupe froid (annuel), nettoyage véhicule après chaque livraison, certificat de conformité du véhicule.",
+      "sources": [
+       {
+        "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+        "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+       }
+      ]
+     },
+     {
+      "document": "Traçabilité maritime (zone FAO, bateau, date pêche)",
+      "obligatoire": true,
+      "source_reglementaire": "Règlement (UE) n° 1379/2013 — OCM produits de la pêche",
+      "applicable_a": [
+       "poissonnerie"
+      ],
+      "description": "Étiquetage obligatoire avec zone FAO de capture, méthode de pêche, nom scientifique espèce, mention décongelé si applicable.",
+      "sources": [
+       {
+        "titre": "Règlement (UE) n° 1379/2013 — organisation commune des marchés des produits de la pêche et de l'aquaculture",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32013R1379"
+       }
+      ]
+     },
+     {
+      "document": "Registre histamine (poissons à risque)",
+      "obligatoire": true,
+      "source_reglementaire": "Règlement (CE) n° 2073/2005",
+      "applicable_a": [
+       "poissonnerie"
+      ],
+      "description": "Autocontrôles histamine périodiques sur thon, sardine, maquereau, anchois, hareng, bonite. Limite 100 mg/kg.",
+      "sources": [
+       {
+        "titre": "Règlement (CE) n° 2073/2005 — critères microbiologiques applicables aux denrées alimentaires",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32005R2073"
+       }
+      ]
+     },
+     {
+      "document": "Protocole pasteurisation mix",
+      "obligatoire": true,
+      "source_reglementaire": "Règlement (CE) n° 853/2004",
+      "applicable_a": [
+       "glacier"
+      ],
+      "description": "Cycle pasteurisation 85 °C / 30 secondes (haute) ou 72 °C / 15 secondes (basse). Enregistrement automatique des cycles, archivage 12 mois.",
+      "sources": [
+       {
+        "titre": "Règlement (CE) n° 853/2004 — règles spécifiques d'hygiène applicables aux denrées d'origine animale",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0853"
+       }
+      ]
+     },
+     {
+      "document": "Traçabilité parfums (lots ingrédients par bac fabriqué)",
+      "obligatoire": true,
+      "source_reglementaire": "Règlement (CE) n° 178/2002",
+      "applicable_a": [
+       "glacier"
+      ],
+      "description": "Pour chaque bac fabriqué : date, parfum, recette, lots ingrédients utilisés (lait, crème, œufs, fruits, chocolat). Permet retrait ciblé en cas d'incident.",
+      "sources": [
+       {
+        "titre": "Règlement (CE) n° 178/2002 — principes généraux, traçabilité (art. 18), retrait et rappel (art. 19)",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32002R0178"
+       }
+      ]
+     },
+     {
+      "document": "Registre traçabilité lots vins/spiritueux",
+      "obligatoire": true,
+      "source_reglementaire": "Réglementation viticole + INCO 1169/2011",
+      "applicable_a": [
+       "caviste"
+      ],
+      "description": "Pour chaque cuvée : domaine, millésime, négociant éventuel, date d'arrivée. Conservation 5 ans.",
+      "sources": [
+       {
+        "titre": "Règlement (UE) n° 1169/2011 (INCO) — information du consommateur, 14 allergènes à déclaration obligatoire (annexe II)",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32011R1169"
+       }
+      ]
+     },
+     {
+      "document": "Suivi sulfites (allergène réglementé)",
+      "obligatoire": true,
+      "source_reglementaire": "Règlement (UE) n° 1169/2011 INCO",
+      "applicable_a": [
+       "caviste"
+      ],
+      "description": "Mention « contient des sulfites » obligatoire sur étiquette si > 10 mg/L. Affichage en boutique pour les clients allergiques.",
+      "sources": [
+       {
+        "titre": "Règlement (UE) n° 1169/2011 (INCO) — information du consommateur, 14 allergènes à déclaration obligatoire (annexe II)",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32011R1169"
+       }
+      ]
+     }
+    ],
+    "type": "reglementaire_officiel",
+    "sources": [
+     {
+      "titre": "Règlement (CE) n° 852/2004 — hygiène des denrées alimentaires",
+      "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0852"
+     },
+     {
+      "titre": "Décret n° 2011-731 du 24 juin 2011 — obligation de formation en hygiène alimentaire de certains établissements de restauration commerciale",
+      "url": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000024266465"
+     },
+     {
+      "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+      "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+     },
+     {
+      "titre": "Règlement (CE) n° 178/2002 — principes généraux, traçabilité (art. 18), retrait et rappel (art. 19)",
+      "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32002R0178"
+     },
+     {
+      "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+      "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+     },
+     {
+      "titre": "Code du travail — prévention du risque chimique et fiches de données de sécurité (FDS) des produits d'entretien",
+      "url": "https://www.legifrance.gouv.fr/codes/texte_lc/LEGITEXT000006072050/"
+     },
+     {
+      "titre": "Code de la consommation — obligations de sécurité, retrait et rappel des produits",
+      "url": "https://www.legifrance.gouv.fr/codes/texte_lc/LEGITEXT000006069565/"
+     },
+     {
+      "titre": "Règlement (UE) n° 1169/2011 (INCO) — information du consommateur, 14 allergènes à déclaration obligatoire (annexe II)",
+      "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32011R1169"
+     },
+     {
+      "titre": "Décret n° 2008-184 du 26 février 2008 — graisses et huiles comestibles (teneur en composés polaires ≤ 25 %)",
+      "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000018188420"
+     },
+     {
+      "titre": "Arrêté du 8 juin 2006 — agrément sanitaire des établissements mettant sur le marché des produits d'origine animale",
+      "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000819750"
+     },
+     {
+      "titre": "Règlement (CE) n° 853/2004 — règles spécifiques d'hygiène applicables aux denrées d'origine animale",
+      "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0853"
+     },
+     {
+      "titre": "Règlement (CE) n° 2073/2005 — critères microbiologiques applicables aux denrées alimentaires",
+      "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32005R2073"
+     },
+     {
+      "titre": "Règlement (UE) n° 1379/2013 — organisation commune des marchés des produits de la pêche et de l'aquaculture",
+      "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32013R1379"
+     }
+    ],
+    "derniere_verification": "2026-05-21",
+    "version_schema": "2.0",
+    "prochaine_revision": "2026-11-21",
+    "source": "Frigolog — frigolog.fr",
+    "avertissement": "Ces informations sont fournies à titre indicatif. Consultez la réglementation officielle via les liens du champ 'sources' (Légifrance, EUR-Lex, DGAL, DGCCRF) et vérifiez les tarifs sur les sites des éditeurs."
+   }
+  },
+  {
+   "outil": "get_regles_dlc",
+   "description": "Renvoie les règles de DLC (Date Limite de Consommation) pour les préparations maison en restauration et métiers de bouche en France, conformément au Guide des Bonnes Pratiques d'Hygiène en Restauration de la DGAL. Couvre viandes cuites/crues, salades composées, sandwiches, pâtisseries à la crème, sauces (émulsionnées et cuites), soupes, plats cuisinés, sous-vide cuisson basse température, produits décongelés, produits entamés. Pour chaque préparation : DLC en jours, température de conservation requise, source réglementaire.\n\n[EN] Returns use-by-date (DLC) rules for in-house preparations in French restaurants and food trades, per the DGAL good-hygiene-practice guide. Optional 'type_preparation' keyword.",
+   "contenu": {
+    "data": [
+     {
+      "preparation": "Préparations à base de viande cuite",
+      "dlc_jours": 3,
+      "temperature_conservation": "+3 °C max",
+      "source": "Guide des Bonnes Pratiques d'Hygiène en Restauration (DGAL)",
+      "notes": "Viandes braisées, rôties, en sauce. À conserver à +3 °C dès refroidissement rapide (< 2 h après cuisson).",
+      "sources": [
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "preparation": "Préparations à base de viande crue (tartare, carpaccio)",
+      "dlc_jours": 1,
+      "temperature_conservation": "+3 °C max",
+      "source": "Guide des Bonnes Pratiques d'Hygiène en Restauration (DGAL)",
+      "notes": "Consommation jour de fabrication ou lendemain matin maximum. Viande hachée ne pas conserver.",
+      "sources": [
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "preparation": "Viande hachée maison",
+      "dlc_jours": 0,
+      "temperature_conservation": "+2 °C max",
+      "source": "Règlement (CE) n° 853/2004",
+      "notes": "Consommation jour même obligatoire. Dégager la mention « jour de fabrication » sur étiquette si destinée à la vente directe.",
+      "sources": [
+       {
+        "titre": "Règlement (CE) n° 853/2004 — règles spécifiques d'hygiène applicables aux denrées d'origine animale",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0853"
+       }
+      ]
+     },
+     {
+      "preparation": "Salades composées (sans produits de la mer)",
+      "dlc_jours": 3,
+      "temperature_conservation": "+3 °C max",
+      "source": "Guide des Bonnes Pratiques d'Hygiène en Restauration (DGAL)",
+      "notes": "Salades césar, niçoise sans œuf cru, taboulé, riz composé. Réduire à 24 h si présence d'œufs durs.",
+      "sources": [
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "preparation": "Salades composées avec produits de la mer",
+      "dlc_jours": 1,
+      "temperature_conservation": "+3 °C max",
+      "source": "Guide des Bonnes Pratiques d'Hygiène en Restauration (DGAL)",
+      "notes": "Salades thon, crevettes, surimi, poisson fumé. Consommation J+1 maximum.",
+      "sources": [
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "preparation": "Sandwiches",
+      "dlc_jours": 1,
+      "temperature_conservation": "+3 °C max",
+      "source": "Guide des Bonnes Pratiques d'Hygiène en Restauration (DGAL)",
+      "notes": "DLC J ou J+1 selon garniture. Sandwiches au poisson cru ou tartare : J uniquement.",
+      "sources": [
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "preparation": "Pâtisseries à la crème (crème pâtissière, chantilly, mousseline)",
+      "dlc_jours": 2,
+      "temperature_conservation": "+3 °C max",
+      "source": "Guide des Bonnes Pratiques d'Hygiène en Restauration (DGAL)",
+      "notes": "Éclairs, religieuses, mille-feuilles, fraisiers, choux. DLC max 48 h. Risque Salmonella et Listeria.",
+      "sources": [
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "preparation": "Pâtisseries sans crème (chocolat, ganache, pâte d'amande)",
+      "dlc_jours": "3 à 5",
+      "temperature_conservation": "+4 °C max ou ambiante selon recette",
+      "source": "Guide des Bonnes Pratiques d'Hygiène en Restauration (DGAL)",
+      "notes": "Tartes au chocolat, opéras, gâteaux secs. Variabilité selon teneur en eau et acidité.",
+      "sources": [
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "preparation": "Desserts à base d'œufs crus (mousse, tiramisu)",
+      "dlc_jours": 1,
+      "temperature_conservation": "+3 °C max",
+      "source": "Guide des Bonnes Pratiques d'Hygiène en Restauration (DGAL)",
+      "notes": "Risque Salmonella élevé. Utiliser œufs extra-frais ou ovoproduits pasteurisés. DLC J+1 strict.",
+      "sources": [
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "preparation": "Sauces émulsionnées froides (mayonnaise maison, aïoli)",
+      "dlc_jours": 1,
+      "temperature_conservation": "+3 °C max",
+      "source": "Guide des Bonnes Pratiques d'Hygiène en Restauration (DGAL)",
+      "notes": "Présence d'œufs crus = risque Salmonella. Préférer ovoproduits pasteurisés pour gagner DLC.",
+      "sources": [
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "preparation": "Sauces cuites (bolognaise, béchamel, sauce tomate maison)",
+      "dlc_jours": 3,
+      "temperature_conservation": "+3 °C max",
+      "source": "Guide des Bonnes Pratiques d'Hygiène en Restauration (DGAL)",
+      "notes": "Refroidissement rapide < 2 h après cuisson. Bain-marie inversé glace+eau ou cellule.",
+      "sources": [
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "preparation": "Soupes / potages",
+      "dlc_jours": 3,
+      "temperature_conservation": "+3 °C max",
+      "source": "Guide des Bonnes Pratiques d'Hygiène en Restauration (DGAL)",
+      "notes": "Refroidissement rapide < 2 h. Risque Bacillus cereus sur potages aux légumes féculents (poireaux, pommes de terre).",
+      "sources": [
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "preparation": "Plats cuisinés réfrigérés",
+      "dlc_jours": 3,
+      "temperature_conservation": "+3 °C max",
+      "source": "Guide des Bonnes Pratiques d'Hygiène en Restauration (DGAL)",
+      "notes": "Lasagnes, gratins, plats en sauce. Au-delà de 3 jours : congeler ou jeter.",
+      "sources": [
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "preparation": "Produits sous-vide cuisson basse température",
+      "dlc_jours": "5 à 21",
+      "temperature_conservation": "+3 °C max",
+      "source": "Guide des Bonnes Pratiques d'Hygiène en Restauration (DGAL)",
+      "notes": "Variabilité forte selon barème de pasteurisation interne. Produits à risque (volaille, poisson) : DLC plus courte. Validation par tests de vieillissement recommandée.",
+      "sources": [
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "preparation": "Produits décongelés (jamais recongeler)",
+      "dlc_jours": "1 à 3",
+      "temperature_conservation": "+3 °C max",
+      "source": "Guide des Bonnes Pratiques d'Hygiène en Restauration (DGAL)",
+      "notes": "Variabilité selon nature. Viande hachée décongelée : J. Légumes : J+3. Décongélation au froid uniquement (jamais à température ambiante).",
+      "sources": [
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "preparation": "Produits entamés (jambon, fromage frais ouvert)",
+      "dlc_jours": "2 à 5",
+      "temperature_conservation": "+4 °C max",
+      "source": "Guide des Bonnes Pratiques d'Hygiène en Restauration (DGAL)",
+      "notes": "Étiqueter avec date d'ouverture. Jambon tranché J+2-3 ; fromages frais J+5 ; conserves ouvertes (ratatouille, légumes en boîte) J+5.",
+      "sources": [
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     }
+    ],
+    "type": "guide_pratique",
+    "sources": [
+     {
+      "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+      "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+     },
+     {
+      "titre": "Règlement (CE) n° 853/2004 — règles spécifiques d'hygiène applicables aux denrées d'origine animale",
+      "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0853"
+     }
+    ],
+    "derniere_verification": "2026-05-21",
+    "version_schema": "2.0",
+    "prochaine_revision": "2026-11-21",
+    "source": "Frigolog — frigolog.fr",
+    "avertissement": "Ces informations sont fournies à titre indicatif. Consultez la réglementation officielle via les liens du champ 'sources' (Légifrance, EUR-Lex, DGAL, DGCCRF) et vérifiez les tarifs sur les sites des éditeurs."
+   }
+  },
+  {
+   "outil": "get_sanctions_ddpp",
+   "description": "Retourne les sanctions et risques d'inspection applicables lors d'un contrôle DDPP en restauration et métiers de bouche en France : 4 niveaux (observation, mise en demeure, procès-verbal, fermeture administrative), seuils déclencheurs, délais de mise en conformité, montants d'amende (de 1 500 € à 75 000 €), risques d'emprisonnement et voies de recours. Base légale : Code rural et de la pêche maritime articles L.231-1 à L.237-3, règlement CE 852/2004, arrêté du 21 décembre 2009.\n\n[EN] Returns DDPP inspection sanction levels in France (observation, formal notice, report, administrative closure): triggers, deadlines, fines (€1,500–€75,000), legal basis (Code rural). Optional 'gravite'.",
+   "contenu": {
+    "data": {
+     "niveaux": [
+      {
+       "niveau": "Observation",
+       "gravite": "mineure",
+       "declencheurs": [
+        "Relevés de température incomplets sur moins de 7 jours consécutifs",
+        "Étiquetage DLC incomplet sur quelques produits",
+        "Plan de nettoyage non signé sur moins de 3 jours",
+        "Erreurs ponctuelles sur la traçabilité fournisseurs"
+       ],
+       "consequences": "Mention dans le rapport d'inspection sans suite immédiate. Délai de mise en conformité accordé.",
+       "delai_conformite": "1 à 3 mois",
+       "recours": "Aucun recours nécessaire. Mettre en conformité avant le prochain contrôle."
+      },
+      {
+       "niveau": "Mise en demeure",
+       "gravite": "majeure",
+       "declencheurs": [
+        "Absence de relevés de température sur plus de 7 jours",
+        "Produits périmés en quantité significative",
+        "Aucune traçabilité fournisseur",
+        "Plan de maîtrise sanitaire (PMS) absent",
+        "Non-conformité répétée depuis le contrôle précédent",
+        "Absence d'attestation de formation HACCP"
+       ],
+       "consequences": "Obligation légale de mise en conformité dans le délai imparti. Publication possible sur Alim'confiance.",
+       "delai_conformite": "15 jours à 3 mois",
+       "amende_possible": "Jusqu'à 1 500 € (contravention 5e classe) si non-respect de la mise en demeure dans le délai imparti",
+       "recours": "Recours gracieux auprès du préfet dans les 2 mois. Recours contentieux au tribunal administratif."
+      },
+      {
+       "niveau": "Procès-verbal",
+       "gravite": "critique",
+       "declencheurs": [
+        "Rupture de chaîne du froid entraînant un risque sanitaire avéré",
+        "Produits périmés en grande quantité ou présentant un danger immédiat",
+        "Refus de présenter les documents à l'inspecteur",
+        "Obstruction au contrôle",
+        "Récidive après mise en demeure non respectée"
+       ],
+       "consequences": "Transmission au procureur de la République. Saisie et destruction des produits non conformes.",
+       "amende": "De 1 500 € à 15 000 € selon la gravité (article L.237-1 du Code rural et de la pêche maritime)",
+       "emprisonnement_possible": "Jusqu'à 2 ans en cas de mise en danger de la santé publique (article L.237-2 du Code rural)",
+       "recours": "Défense pénale. Avocat recommandé."
+      },
+      {
+       "niveau": "Fermeture administrative",
+       "gravite": "critique",
+       "declencheurs": [
+        "Danger immédiat et grave pour la santé publique",
+        "Infestation de nuisibles active (rongeurs, blattes) en zone de production",
+        "Absence totale de conditions d'hygiène élémentaires",
+        "Refus réitéré de se conformer aux mises en demeure successives",
+        "Toxi-infection alimentaire collective (TIAC) avec établissement identifié comme source"
+       ],
+       "consequences": "Fermeture immédiate de l'établissement par arrêté préfectoral. Saisie des produits. Publication sur Alim'confiance.",
+       "duree": "Jusqu'à mise en conformité complète vérifiée par re-inspection sur site",
+       "reouverture": "Demande de levée de la mesure après travaux et mise en conformité, suivie d'une re-inspection.",
+       "amende": "Jusqu'à 75 000 € (article L.237-3 du Code rural pour mise en danger délibérée de la santé publique)"
+      }
+     ],
+     "base_legale": [
+      "Code rural et de la pêche maritime — articles L.231-1 à L.237-3",
+      "Règlement (CE) n° 852/2004 — hygiène des denrées alimentaires",
+      "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail",
+      "Règlement (CE) n° 882/2004 — contrôles officiels effectués pour assurer la conformité avec la législation alimentaire"
+     ],
+     "conseil_frigolog": "Frigolog archive automatiquement tous vos enregistrements HACCP (relevés de température, nettoyages, traçabilité). En cas de contrôle DDPP, votre historique complet est accessible depuis le Mode Contrôle. Ce qui compte le jour d'un contrôle, c'est de pouvoir produire ses preuves immédiatement."
+    },
+    "type": "reglementaire_officiel",
+    "sources": [
+     {
+      "titre": "Code rural et de la pêche maritime — Titre III, qualité nutritionnelle et sécurité sanitaire des aliments (art. L.230-2 à L.237-4)",
+      "url": "https://www.legifrance.gouv.fr/codes/id/LEGISCTA000022657336"
+     },
+     {
+      "titre": "Règlement (CE) n° 852/2004 — hygiène des denrées alimentaires",
+      "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0852"
+     },
+     {
+      "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+      "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+     },
+     {
+      "titre": "Règlement (CE) n° 882/2004 — contrôles officiels pour la conformité avec la législation alimentaire",
+      "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0882"
+     }
+    ],
+    "derniere_verification": "2026-05-21",
+    "version_schema": "2.0",
+    "prochaine_revision": "2026-11-21",
+    "source": "Frigolog — frigolog.fr",
+    "avertissement": "Ces informations sont fournies à titre indicatif. Consultez la réglementation officielle via les liens du champ 'sources' (Légifrance, EUR-Lex, DGAL, DGCCRF) et vérifiez les tarifs sur les sites des éditeurs."
+   }
+  },
+  {
+   "outil": "get_allergenes_reglementaires",
+   "description": "Retourne la liste des 14 allergènes à déclaration obligatoire en France conformément au règlement UE 1169/2011 (INCO) applicable depuis le 13 décembre 2014 : gluten (blé, seigle, orge, avoine), crustacés, œufs, poissons, arachides, soja, lait (lactose), fruits à coque (8 types), céleri, moutarde, graines de sésame, anhydride sulfureux et sulfites, lupin, mollusques. Pour chaque allergène : noms communs, sources principales, sources cachées non évidentes, obligation d'affichage en restauration et sanction en cas d'omission.\n\n[EN] Returns the 14 mandatory allergens under EU Regulation 1169/2011 (INCO): common names, main and hidden sources, display obligation, penalties. Optional 'allergene'.",
+   "contenu": {
+    "data": [
+     {
+      "id": "gluten",
+      "nom_officiel": "Céréales contenant du gluten",
+      "noms_communs": [
+       "Gluten",
+       "Blé",
+       "Seigle",
+       "Orge",
+       "Avoine",
+       "Épeautre",
+       "Kamut"
+      ],
+      "sources_principales": [
+       "Pain, pâtes, pizza, pâtisseries",
+       "Farine de blé et tous produits panifiés",
+       "Couscous, semoule, boulgour",
+       "Bière (orge maltée)"
+      ],
+      "sources_cachees": [
+       "Sauce soja (souvent à base de blé)",
+       "Bouillons cubes et bouillons en poudre",
+       "Charcuteries (saucisses, pâtés — liants à base de gluten)",
+       "Chips et snacks aromatisés",
+       "Sauces industrielles (béchamel, vinaigrettes épaissies)",
+       "Bonbons et chewing-gums (amidon de blé)"
+      ],
+      "obligation_affichage": "Mention obligatoire sur la carte ou sur un document accessible au client. En restauration : affichage visible (panneau, carte) ou information orale documentée par procédure écrite. Règlement (UE) n° 1169/2011 (INCO), applicable depuis le 13 décembre 2014.",
+      "sanction_omission": "Jusqu'à 1 500 € par produit non conforme (contravention 5e classe). Récidive : doublement. Risque civil engagé en cas de réaction allergique chez un client (mise en danger).",
+      "symbole_allergene": "Annexe II — point 1",
+      "sources": [
+       {
+        "titre": "Règlement (UE) n° 1169/2011 (INCO) — information du consommateur, 14 allergènes à déclaration obligatoire (annexe II)",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32011R1169"
+       }
+      ]
+     },
+     {
+      "id": "crustaces",
+      "nom_officiel": "Crustacés et produits à base de crustacés",
+      "noms_communs": [
+       "Crustacés",
+       "Crevettes",
+       "Langoustines",
+       "Crabe",
+       "Homard",
+       "Langouste",
+       "Écrevisses"
+      ],
+      "sources_principales": [
+       "Cocktails de crevettes, salades de crabe",
+       "Bisques, soupes de poisson",
+       "Plats asiatiques (pad thaï, curry de crevettes)",
+       "Sushis et makis aux crevettes"
+      ],
+      "sources_cachees": [
+       "Bouillons de poisson et fumets",
+       "Tarama (peut contenir des extraits de crustacés)",
+       "Surimi (rarement, mais possible selon recette)",
+       "Chips aux crevettes asiatiques",
+       "Sauces XO et nuoc-mâm raffinés"
+      ],
+      "obligation_affichage": "Mention obligatoire sur la carte ou sur un document accessible au client. En restauration : affichage visible (panneau, carte) ou information orale documentée par procédure écrite. Règlement (UE) n° 1169/2011 (INCO), applicable depuis le 13 décembre 2014.",
+      "sanction_omission": "Jusqu'à 1 500 € par produit non conforme (contravention 5e classe). Récidive : doublement. Risque civil engagé en cas de réaction allergique chez un client (mise en danger).",
+      "symbole_allergene": "Annexe II — point 2",
+      "sources": [
+       {
+        "titre": "Règlement (UE) n° 1169/2011 (INCO) — information du consommateur, 14 allergènes à déclaration obligatoire (annexe II)",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32011R1169"
+       }
+      ]
+     },
+     {
+      "id": "oeufs",
+      "nom_officiel": "Œufs et produits à base d'œufs",
+      "noms_communs": [
+       "Œufs",
+       "Œuf",
+       "Albumine",
+       "Lysozyme",
+       "Lécithine d'œuf",
+       "Ovalbumine"
+      ],
+      "sources_principales": [
+       "Mayonnaise, omelettes, quiches",
+       "Pâtisseries, gâteaux, crème pâtissière",
+       "Pâtes fraîches",
+       "Mousses, soufflés, meringues"
+      ],
+      "sources_cachees": [
+       "Pains briochés et viennoiseries (dorure jaune d'œuf)",
+       "Pâtes alimentaires sèches (pâtes aux œufs)",
+       "Sauces émulsionnées (béarnaise, hollandaise, aïoli)",
+       "Glaçages et nappages de pâtisserie",
+       "Vins et bières clarifiés au blanc d'œuf (rare mais existant)",
+       "Charcuteries fines (terrines, pâtés en croûte)"
+      ],
+      "obligation_affichage": "Mention obligatoire sur la carte ou sur un document accessible au client. En restauration : affichage visible (panneau, carte) ou information orale documentée par procédure écrite. Règlement (UE) n° 1169/2011 (INCO), applicable depuis le 13 décembre 2014.",
+      "sanction_omission": "Jusqu'à 1 500 € par produit non conforme (contravention 5e classe). Récidive : doublement. Risque civil engagé en cas de réaction allergique chez un client (mise en danger).",
+      "symbole_allergene": "Annexe II — point 3",
+      "sources": [
+       {
+        "titre": "Règlement (UE) n° 1169/2011 (INCO) — information du consommateur, 14 allergènes à déclaration obligatoire (annexe II)",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32011R1169"
+       }
+      ]
+     },
+     {
+      "id": "poissons",
+      "nom_officiel": "Poissons et produits à base de poissons",
+      "noms_communs": [
+       "Poisson",
+       "Saumon",
+       "Thon",
+       "Cabillaud",
+       "Sole",
+       "Bar",
+       "Daurade",
+       "Anchois"
+      ],
+      "sources_principales": [
+       "Plats de poisson, sushis, sashimis",
+       "Tarama, rillettes de poisson",
+       "Soupes de poisson, bouillabaisse",
+       "Fish and chips, bâtonnets panés"
+      ],
+      "sources_cachees": [
+       "Sauce Worcestershire (anchois)",
+       "Sauce Caesar (anchois, souvent pâte d'anchois)",
+       "Pissaladière, pizzas niçoises",
+       "Bouillons et fumets",
+       "Pâté de campagne (parfois enrichi en anchois)",
+       "Tapenade niçoise (souvent avec anchois)"
+      ],
+      "obligation_affichage": "Mention obligatoire sur la carte ou sur un document accessible au client. En restauration : affichage visible (panneau, carte) ou information orale documentée par procédure écrite. Règlement (UE) n° 1169/2011 (INCO), applicable depuis le 13 décembre 2014.",
+      "sanction_omission": "Jusqu'à 1 500 € par produit non conforme (contravention 5e classe). Récidive : doublement. Risque civil engagé en cas de réaction allergique chez un client (mise en danger).",
+      "symbole_allergene": "Annexe II — point 4",
+      "sources": [
+       {
+        "titre": "Règlement (UE) n° 1169/2011 (INCO) — information du consommateur, 14 allergènes à déclaration obligatoire (annexe II)",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32011R1169"
+       }
+      ]
+     },
+     {
+      "id": "arachides",
+      "nom_officiel": "Arachides et produits à base d'arachides",
+      "noms_communs": [
+       "Arachide",
+       "Cacahuète",
+       "Cacahouète",
+       "Beurre de cacahuète",
+       "Huile d'arachide"
+      ],
+      "sources_principales": [
+       "Cacahuètes apéritives",
+       "Beurre de cacahuète",
+       "Cuisine asiatique (pad thaï, satay, sauces aux cacahuètes)",
+       "Pâtisseries praliné, pralines"
+      ],
+      "sources_cachees": [
+       "Huile d'arachide en friture (souvent en pâtisserie industrielle)",
+       "Mueslis et barres céréalières",
+       "Sauces asiatiques épaissies",
+       "Chocolats (contamination croisée fréquente sur lignes industrielles)",
+       "Gâteaux de fête, glaces praliné",
+       "Substituts de viande végétaux"
+      ],
+      "obligation_affichage": "Mention obligatoire sur la carte ou sur un document accessible au client. En restauration : affichage visible (panneau, carte) ou information orale documentée par procédure écrite. Règlement (UE) n° 1169/2011 (INCO), applicable depuis le 13 décembre 2014.",
+      "sanction_omission": "Jusqu'à 1 500 € par produit non conforme (contravention 5e classe). Récidive : doublement. Risque civil engagé en cas de réaction allergique chez un client (mise en danger).",
+      "symbole_allergene": "Annexe II — point 5",
+      "sources": [
+       {
+        "titre": "Règlement (UE) n° 1169/2011 (INCO) — information du consommateur, 14 allergènes à déclaration obligatoire (annexe II)",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32011R1169"
+       }
+      ]
+     },
+     {
+      "id": "soja",
+      "nom_officiel": "Soja et produits à base de soja",
+      "noms_communs": [
+       "Soja",
+       "Tofu",
+       "Tempeh",
+       "Edamame",
+       "Lécithine de soja"
+      ],
+      "sources_principales": [
+       "Tofu, tempeh, lait de soja",
+       "Sauce soja (shoyu, tamari)",
+       "Cuisine asiatique (sushis, plats végétariens)",
+       "Steaks végétaux et substituts de viande"
+      ],
+      "sources_cachees": [
+       "Lécithine de soja (E322) dans nombreux chocolats et viennoiseries",
+       "Charcuteries (extenseurs de viande à base de soja)",
+       "Bouillons cubes",
+       "Margarines et huiles végétales mélangées",
+       "Plats préparés et soupes industrielles",
+       "Pains de mie industriels"
+      ],
+      "obligation_affichage": "Mention obligatoire sur la carte ou sur un document accessible au client. En restauration : affichage visible (panneau, carte) ou information orale documentée par procédure écrite. Règlement (UE) n° 1169/2011 (INCO), applicable depuis le 13 décembre 2014.",
+      "sanction_omission": "Jusqu'à 1 500 € par produit non conforme (contravention 5e classe). Récidive : doublement. Risque civil engagé en cas de réaction allergique chez un client (mise en danger).",
+      "symbole_allergene": "Annexe II — point 6",
+      "sources": [
+       {
+        "titre": "Règlement (UE) n° 1169/2011 (INCO) — information du consommateur, 14 allergènes à déclaration obligatoire (annexe II)",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32011R1169"
+       }
+      ]
+     },
+     {
+      "id": "lait",
+      "nom_officiel": "Lait et produits à base de lait (y compris le lactose)",
+      "noms_communs": [
+       "Lait",
+       "Lactose",
+       "Caséine",
+       "Lactosérum",
+       "Beurre",
+       "Crème",
+       "Fromage",
+       "Yaourt"
+      ],
+      "sources_principales": [
+       "Lait, beurre, crème, yaourt",
+       "Fromages, fromages frais",
+       "Pâtisseries crème, glaces",
+       "Sauces béchamel, gratins"
+      ],
+      "sources_cachees": [
+       "Pains au lait, brioches, viennoiseries",
+       "Charcuteries (jambon cuit, saucissons — protéines de lait ajoutées)",
+       "Margarines au beurre",
+       "Sauces industrielles (mayonnaise allégée, ketchup),",
+       "Purées en flocons (poudre de lait)",
+       "Bonbons au caramel et au chocolat au lait"
+      ],
+      "obligation_affichage": "Mention obligatoire sur la carte ou sur un document accessible au client. En restauration : affichage visible (panneau, carte) ou information orale documentée par procédure écrite. Règlement (UE) n° 1169/2011 (INCO), applicable depuis le 13 décembre 2014.",
+      "sanction_omission": "Jusqu'à 1 500 € par produit non conforme (contravention 5e classe). Récidive : doublement. Risque civil engagé en cas de réaction allergique chez un client (mise en danger).",
+      "symbole_allergene": "Annexe II — point 7",
+      "sources": [
+       {
+        "titre": "Règlement (UE) n° 1169/2011 (INCO) — information du consommateur, 14 allergènes à déclaration obligatoire (annexe II)",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32011R1169"
+       }
+      ]
+     },
+     {
+      "id": "fruits_a_coque",
+      "nom_officiel": "Fruits à coque (8 types réglementaires)",
+      "noms_communs": [
+       "Amandes",
+       "Noisettes",
+       "Noix",
+       "Noix de cajou",
+       "Noix de pécan",
+       "Noix du Brésil",
+       "Pistaches",
+       "Noix de macadamia"
+      ],
+      "sources_principales": [
+       "Pâtisseries (frangipane, financiers, macarons)",
+       "Glaces (pistache, noisette, praliné)",
+       "Mueslis et granolas",
+       "Salades composées (noix, pignons)"
+      ],
+      "sources_cachees": [
+       "Pestos (pignons, parfois noix)",
+       "Pâte d'amande dans pâtisseries (galette des rois)",
+       "Liqueurs (amaretto, frangelico)",
+       "Sauces curry indiennes (noix de cajou broyées)",
+       "Pains aux noix, baguettes spéciales",
+       "Chocolats fourrés et pralines"
+      ],
+      "obligation_affichage": "Mention obligatoire sur la carte ou sur un document accessible au client. En restauration : affichage visible (panneau, carte) ou information orale documentée par procédure écrite. Règlement (UE) n° 1169/2011 (INCO), applicable depuis le 13 décembre 2014.",
+      "sanction_omission": "Jusqu'à 1 500 € par produit non conforme (contravention 5e classe). Récidive : doublement. Risque civil engagé en cas de réaction allergique chez un client (mise en danger).",
+      "symbole_allergene": "Annexe II — point 8",
+      "sources": [
+       {
+        "titre": "Règlement (UE) n° 1169/2011 (INCO) — information du consommateur, 14 allergènes à déclaration obligatoire (annexe II)",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32011R1169"
+       }
+      ]
+     },
+     {
+      "id": "celeri",
+      "nom_officiel": "Céleri et produits à base de céleri",
+      "noms_communs": [
+       "Céleri",
+       "Céleri-rave",
+       "Céleri-branche"
+      ],
+      "sources_principales": [
+       "Céleri rémoulade, céleri-branche cru",
+       "Bouillons et soupes (mirepoix)",
+       "Plats mijotés, pot-au-feu"
+      ],
+      "sources_cachees": [
+       "Bouillons cubes (céleri en poudre presque toujours)",
+       "Sauces tomate industrielles",
+       "Charcuteries fines (terrines, pâtés)",
+       "Sels aromatisés (sel de céleri)",
+       "Plats préparés (lasagnes, gratins)",
+       "Mélanges d'épices et herbes de Provence"
+      ],
+      "obligation_affichage": "Mention obligatoire sur la carte ou sur un document accessible au client. En restauration : affichage visible (panneau, carte) ou information orale documentée par procédure écrite. Règlement (UE) n° 1169/2011 (INCO), applicable depuis le 13 décembre 2014.",
+      "sanction_omission": "Jusqu'à 1 500 € par produit non conforme (contravention 5e classe). Récidive : doublement. Risque civil engagé en cas de réaction allergique chez un client (mise en danger).",
+      "symbole_allergene": "Annexe II — point 9",
+      "sources": [
+       {
+        "titre": "Règlement (UE) n° 1169/2011 (INCO) — information du consommateur, 14 allergènes à déclaration obligatoire (annexe II)",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32011R1169"
+       }
+      ]
+     },
+     {
+      "id": "moutarde",
+      "nom_officiel": "Moutarde et produits à base de moutarde",
+      "noms_communs": [
+       "Moutarde",
+       "Graines de moutarde"
+      ],
+      "sources_principales": [
+       "Vinaigrettes, sauces moutarde",
+       "Lapin à la moutarde, viandes en sauce",
+       "Cornichons aigres-doux"
+      ],
+      "sources_cachees": [
+       "Mayonnaises (moutarde dans la base)",
+       "Charcuteries (cervelas, saucisson)",
+       "Pickles et condiments",
+       "Marinades industrielles",
+       "Sauces barbecue et ketchup épicé",
+       "Mélanges d'épices (curry, garam masala)"
+      ],
+      "obligation_affichage": "Mention obligatoire sur la carte ou sur un document accessible au client. En restauration : affichage visible (panneau, carte) ou information orale documentée par procédure écrite. Règlement (UE) n° 1169/2011 (INCO), applicable depuis le 13 décembre 2014.",
+      "sanction_omission": "Jusqu'à 1 500 € par produit non conforme (contravention 5e classe). Récidive : doublement. Risque civil engagé en cas de réaction allergique chez un client (mise en danger).",
+      "symbole_allergene": "Annexe II — point 10",
+      "sources": [
+       {
+        "titre": "Règlement (UE) n° 1169/2011 (INCO) — information du consommateur, 14 allergènes à déclaration obligatoire (annexe II)",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32011R1169"
+       }
+      ]
+     },
+     {
+      "id": "sesame",
+      "nom_officiel": "Graines de sésame et produits à base de graines de sésame",
+      "noms_communs": [
+       "Sésame",
+       "Tahin",
+       "Tahini",
+       "Huile de sésame"
+      ],
+      "sources_principales": [
+       "Pains aux graines, bagels",
+       "Houmous, falafels (tahin)",
+       "Cuisine asiatique (huile de sésame)",
+       "Sushis, makis garnis de graines"
+      ],
+      "sources_cachees": [
+       "Hamburgers (graines sur pain bun)",
+       "Crackers et grissinis apéritifs",
+       "Granolas et barres céréalières",
+       "Sauces asiatiques (gomasio, dressings)",
+       "Pâtisseries orientales (halva)",
+       "Mélanges d'épices za'atar"
+      ],
+      "obligation_affichage": "Mention obligatoire sur la carte ou sur un document accessible au client. En restauration : affichage visible (panneau, carte) ou information orale documentée par procédure écrite. Règlement (UE) n° 1169/2011 (INCO), applicable depuis le 13 décembre 2014.",
+      "sanction_omission": "Jusqu'à 1 500 € par produit non conforme (contravention 5e classe). Récidive : doublement. Risque civil engagé en cas de réaction allergique chez un client (mise en danger).",
+      "symbole_allergene": "Annexe II — point 11",
+      "sources": [
+       {
+        "titre": "Règlement (UE) n° 1169/2011 (INCO) — information du consommateur, 14 allergènes à déclaration obligatoire (annexe II)",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32011R1169"
+       }
+      ]
+     },
+     {
+      "id": "sulfites",
+      "nom_officiel": "Anhydride sulfureux et sulfites en concentration > 10 mg/kg ou 10 mg/L",
+      "noms_communs": [
+       "Sulfites",
+       "E220",
+       "E221",
+       "E222",
+       "E223",
+       "E224",
+       "E226",
+       "E227",
+       "E228",
+       "Anhydride sulfureux"
+      ],
+      "sources_principales": [
+       "Vins (rouges, blancs, rosés)",
+       "Cidres, bières",
+       "Fruits secs (abricots, raisins, figues)",
+       "Vinaigres"
+      ],
+      "sources_cachees": [
+       "Crustacés frais (traités pour éviter le noircissement)",
+       "Pommes de terre déshydratées et frites surgelées",
+       "Cornichons et légumes en saumure",
+       "Jus de fruits industriels",
+       "Charcuteries (saucisses sèches)",
+       "Confitures industrielles, fruits confits"
+      ],
+      "obligation_affichage": "Mention obligatoire sur la carte ou sur un document accessible au client. En restauration : affichage visible (panneau, carte) ou information orale documentée par procédure écrite. Règlement (UE) n° 1169/2011 (INCO), applicable depuis le 13 décembre 2014.",
+      "sanction_omission": "Jusqu'à 1 500 € par produit non conforme (contravention 5e classe). Récidive : doublement. Risque civil engagé en cas de réaction allergique chez un client (mise en danger).",
+      "symbole_allergene": "Annexe II — point 12",
+      "sources": [
+       {
+        "titre": "Règlement (UE) n° 1169/2011 (INCO) — information du consommateur, 14 allergènes à déclaration obligatoire (annexe II)",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32011R1169"
+       }
+      ]
+     },
+     {
+      "id": "lupin",
+      "nom_officiel": "Lupin et produits à base de lupin",
+      "noms_communs": [
+       "Lupin",
+       "Farine de lupin"
+      ],
+      "sources_principales": [
+       "Farines sans gluten (souvent enrichies en lupin)",
+       "Pains et viennoiseries spéciales",
+       "Substituts de viande vegan"
+      ],
+      "sources_cachees": [
+       "Pâtes alimentaires sans gluten (lupin substitut)",
+       "Biscuits et gâteaux apéritifs",
+       "Crèmes glacées (substitut soja)",
+       "Boissons végétales",
+       "Charcuteries végétales",
+       "Préparations panifiées allégées en gluten"
+      ],
+      "obligation_affichage": "Mention obligatoire sur la carte ou sur un document accessible au client. En restauration : affichage visible (panneau, carte) ou information orale documentée par procédure écrite. Règlement (UE) n° 1169/2011 (INCO), applicable depuis le 13 décembre 2014.",
+      "sanction_omission": "Jusqu'à 1 500 € par produit non conforme (contravention 5e classe). Récidive : doublement. Risque civil engagé en cas de réaction allergique chez un client (mise en danger).",
+      "symbole_allergene": "Annexe II — point 13",
+      "sources": [
+       {
+        "titre": "Règlement (UE) n° 1169/2011 (INCO) — information du consommateur, 14 allergènes à déclaration obligatoire (annexe II)",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32011R1169"
+       }
+      ]
+     },
+     {
+      "id": "mollusques",
+      "nom_officiel": "Mollusques et produits à base de mollusques",
+      "noms_communs": [
+       "Mollusques",
+       "Moules",
+       "Huîtres",
+       "Coquilles Saint-Jacques",
+       "Calamars",
+       "Poulpe",
+       "Bigorneaux",
+       "Escargots"
+      ],
+      "sources_principales": [
+       "Plateaux de fruits de mer",
+       "Moules marinières, paella",
+       "Calamars frits, encornets farcis",
+       "Sushis aux coquilles Saint-Jacques"
+      ],
+      "sources_cachees": [
+       "Bouillons de poisson et soupes (fumet de coquillages)",
+       "Sauces aux fruits de mer",
+       "Pâtes et risottos aux fruits de mer",
+       "Plats préparés méditerranéens",
+       "Encres de seiche (risotto noir, pâtes)",
+       "Tapenade enrichie aux fruits de mer (rare)"
+      ],
+      "obligation_affichage": "Mention obligatoire sur la carte ou sur un document accessible au client. En restauration : affichage visible (panneau, carte) ou information orale documentée par procédure écrite. Règlement (UE) n° 1169/2011 (INCO), applicable depuis le 13 décembre 2014.",
+      "sanction_omission": "Jusqu'à 1 500 € par produit non conforme (contravention 5e classe). Récidive : doublement. Risque civil engagé en cas de réaction allergique chez un client (mise en danger).",
+      "symbole_allergene": "Annexe II — point 14",
+      "sources": [
+       {
+        "titre": "Règlement (UE) n° 1169/2011 (INCO) — information du consommateur, 14 allergènes à déclaration obligatoire (annexe II)",
+        "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32011R1169"
+       }
+      ]
+     }
+    ],
+    "type": "reglementaire_officiel",
+    "sources": [
+     {
+      "titre": "Règlement (UE) n° 1169/2011 (INCO) — information du consommateur, 14 allergènes à déclaration obligatoire (annexe II)",
+      "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32011R1169"
+     }
+    ],
+    "derniere_verification": "2026-05-21",
+    "version_schema": "2.0",
+    "prochaine_revision": "2026-11-21",
+    "source": "Frigolog — frigolog.fr",
+    "avertissement": "Ces informations sont fournies à titre indicatif. Consultez la réglementation officielle via les liens du champ 'sources' (Légifrance, EUR-Lex, DGAL, DGCCRF) et vérifiez les tarifs sur les sites des éditeurs."
+   }
+  },
+  {
+   "outil": "get_temperatures_cuisson",
+   "description": "Retourne les températures à cœur réglementaires obligatoires en cuisson par type d'aliment en restauration française (GBPH Restaurateur DGAL) : volaille 74 °C, bœuf haché 70 °C, porc 70 °C, poisson 63 °C, etc. Inclut le refroidissement rapide (de +63 °C à +10 °C en moins de 2 heures), la remise en température à +63 °C minimum et les recommandations de sécurité spécifiques aux populations sensibles (enfants, femmes enceintes, immunodéprimés). Distinct des températures de conservation disponibles via get_haccp_temperatures.\n\n[EN] Returns mandatory core cooking temperatures by food type in French catering (poultry 74°C, minced beef 70°C, fish 63°C…) plus rapid cooling and reheating rules. Optional 'type_aliment'.",
+   "contenu": {
+    "data": [
+     {
+      "id": "volaille",
+      "intitule": "Volaille (poulet, dinde, canard, pintade)",
+      "temperature_coeur": 74,
+      "unite": "°C",
+      "duree_maintien": "1 minute minimum",
+      "raison": "Destruction de Salmonella et Campylobacter",
+      "populations_sensibles": "82 °C recommandé pour femmes enceintes, jeunes enfants (< 5 ans), personnes immunodéprimées et seniors fragiles",
+      "base_legale": "Guide des Bonnes Pratiques d'Hygiène en Restauration (DGAL)",
+      "sources": [
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "id": "boeuf_hache",
+      "intitule": "Bœuf haché (steak haché, viande hachée crue)",
+      "temperature_coeur": 70,
+      "unite": "°C",
+      "duree_maintien": "2 minutes",
+      "raison": "Destruction de E. coli O157:H7 (entérohémorragique)",
+      "populations_sensibles": "Ne jamais servir saignant aux enfants de moins de 16 ans, femmes enceintes ni personnes immunodéprimées",
+      "base_legale": "Guide des Bonnes Pratiques d'Hygiène en Restauration (DGAL)",
+      "sources": [
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "id": "boeuf_piece_entiere",
+      "intitule": "Bœuf en pièce entière (steak, rosbif, entrecôte)",
+      "temperature_coeur": 63,
+      "unite": "°C",
+      "commentaire": "Cuisson à cœur non requise sur pièce entière non tranchée — surface saisie suffit (>70 °C en surface). Steak tartare et carpaccio : réglementation spécifique, viande extra-fraîche jour même + populations sensibles exclues.",
+      "populations_sensibles": "Interdit de servir cru ou saignant aux populations sensibles (enfants, femmes enceintes, immunodéprimés)",
+      "base_legale": "Guide des Bonnes Pratiques d'Hygiène en Restauration (DGAL)",
+      "sources": [
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "id": "porc",
+      "intitule": "Porc (rôti, côte, échine)",
+      "temperature_coeur": 70,
+      "unite": "°C",
+      "duree_maintien": "2 minutes",
+      "raison": "Destruction de Trichinella spiralis et Salmonella",
+      "base_legale": "Guide des Bonnes Pratiques d'Hygiène en Restauration (DGAL)",
+      "sources": [
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "id": "veau",
+      "intitule": "Veau (escalope, blanquette, rôti)",
+      "temperature_coeur": 70,
+      "unite": "°C",
+      "base_legale": "Guide des Bonnes Pratiques d'Hygiène en Restauration (DGAL)",
+      "sources": [
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "id": "agneau",
+      "intitule": "Agneau (gigot, côtelettes, navarin)",
+      "temperature_coeur": 70,
+      "unite": "°C",
+      "commentaire": "63 °C accepté si cuisson rosée souhaitée sur pièce entière non tranchée (gigot, carré). Hachis et préparations émincées : 70 °C obligatoire.",
+      "base_legale": "Guide des Bonnes Pratiques d'Hygiène en Restauration (DGAL)",
+      "sources": [
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "id": "poisson",
+      "intitule": "Poisson cuit",
+      "temperature_coeur": 63,
+      "unite": "°C",
+      "commentaire": "Ou jusqu'à obtenir une chair opaque et ferme sur toute la surface. La chair se détache facilement à la fourchette.",
+      "base_legale": "Guide des Bonnes Pratiques d'Hygiène en Restauration (DGAL)",
+      "sources": [
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "id": "poisson_cru_sashimi",
+      "intitule": "Poisson cru, sashimi, ceviche, tartare de poisson",
+      "temperature_coeur": null,
+      "commentaire": "Pas de cuisson, mais congélation préalable obligatoire à -20 °C pendant 24 heures minimum (ou -35 °C pendant 15 heures) pour destruction du parasite Anisakis simplex.",
+      "base_legale": "Arrêté du 21 décembre 2009 article 18",
+      "sources": [
+       {
+        "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+        "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+       }
+      ]
+     },
+     {
+      "id": "oeufs_plats_oeufs",
+      "intitule": "Œufs et plats à base d'œufs (omelette, œuf au plat, brouillade)",
+      "temperature_coeur": 70,
+      "unite": "°C",
+      "commentaire": "Blanc et jaune solidifiés. Mayonnaise maison : DLC J+1 maximum après préparation, conservation à +3 °C. Préférer ovoproduits pasteurisés en restauration collective.",
+      "raison": "Destruction de Salmonella enteritidis",
+      "base_legale": "Guide des Bonnes Pratiques d'Hygiène en Restauration (DGAL)",
+      "sources": [
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "id": "refroidissement_rapide",
+      "intitule": "Refroidissement rapide après cuisson",
+      "temperature_coeur": 10,
+      "unite": "°C",
+      "objectif": "De +63 °C à +10 °C en moins de 2 heures",
+      "methode": "Cellule de refroidissement rapide ou bain-marie inversé (eau glacée + glace pilée) avec brassage régulier",
+      "raison": "Zone dangereuse entre 10 °C et 63 °C : multiplication bactérienne rapide (Bacillus cereus, Clostridium perfringens, Staphylococcus aureus)",
+      "base_legale": "Guide des Bonnes Pratiques d'Hygiène en Restauration (DGAL)",
+      "sources": [
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "id": "remise_en_temperature",
+      "intitule": "Remise en température (réchauffage avant service)",
+      "temperature_coeur": 63,
+      "unite": "°C",
+      "duree_maximale": "1 heure au service",
+      "commentaire": "Un plat réchauffé ne peut être réchauffé qu'une seule fois. Surplus non servi à jeter ou à congeler immédiatement (jamais re-refroidir puis re-réchauffer).",
+      "base_legale": "Guide des Bonnes Pratiques d'Hygiène en Restauration (DGAL)",
+      "sources": [
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     }
+    ],
+    "type": "guide_pratique",
+    "sources": [
+     {
+      "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+      "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+     },
+     {
+      "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+      "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+     }
+    ],
+    "derniere_verification": "2026-05-21",
+    "version_schema": "2.0",
+    "prochaine_revision": "2026-11-21",
+    "source": "Frigolog — frigolog.fr",
+    "avertissement": "Ces informations sont fournies à titre indicatif. Consultez la réglementation officielle via les liens du champ 'sources' (Légifrance, EUR-Lex, DGAL, DGCCRF) et vérifiez les tarifs sur les sites des éditeurs."
+   }
+  },
+  {
+   "outil": "get_formation_haccp_obligatoire",
+   "description": "Retourne les obligations légales de formation hygiène alimentaire HACCP en restauration commerciale en France : qui doit obligatoirement se former (restauration traditionnelle, rapide, traiteur, food trucks), qui est exempté (3 ans d'expérience ou diplômés), contenu obligatoire de la formation, durée pratique (14 heures), coût moyen, organismes certifiés Qualiopi, validité et sanction (jusqu'à 1 500 €) en cas d'absence de formation lors d'un contrôle DDPP. Base légale : article L.233-4 du Code rural, arrêté du 5 octobre 2011 modifié 12 février 2024.\n\n[EN] Returns the mandatory food-hygiene (HACCP) training rules for French commercial catering: who must train, exemptions, content, duration, cost, penalties. Legal basis: Code rural L.233-4, arrêté of 12 Feb 2024. Optional 'type_etablissement' (informational).",
+   "contenu": {
+    "data": {
+     "obligation_legale": {
+      "texte": "Au moins une personne au sein de chaque établissement de restauration commerciale doit pouvoir justifier d'une formation spécifique en matière d'hygiène alimentaire adaptée à l'activité. Cette obligation s'applique à tout établissement préparant, manipulant ou servant des denrées alimentaires en vue de leur consommation immédiate sur place ou à emporter.",
+      "base_legale": "Article L.233-4 du Code rural et de la pêche maritime — Arrêté du 5 octobre 2011 modifié par l'arrêté du 12 février 2024",
+      "entree_en_vigueur": "1er octobre 2012"
+     },
+     "qui_est_concerne": [
+      "Restauration traditionnelle (restaurants à table)",
+      "Restauration rapide (fast-food, sandwicheries)",
+      "Cafétérias et libres-services",
+      "Vente à emporter (sushi shops, dark kitchens, food courts)",
+      "Traiteurs (livraison ou réception)",
+      "Food trucks et points de vente mobiles",
+      "Salons de thé avec restauration légère"
+     ],
+     "qui_est_exempte": [
+      "Professionnels justifiant de 3 ans d'expérience à temps plein dans une entreprise du secteur alimentaire en tant que gestionnaire ou exploitant",
+      "Titulaires d'un diplôme ou titre de niveau V ou supérieur en rapport avec le secteur de l'alimentation et incluant une composante hygiène alimentaire (CAP/BEP/Bac Pro/BTS hôtellerie-restauration, métiers de bouche, cuisine, pâtisserie, boulangerie, charcuterie-traiteur)"
+     ],
+     "contenu_obligatoire": [
+      "Aliments et risques pour le consommateur (introduction à la microbiologie alimentaire)",
+      "Les dangers biologiques (bactéries, virus, parasites), chimiques (résidus, allergènes) et physiques (corps étrangers)",
+      "Principes fondamentaux de la méthode HACCP (les 7 principes et 12 étapes)",
+      "Mesures de surveillance et autocontrôles à mettre en place dans l'établissement",
+      "Plan de Maîtrise Sanitaire (PMS) — bonnes pratiques d'hygiène, traçabilité, gestion des non-conformités",
+      "Guide de Bonnes Pratiques d'Hygiène (GBPH) du secteur d'activité",
+      "Traçabilité alimentaire et procédure de retrait/rappel",
+      "Réglementation européenne (paquet hygiène : règlements CE 178/2002, 852/2004, 853/2004)"
+     ],
+     "duree_formation": {
+      "minimum_legal": "Pas de durée minimale imposée réglementairement par l'arrêté du 5 octobre 2011 — c'est l'organisme qui détermine la durée pour couvrir le programme obligatoire",
+      "pratique_courante": "14 heures (2 jours pleins) en présentiel — durée standard du marché",
+      "en_ligne": "7 à 14 heures en e-learning certifié (Qualiopi)"
+     },
+     "cout_moyen": {
+      "presentiel": "150 € à 400 € HT par personne",
+      "elearning": "80 € à 200 € HT par personne",
+      "financement": "Éligible OPCO Akto (HCR), AFDAS et FIF-PL pour les indépendants. Prise en charge totale ou partielle possible selon la situation et la branche professionnelle."
+     },
+     "validite": "Pas de durée de validité légale imposée. Renouvellement recommandé tous les 3 à 5 ans, ou en cas d'évolution réglementaire majeure (ex : nouvel arrêté du 12 février 2024).",
+     "sanction_absence": "Jusqu'à 1 500 € d'amende (contravention de 5e classe) en cas de contrôle DDPP sans présentation d'une attestation de formation HACCP. Peut entraîner une mise en demeure si combinée à d'autres manquements.",
+     "ou_se_former": {
+      "critere": "Choisir un organisme de formation déclaré et enregistré auprès de la DRAAF (Direction Régionale de l'Alimentation, de l'Agriculture et de la Forêt) de sa région. La certification Qualiopi est un gage supplémentaire de sérieux et conditionne la prise en charge OPCO.",
+      "recherche": "Liste officielle des organismes habilités via les DRAAF régionales ou data.gouv.fr. Sites spécialisés : CCI, CFA hôtellerie-restauration, organismes nationaux (CFEFP, AFPA).",
+      "validation": "À l'issue, l'organisme délivre une attestation de formation individuelle datée, signée et nominative — à conserver dans le PMS et présentable à l'inspecteur DDPP en cas de contrôle."
+     }
+    },
+    "type": "reglementaire_officiel",
+    "sources": [
+     {
+      "titre": "Arrêté du 5 octobre 2011 (modifié) — cahier des charges de la formation hygiène alimentaire en restauration commerciale",
+      "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000024686280"
+     },
+     {
+      "titre": "Arrêté du 12 février 2024 — cahier des charges de la formation hygiène alimentaire (texte en vigueur, abroge l'arrêté du 5 octobre 2011)",
+      "url": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000049171606"
+     },
+     {
+      "titre": "Code rural et de la pêche maritime — Titre III, qualité nutritionnelle et sécurité sanitaire des aliments (art. L.230-2 à L.237-4)",
+      "url": "https://www.legifrance.gouv.fr/codes/id/LEGISCTA000022657336"
+     },
+     {
+      "titre": "Décret n° 2011-731 du 24 juin 2011 — obligation de formation en hygiène alimentaire de certains établissements de restauration commerciale",
+      "url": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000024266465"
+     }
+    ],
+    "derniere_verification": "2026-05-21",
+    "version_schema": "2.0",
+    "prochaine_revision": "2026-11-21",
+    "source": "Frigolog — frigolog.fr",
+    "avertissement": "Ces informations sont fournies à titre indicatif. Consultez la réglementation officielle via les liens du champ 'sources' (Légifrance, EUR-Lex, DGAL, DGCCRF) et vérifiez les tarifs sur les sites des éditeurs."
+   }
+  },
+  {
+   "outil": "get_actions_correctives",
+   "description": "Retourne les actions correctives réglementaires à mettre en place face aux 6 non-conformités les plus fréquentes en restauration : que faire en cas de frigo trop chaud, produit périmé en stock, rupture de chaîne du froid à la réception, livraison non conforme, présence de nuisibles ou plan de nettoyage non réalisé. Pour chaque non-conformité : action immédiate (30 premières minutes), action documentaire à inscrire dans le PMS, délai de résolution, conditions d'alerte DDPP et exemple concret de fiche de correction.\n\n[EN] Returns regulatory corrective actions for the 6 most common catering non-conformities (fridge too warm, expired product, cold-chain break, non-compliant delivery, pests, cleaning not done): immediate action, PMS documentation, deadlines, when to alert the DDPP. Optional 'type_non_conformite'.",
+   "contenu": {
+    "data": [
+     {
+      "id": "temperature",
+      "intitule": "Température frigo trop haute (> +4 °C en positif, > -18 °C en négatif)",
+      "gravite": "moyenne",
+      "action_immediate": [
+       "Vérifier que le frigo n'est pas en mode dégivrage automatique (cycle normal de 30 min à 2 h)",
+       "Contrôler la fermeture de la porte et la présence d'éventuelles ouvertures prolongées récentes",
+       "Vérifier l'encombrement intérieur (l'air doit circuler — ne pas obstruer les bouches de soufflage)",
+       "Si l'écart persiste plus de 30 min : déplacer les produits sensibles dans un autre frigo conforme",
+       "Noter la température mesurée, l'heure, l'opérateur et l'action prise"
+      ],
+      "action_documentaire": [
+       "Inscrire l'incident dans le registre des non-conformités du PMS (date, heure, équipement, T° relevée)",
+       "Renseigner l'action corrective appliquée (dégivrage, maintenance, déplacement produits)",
+       "Conserver la fiche signée 12 mois minimum"
+      ],
+      "delai_resolution": "Retour à T° conforme sous 2 h maximum. Au-delà : intervention SAV obligatoire.",
+      "quand_alerter_ddpp": "Pas d'obligation de signalement DDPP pour un dépassement ponctuel résolu rapidement. Signalement obligatoire si T° > +8 °C maintenue plus de 2 h avec produits à risque (viandes, produits laitiers, produits de la mer) — risque de TIAC.",
+      "exemple_fiche_correction": "Le 06/05/2026 à 09:15, frigo Cuisine 2 relevé à +7,2 °C. Vérification : porte fermée, dégivrage non en cours. Produits déplacés vers frigo Réserve 1 (+2,8 °C). Appel SAV à 09:30. Réparation 14:00 — joint de porte HS remplacé. Retour T° conforme +3,1 °C à 15:30. Signé : Nadia, cheffe de partie.",
+      "sources": [
+       {
+        "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+        "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+       },
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "id": "dlc_depassee",
+      "intitule": "Produit périmé découvert en stock (DLC dépassée)",
+      "gravite": "moyenne",
+      "action_immediate": [
+       "Retirer immédiatement le produit du stock et l'isoler en zone DLC dépassée (étagère identifiée 'À DÉTRUIRE')",
+       "Vérifier l'ensemble des produits de la même famille pour exclure une dérive systémique",
+       "Détruire ou retourner au fournisseur selon les conditions du contrat",
+       "Documenter la destruction (registre, ou en cas de retour : bon de retour signé)"
+      ],
+      "action_documentaire": [
+       "Inscrire dans le registre du PMS : date, produit, lot, quantité, DLC, action (destruction/retour)",
+       "Signer la fiche par le manager et l'opérateur",
+       "Conserver les bons de destruction ou retour fournisseur 12 mois"
+      ],
+      "delai_resolution": "Retrait sous 30 minutes. Destruction documentée sous 24 h.",
+      "quand_alerter_ddpp": "Pas de signalement DDPP requis si retrait en interne avant service. Obligation de retrait actif et de signalement à la DGCCRF (formulaire SignalConso) si le produit a été servi à des consommateurs.",
+      "exemple_fiche_correction": "Le 06/05/2026, découverte en chambre froide d'un lot de saumon fumé Marque X — DLC 04/05/2026 dépassée. Quantité : 1,2 kg. Retrait immédiat 11:20. Destruction documentée 11:45 (poubelle scellée + photo). Vérification de tous les saumons : aucun autre produit hors DLC. Signé : Karim, second.",
+      "sources": [
+       {
+        "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+        "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+       },
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "id": "rupture_chaine_froid",
+      "intitule": "Rupture de chaîne du froid à la réception (livraison à T° excessive)",
+      "gravite": "critique",
+      "action_immediate": [
+       "Refuser la livraison sur place, ne pas signer le bon de livraison ou y mentionner explicitement la non-conformité",
+       "Mesurer la température au cœur du produit avec un thermomètre étalonné (ne pas se fier à la T° d'air seule)",
+       "Photographier le bon de livraison, la T° relevée et l'état de l'emballage",
+       "Contacter immédiatement le fournisseur pour formaliser le refus",
+       "Si la livraison ne peut être refusée totalement : mettre en quarantaine et déclencher analyse"
+      ],
+      "action_documentaire": [
+       "Annoter le bon de livraison : 'Refusé pour non-conformité — T° relevée X °C à H:MM' + signature opérateur",
+       "Conserver une copie du BL avec annotations dans le PMS (registre des non-conformités fournisseur)",
+       "Envoyer un email récapitulatif au fournisseur sous 24 h avec photos en pièces jointes"
+      ],
+      "delai_resolution": "Refus immédiat à réception. Litige fournisseur réglé sous 7 jours.",
+      "quand_alerter_ddpp": "Pas d'alerte DDPP si refus immédiat. Alerte DGCCRF si défaillance répétée du fournisseur (3 incidents en 6 mois) ou si suspicion de fraude organisée.",
+      "exemple_fiche_correction": "Le 06/05/2026, livraison fournisseur Métro 08:30. Carton de viandes fraîches : T° au cœur d'un steak +9,4 °C (limite : +4 °C). Livraison refusée sur place, BL annoté 'Refus chaîne du froid rompue +9,4 °C 08:30 — Naïm'. Photos prises. Email envoyé à Métro 09:15 — accord pour avoir + relivraison conforme à 14:00.",
+      "sources": [
+       {
+        "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+        "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+       },
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "id": "livraison_non_conforme",
+      "intitule": "Livraison non conforme (emballage abîmé, DLC trop courte, produit absent ou erroné)",
+      "gravite": "moyenne",
+      "action_immediate": [
+       "Identifier précisément la non-conformité (emballage percé, DLC < 5 jours, mauvaise référence, quantité erronée)",
+       "Décider du sort du produit : refus total, refus partiel ou acceptation avec réserve",
+       "Annoter le bon de livraison avec la nature précise de la réserve",
+       "Photographier le défaut constaté",
+       "Contacter le fournisseur sous 24 h"
+      ],
+      "action_documentaire": [
+       "Bon de livraison signé avec mention 'sous réserve' et description précise",
+       "Conserver les photos dans le dossier traçabilité fournisseur",
+       "Inscrire au registre des non-conformités fournisseurs (PMS)"
+      ],
+      "delai_resolution": "Litige réglé sous 7 jours ouvrés.",
+      "quand_alerter_ddpp": "Pas d'alerte DDPP requise. Alerte DGCCRF si fraude commerciale soupçonnée (faux étiquetage, faux poids, faux origine).",
+      "exemple_fiche_correction": "Le 06/05/2026, livraison fruits & légumes Pomona. Lot de fraises gariguette commandé 10 kg, livré 7 kg avec une barquette écrasée. BL annoté 'Réserve : 3 kg manquants + 1 barquette écrasée'. Photo jointe. Avoir fournisseur reçu sous 48 h.",
+      "sources": [
+       {
+        "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+        "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+       },
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "id": "nuisibles",
+      "intitule": "Présence active de nuisibles (rongeurs, blattes, mouches en quantité)",
+      "gravite": "critique",
+      "action_immediate": [
+       "Fermer immédiatement la zone concernée et retirer tous les produits exposés",
+       "Détruire les denrées potentiellement contaminées (contact direct ou proximité immédiate)",
+       "Contacter en urgence le prestataire de désinsectisation/dératisation (intervention sous 24 h)",
+       "Procéder à un nettoyage et désinfection renforcés de la zone (sols, surfaces, matériel)",
+       "Identifier et boucher les points d'entrée potentiels (fissures, conduits, sous-portes)"
+      ],
+      "action_documentaire": [
+       "Registre des incidents : date, nature de l'infestation (espèce, ampleur), zone touchée, produits détruits",
+       "Bon d'intervention du prestataire conservé en pièce justificative",
+       "Mise à jour du contrat de lutte contre les nuisibles (renforcement de la fréquence)"
+      ],
+      "delai_resolution": "Intervention prestataire sous 24 h. Levée de l'incident sous 7 jours après vérification de l'absence de récidive.",
+      "quand_alerter_ddpp": "Obligation de signalement DDPP si infestation active majeure non maîtrisée sous 48 h, ou si présence dans une zone de production. Signalement systématique à l'ARS en cas de TIAC associée.",
+      "exemple_fiche_correction": "Le 06/05/2026 18:00, présence de souris constatée en réserve sèche (crottes + sachet de riz percé). Zone fermée immédiatement. 3 sacs de riz et 2 paquets de pâtes détruits. Appel ATBlatt 18:15 — intervention 09:00 le 07/05. Pose de pièges + bouchage d'un trou en plinthe. Re-nettoyage complet de la réserve. Suivi 7 jours sans nouvelle trace.",
+      "sources": [
+       {
+        "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+        "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+       },
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     },
+     {
+      "id": "nettoyage",
+      "intitule": "Plan de nettoyage non réalisé ou retardé",
+      "gravite": "faible",
+      "action_immediate": [
+       "Identifier le motif du retard ou de l'omission (oubli, sous-effectif, panne de matériel, indisponibilité d'un produit)",
+       "Effectuer le nettoyage manquant dès que possible — au plus tard avant la prochaine prise de service",
+       "Si la zone a été utilisée entre-temps : nettoyage renforcé (désinfection complète + rinçage à l'eau chaude)"
+      ],
+      "action_documentaire": [
+       "Inscrire dans le plan de nettoyage la mention 'rattrapage' avec la cause du retard",
+       "Signature de l'opérateur ayant effectué le rattrapage",
+       "Si récurrence : revoir l'organisation de l'équipe ou renforcer la planification"
+      ],
+      "delai_resolution": "Rattrapage sous 24 h maximum.",
+      "quand_alerter_ddpp": "Aucune obligation de signalement. Mais en cas de contrôle DDPP, un retard isolé documenté avec rattrapage est mieux toléré qu'une absence de traçabilité.",
+      "exemple_fiche_correction": "Le 06/05/2026, plan de nettoyage du soir non signé pour la plonge (cause : oubli, fin de service tardive). Constaté le 07/05 au matin. Nettoyage renforcé effectué 07:30 — désinfection complète + brossage évier. Signé : Pauline, plongeuse. Note : revoir checklist fin de service.",
+      "sources": [
+       {
+        "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+        "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+       },
+       {
+        "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+        "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+       }
+      ]
+     }
+    ],
+    "type": "guide_pratique",
+    "sources": [
+     {
+      "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+      "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+     },
+     {
+      "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+      "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+     }
+    ],
+    "derniere_verification": "2026-05-21",
+    "version_schema": "2.0",
+    "prochaine_revision": "2026-11-21",
+    "source": "Frigolog — frigolog.fr",
+    "avertissement": "Ces informations sont fournies à titre indicatif. Consultez la réglementation officielle via les liens du champ 'sources' (Légifrance, EUR-Lex, DGAL, DGCCRF) et vérifiez les tarifs sur les sites des éditeurs."
+   }
+  },
+  {
+   "outil": "get_plan_nettoyage_type",
+   "description": "Retourne un plan de nettoyage modèle pour un type d'établissement alimentaire en France, conforme au Guide des Bonnes Pratiques d'Hygiène (GBPH) et au règlement (CE) n° 852/2004. Détaille les postes de nettoyage par zone (cuisine, plonge, salle, réserve, sanitaires), la fréquence (après chaque service, quotidienne, hebdomadaire, mensuelle), le produit recommandé (détergent, désinfectant, dégraissant), la méthode (protocole de nettoyage-désinfection en 5 étapes), et le critère de vérification visuelle ou par test de surface. Couvre restaurant, boulangerie, boucherie, fromagerie, poissonnerie, traiteur, glacier, pizzeria.\n\n[EN] Returns a model cleaning plan for a French food-establishment type (GBPH-compliant): cleaning stations by zone, frequency, recommended product, method (5-step protocol), verification criterion. Covers restaurant, bakery, butcher, cheese shop, fishmonger, caterer, ice-cream maker, pizzeria. Arg 'type_etablissement'.",
+   "contenu": {
+    "data": {
+     "type_etablissement": "restaurant",
+     "postes": [
+      {
+       "nom": "Plans de travail et surfaces de découpe",
+       "zone": "Production",
+       "frequence": "Après chaque usage et en fin de service",
+       "produit_type": "Détergent-désinfectant contact alimentaire",
+       "methode": "Bionettoyage en 5 étapes ; insister sur les angles et joints ; désinfectant rincé si requis",
+       "verification": "Surface visuellement propre, absence de résidus gras (contrôle visuel ; test de surface ATP possible)"
+      },
+      {
+       "nom": "Sols de la zone de production",
+       "zone": "Cuisine / Production",
+       "frequence": "Quotidienne (fin de service)",
+       "produit_type": "Détergent dégraissant alcalin",
+       "methode": "Balayage humide puis lavage à la raclette, rinçage ; siphons nettoyés",
+       "verification": "Sol propre, siphons dégagés, absence d'eau stagnante"
+      },
+      {
+       "nom": "Réfrigérateurs et chambres froides (intérieur)",
+       "zone": "Stockage froid",
+       "frequence": "Hebdomadaire et dès souillure",
+       "produit_type": "Détergent-désinfectant contact alimentaire",
+       "methode": "Vidage, nettoyage parois/clayettes/joints, désinfection, rinçage ; relevé de température contrôlé",
+       "verification": "Parois et joints propres, absence de moisissure, température conforme (≤ +4 °C positif / ≤ -18 °C négatif)"
+      },
+      {
+       "nom": "Plonge et éviers",
+       "zone": "Plonge",
+       "frequence": "Après chaque service",
+       "produit_type": "Détergent dégraissant",
+       "methode": "Récurage des bacs, rinçage, désinfection ; détartrage périodique",
+       "verification": "Bacs propres, absence de dépôt gras ou calcaire"
+      },
+      {
+       "nom": "Poubelles et local déchets",
+       "zone": "Zone déchets",
+       "frequence": "Quotidienne",
+       "produit_type": "Détergent-désinfectant",
+       "methode": "Lavage intérieur/extérieur des contenants, désinfection ; sacs changés",
+       "verification": "Contenants propres, couvercles fonctionnels, absence d'odeur et de nuisibles"
+      },
+      {
+       "nom": "Lave-mains du personnel",
+       "zone": "Toutes zones",
+       "frequence": "Quotidienne (plusieurs fois par jour)",
+       "produit_type": "Détergent-désinfectant",
+       "methode": "Nettoyage robinetterie (commande non manuelle), réapprovisionnement savon et essuie-mains",
+       "verification": "Savon bactéricide et essuie-mains à usage unique disponibles, robinet propre"
+      },
+      {
+       "nom": "Sanitaires",
+       "zone": "Sanitaires",
+       "frequence": "Quotidienne (au minimum 1 fois par jour)",
+       "produit_type": "Détergent-désinfectant sanitaire",
+       "methode": "Nettoyage cuvettes, sols, points de contact (poignées) ; aération",
+       "verification": "Propreté visuelle, consommables réapprovisionnés, séparation stricte des sanitaires et de la zone alimentaire"
+      },
+      {
+       "nom": "Hotte et filtres d'extraction",
+       "zone": "Cuisson",
+       "frequence": "Filtres : hebdomadaire ; conduits : annuel (entreprise spécialisée)",
+       "produit_type": "Dégraissant alcalin fort",
+       "methode": "Démontage des filtres, trempage dégraissant, rinçage, séchage",
+       "verification": "Filtres dégraissés, absence d'accumulation de graisse (risque incendie et contamination)"
+      },
+      {
+       "nom": "Matériel de cuisson (fours, plaques, friteuses)",
+       "zone": "Cuisson",
+       "frequence": "Quotidienne",
+       "produit_type": "Dégraissant alimentaire",
+       "methode": "Grattage à chaud, dégraissage, rinçage ; vidange et filtration des huiles selon suivi",
+       "verification": "Absence de résidus carbonisés ; huile de friture < 25 % de composés polaires"
+      },
+      {
+       "nom": "Salle, tables et banquettes",
+       "zone": "Salle",
+       "frequence": "Après chaque service",
+       "produit_type": "Détergent-désinfectant tables",
+       "methode": "Essuyage des tables et points de contact, nettoyage du sol de salle",
+       "verification": "Tables et sol de salle propres"
+      },
+      {
+       "nom": "Petit matériel (trancheur, robot, batteur)",
+       "zone": "Production",
+       "frequence": "Après chaque usage",
+       "produit_type": "Détergent-désinfectant (pièces démontables)",
+       "methode": "Démontage, bionettoyage de chaque pièce, séchage à l'air libre",
+       "verification": "Pièces démontées propres et sèches, lame de trancheur désinfectée"
+      },
+      {
+       "nom": "Réserve sèche et étagères",
+       "zone": "Réserve",
+       "frequence": "Mensuelle",
+       "produit_type": "Détergent",
+       "methode": "Dépoussiérage et lavage des étagères ; vérification de la rotation des stocks (FEFO)",
+       "verification": "Étagères propres, denrées non au sol, absence de nuisibles"
+      }
+     ],
+     "protocole_5_etapes": "Protocole de nettoyage-désinfection en 5 étapes (bionettoyage) : 1) Pré-nettoyage — élimination des déchets et résidus visibles (grattage, balayage humide, trempage si besoin) ; 2) Nettoyage — application d'un détergent adapté, action mécanique (brosse, lavette), respect du temps de contact ; 3) Rinçage intermédiaire à l'eau potable pour éliminer le détergent ; 4) Désinfection — application d'un désinfectant agréé contact alimentaire (norme EN 13697 / EN 1276), respect de la concentration et du temps d'action indiqués par le fabricant ; 5) Rinçage final à l'eau potable (si le désinfectant l'exige) puis séchage à l'air libre ou essuie-tout à usage unique. Toute surface en contact avec les aliments requiert un bionettoyage (nettoyage + désinfection).",
+     "source": "GBPH du secteur (DGAL) + Règlement (CE) n° 852/2004 annexe II (locaux, équipements, nettoyage/désinfection). Plan modèle indicatif — à adapter au plan de maîtrise sanitaire (PMS) de l'établissement.",
+     "note": "Type « (non précisé) » non reconnu : plan générique « restaurant » fourni. Types couverts : restaurant, boulangerie, boucherie, fromagerie, poissonnerie, traiteur, glacier, pizzeria."
+    },
+    "type": "guide_pratique",
+    "sources": [
+     {
+      "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+      "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+     },
+     {
+      "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+      "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+     },
+     {
+      "titre": "Règlement (CE) n° 852/2004 — hygiène des denrées alimentaires",
+      "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0852"
+     }
+    ],
+    "derniere_verification": "2026-05-21",
+    "version_schema": "2.0",
+    "prochaine_revision": "2026-11-21",
+    "source": "Frigolog — frigolog.fr",
+    "avertissement": "Ces informations sont fournies à titre indicatif. Consultez la réglementation officielle via les liens du champ 'sources' (Légifrance, EUR-Lex, DGAL, DGCCRF) et vérifiez les tarifs sur les sites des éditeurs."
+   }
+  },
+  {
+   "outil": "get_checklist_ouverture_etablissement",
+   "description": "Retourne la checklist complète de vérification à réaliser avant l'ouverture quotidienne d'un établissement alimentaire en France, conforme aux bonnes pratiques HACCP et au Guide des Bonnes Pratiques d'Hygiène. Couvre les contrôles visuels (propreté, état des équipements), les relevés de température (frigos, chambres froides, vitrines), les vérifications de stock (DLC, produits rappelés), l'hygiène du personnel (tenue, lavage des mains, certificats médicaux) et la préparation documentaire (classeur HACCP accessible, affichage allergènes). Par type d'établissement.\n\n[EN] Returns the full daily pre-opening checklist for a French food establishment (HACCP/GBPH): visual checks, temperature readings, stock checks (DLC, recalled products), staff hygiene, document readiness. Optional 'type_etablissement' adds trade-specific items.",
+   "contenu": {
+    "data": {
+     "type_etablissement": "générique",
+     "checklist": [
+      {
+       "categorie": "Contrôles visuels",
+       "verification": "Propreté générale des locaux (sols, surfaces, plans de travail)",
+       "critere_ok": "Aucune souillure visible ; plan de nettoyage de la veille réalisé et signé",
+       "action_si_ko": "Refaire le nettoyage manquant et le tracer avant ouverture",
+       "obligatoire": true
+      },
+      {
+       "categorie": "Contrôles visuels",
+       "verification": "État et propreté des équipements (fours, frigos, plonge)",
+       "critere_ok": "Équipements propres et fonctionnels",
+       "action_si_ko": "Nettoyer ou signaler la panne ; isoler l'équipement non conforme",
+       "obligatoire": true
+      },
+      {
+       "categorie": "Contrôles visuels",
+       "verification": "Absence de nuisibles (pièges, traces, déjections)",
+       "critere_ok": "Aucune trace ; pièges en place et entretenus",
+       "action_si_ko": "Isoler la zone, retirer les denrées exposées, contacter le prestataire de dératisation",
+       "obligatoire": true
+      },
+      {
+       "categorie": "Contrôles visuels",
+       "verification": "Fonctionnement des lave-mains (eau chaude, savon, essuie-mains)",
+       "critere_ok": "Savon bactéricide et essuie-mains à usage unique disponibles, eau chaude",
+       "action_si_ko": "Réapprovisionner avant la prise de poste",
+       "obligatoire": true
+      },
+      {
+       "categorie": "Contrôles visuels",
+       "verification": "Évacuation des déchets de la veille / local déchets",
+       "critere_ok": "Local déchets propre, poubelles vidées, couvercles en place",
+       "action_si_ko": "Évacuer et nettoyer le local déchets",
+       "obligatoire": false
+      },
+      {
+       "categorie": "Relevés de température",
+       "verification": "Relevé des réfrigérateurs et armoires positives",
+       "critere_ok": "≤ +4 °C",
+       "action_si_ko": "Déplacer les denrées sensibles vers une enceinte conforme, déclencher l'action corrective, appeler le SAV",
+       "obligatoire": true
+      },
+      {
+       "categorie": "Relevés de température",
+       "verification": "Relevé des congélateurs et chambres négatives",
+       "critere_ok": "≤ -18 °C",
+       "action_si_ko": "Vérifier l'état des denrées, action corrective, ne pas recongeler un produit décongelé",
+       "obligatoire": true
+      },
+      {
+       "categorie": "Relevés de température",
+       "verification": "Relevé des vitrines réfrigérées",
+       "critere_ok": "≤ +4 °C (≤ +8 °C pour fromages affinés)",
+       "action_si_ko": "Régler la vitrine, déplacer les denrées",
+       "obligatoire": true
+      },
+      {
+       "categorie": "Relevés de température",
+       "verification": "Thermomètre / sonde fonctionnel et étalonné",
+       "critere_ok": "Thermomètre opérationnel, étalonnage à jour",
+       "action_si_ko": "Utiliser un thermomètre de secours, planifier l'étalonnage",
+       "obligatoire": true
+      },
+      {
+       "categorie": "Vérifications de stock",
+       "verification": "Contrôle des DLC/DLUO des produits ouverts et stockés",
+       "critere_ok": "Aucun produit périmé ; entamés étiquetés et datés",
+       "action_si_ko": "Retirer immédiatement et tracer les produits périmés (registre PMS)",
+       "obligatoire": true
+      },
+      {
+       "categorie": "Vérifications de stock",
+       "verification": "Rotation des stocks selon le principe FEFO (premier périmé, premier sorti)",
+       "critere_ok": "Produits classés par DLC croissante",
+       "action_si_ko": "Reclasser les stocks",
+       "obligatoire": false
+      },
+      {
+       "categorie": "Vérifications de stock",
+       "verification": "Vérification des produits faisant l'objet d'un rappel (RappelConso)",
+       "critere_ok": "Aucun lot concerné par un rappel en cours",
+       "action_si_ko": "Isoler et retirer le lot, appliquer la procédure de retrait/rappel",
+       "obligatoire": true
+      },
+      {
+       "categorie": "Vérifications de stock",
+       "verification": "État des stocks et conformité des denrées (aspect, emballage)",
+       "critere_ok": "Stock suffisant, denrées conformes",
+       "action_si_ko": "Écarter les denrées non conformes, commander le réassort",
+       "obligatoire": false
+      },
+      {
+       "categorie": "Hygiène du personnel",
+       "verification": "Tenue de travail propre et complète (coiffe, tablier, chaussures)",
+       "critere_ok": "Tenue propre, cheveux couverts, pas de tenue de ville en production",
+       "action_si_ko": "Changer de tenue avant la prise de poste",
+       "obligatoire": true
+      },
+      {
+       "categorie": "Hygiène du personnel",
+       "verification": "Lavage des mains à la prise de poste",
+       "critere_ok": "Lavage effectué, ongles courts et sans vernis, pas de bijoux aux mains",
+       "action_si_ko": "Rappeler et afficher la procédure de lavage des mains",
+       "obligatoire": true
+      },
+      {
+       "categorie": "Hygiène du personnel",
+       "verification": "État de santé / plaies couvertes",
+       "critere_ok": "Personnel apte ; plaies protégées par pansement détectable (bleu)",
+       "action_si_ko": "Écarter de la manipulation des denrées tout personnel symptomatique (gastro, plaie infectée)",
+       "obligatoire": true
+      },
+      {
+       "categorie": "Hygiène du personnel",
+       "verification": "Attestations de formation HACCP et aptitudes médicales à jour",
+       "critere_ok": "Au moins une personne formée à l'hygiène alimentaire présente ; suivi médical à jour",
+       "action_si_ko": "Régulariser la formation et le suivi médical",
+       "obligatoire": true
+      },
+      {
+       "categorie": "Préparation documentaire",
+       "verification": "Classeur / Plan de Maîtrise Sanitaire (PMS) accessible et à jour",
+       "critere_ok": "PMS présent, à jour, daté et signé",
+       "action_si_ko": "Mettre à jour et compléter le PMS",
+       "obligatoire": true
+      },
+      {
+       "categorie": "Préparation documentaire",
+       "verification": "Affichage / disponibilité de l'information sur les allergènes",
+       "critere_ok": "Information allergènes disponible pour la clientèle (carte ou support écrit)",
+       "action_si_ko": "Mettre l'information allergènes à disposition avant le service",
+       "obligatoire": true
+      },
+      {
+       "categorie": "Préparation documentaire",
+       "verification": "Registres de traçabilité fournisseurs disponibles (bons de livraison, étiquettes)",
+       "critere_ok": "Documents conservés et classés (≥ 6 mois)",
+       "action_si_ko": "Réclamer et archiver les justificatifs de traçabilité",
+       "obligatoire": true
+      },
+      {
+       "categorie": "Préparation documentaire",
+       "verification": "Plan de nettoyage du jour prêt et tâches attribuées",
+       "critere_ok": "Plan disponible, opérateurs désignés",
+       "action_si_ko": "Réorganiser l'équipe et planifier les tâches",
+       "obligatoire": false
+      }
+     ],
+     "nombre_items": 21,
+     "duree_estimee_minutes": 25,
+     "source": "Bonnes pratiques HACCP + Guide des Bonnes Pratiques d'Hygiène (DGAL) + Arrêté du 21 décembre 2009 (relevés de température) + Règlement (CE) n° 852/2004. Checklist modèle indicative — à adapter au PMS de l'établissement."
+    },
+    "type": "guide_pratique",
+    "sources": [
+     {
+      "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+      "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+     },
+     {
+      "titre": "Arrêté du 21 décembre 2009 relatif aux règles sanitaires applicables aux activités de commerce de détail, d'entreposage et de transport de produits d'origine animale",
+      "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000021573483"
+     },
+     {
+      "titre": "Règlement (CE) n° 852/2004 — hygiène des denrées alimentaires",
+      "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0852"
+     }
+    ],
+    "derniere_verification": "2026-05-21",
+    "version_schema": "2.0",
+    "prochaine_revision": "2026-11-21",
+    "source": "Frigolog — frigolog.fr",
+    "avertissement": "Ces informations sont fournies à titre indicatif. Consultez la réglementation officielle via les liens du champ 'sources' (Légifrance, EUR-Lex, DGAL, DGCCRF) et vérifiez les tarifs sur les sites des éditeurs."
+   }
+  },
+  {
+   "outil": "get_guide_bonnes_pratiques_secteur",
+   "description": "Retourne la référence au Guide des Bonnes Pratiques d'Hygiène (GBPH) officiel pour un secteur des métiers de bouche en France. Les GBPH sont validés par les ministères de l'Agriculture et de la Santé et publiés par les fédérations professionnelles. Détaille pour chaque secteur : titre du GBPH, éditeur/fédération, année de publication, prix, nombre de pages, lien officiel, résumé des points clés couverts, et lien avec les obligations réglementaires (CE 852/2004 notamment). Quand aucun GBPH validé distinct n'existe (boulangerie, fromagerie, traiteur), le champ note l'indique explicitement.\n\n[EN] Returns the official Good Hygiene Practice Guide (GBPH) reference for a French food-trade sector: title, editor/federation, year, price, pages, link, key points, related regulatory obligations. Sectors with no distinct validated guide (bakery, cheese, caterer) are flagged. Arg 'secteur'.",
+   "contenu": {
+    "restauration": {
+     "data": {
+      "secteur": "restauration",
+      "titre": "Guide de bonnes pratiques d'hygiène — Restaurateur",
+      "editeur": "CGAD (Confédération générale de l'alimentation en détail)",
+      "annee": 2015,
+      "pages": "à vérifier",
+      "prix_eur": "Gratuit en téléchargement sur agriculture.gouv.fr ; version imprimée payante via La Documentation française (vie-publique.fr/catalogue) — prix à vérifier",
+      "lien_documentation_francaise": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph",
+      "resume": "Guide de référence de la restauration commerciale traditionnelle. Couvre la marche en avant, la maîtrise des températures (réception, stockage, cuisson, refroidissement, service), l'hygiène du personnel et des locaux, le plan de nettoyage-désinfection, la traçabilité et la gestion des non-conformités. Sert de base à la rédaction du PMS.",
+      "points_cles": [
+       "Marche en avant et séparation secteur propre / secteur souillé",
+       "Maîtrise des températures et de la chaîne du froid",
+       "Refroidissement rapide (+63 °C → +10 °C en moins de 2 h)",
+       "Plan de nettoyage-désinfection et autocontrôles",
+       "Traçabilité et gestion des allergènes"
+      ],
+      "obligations_liees": [
+       "Règlement (CE) n° 852/2004 — plan de maîtrise sanitaire (PMS) et bonnes pratiques d'hygiène (présomption de conformité)",
+       "Arrêté du 21 décembre 2009 — températures de conservation et relevés",
+       "Règlement (CE) n° 178/2002 — traçabilité (art. 18) et procédures de retrait/rappel (art. 19)",
+       "Règlement (UE) n° 1169/2011 (INCO) — information du consommateur sur les allergènes",
+       "Décret n° 2011-731 / arrêté du 12 février 2024 — formation hygiène alimentaire obligatoire"
+      ],
+      "source": "Liste officielle des GBPH validés — Ministère de l'Agriculture et de la Souveraineté alimentaire (agriculture.gouv.fr). Les GBPH sont d'application volontaire mais leur usage vaut présomption de conformité au règlement (CE) n° 852/2004."
+     },
+     "type": "guide_pratique",
+     "sources": [
+      {
+       "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+       "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+      },
+      {
+       "titre": "Règlement (CE) n° 852/2004 — hygiène des denrées alimentaires",
+       "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0852"
+      }
+     ],
+     "derniere_verification": "2026-05-21",
+     "version_schema": "2.0",
+     "prochaine_revision": "2026-11-21",
+     "source": "Frigolog — frigolog.fr",
+     "avertissement": "Ces informations sont fournies à titre indicatif. Consultez la réglementation officielle via les liens du champ 'sources' (Légifrance, EUR-Lex, DGAL, DGCCRF) et vérifiez les tarifs sur les sites des éditeurs."
+    },
+    "boulangerie": {
+     "data": {
+      "secteur": "boulangerie",
+      "titre": "GBPH boulangerie — non publié à ce jour dans la liste officielle",
+      "editeur": "à vérifier",
+      "annee": "à vérifier",
+      "pages": "à vérifier",
+      "prix_eur": "Gratuit en téléchargement sur agriculture.gouv.fr ; version imprimée payante via La Documentation française (vie-publique.fr/catalogue) — prix à vérifier",
+      "lien_documentation_francaise": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph",
+      "resume": "Aucun GBPH « boulangerie » distinct ne figure dans la liste officielle des guides validés à la date de vérification. Les boulangeries-pâtisseries appliquent les principes du règlement (CE) n° 852/2004 (PMS) ; pour la partie pâtisserie/crèmes, se référer aux pratiques du secteur pâtisserie et à la maîtrise des produits à la crème (DLC courte, +3 °C).",
+      "points_cles": [
+       "Application du règlement (CE) n° 852/2004 et rédaction d'un PMS",
+       "Maîtrise des préparations à la crème (risque Salmonella, +3 °C, DLC ≤ 48 h)",
+       "Hygiène du pétrin, du four et de la chambre de pousse",
+       "Gestion des allergènes (gluten, œufs, lait, fruits à coque)",
+       "Conservation des matières premières (farine, levure, beurre)"
+      ],
+      "obligations_liees": [
+       "Règlement (CE) n° 852/2004 — plan de maîtrise sanitaire (PMS) et bonnes pratiques d'hygiène (présomption de conformité)",
+       "Arrêté du 21 décembre 2009 — températures de conservation et relevés",
+       "Règlement (CE) n° 178/2002 — traçabilité (art. 18) et procédures de retrait/rappel (art. 19)",
+       "Règlement (UE) n° 1169/2011 (INCO) — information du consommateur sur les allergènes",
+       "Décret n° 2011-731 / arrêté du 12 février 2024 — formation hygiène alimentaire obligatoire"
+      ],
+      "note": "À vérifier : aucun GBPH boulangerie validé identifié. Consulter la liste officielle à jour sur agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph.",
+      "source": "Liste officielle des GBPH validés — Ministère de l'Agriculture et de la Souveraineté alimentaire (agriculture.gouv.fr). Les GBPH sont d'application volontaire mais leur usage vaut présomption de conformité au règlement (CE) n° 852/2004."
+     },
+     "type": "guide_pratique",
+     "sources": [
+      {
+       "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+       "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+      },
+      {
+       "titre": "Règlement (CE) n° 852/2004 — hygiène des denrées alimentaires",
+       "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0852"
+      }
+     ],
+     "derniere_verification": "2026-05-21",
+     "version_schema": "2.0",
+     "prochaine_revision": "2026-11-21",
+     "source": "Frigolog — frigolog.fr",
+     "avertissement": "Ces informations sont fournies à titre indicatif. Consultez la réglementation officielle via les liens du champ 'sources' (Légifrance, EUR-Lex, DGAL, DGCCRF) et vérifiez les tarifs sur les sites des éditeurs."
+    },
+    "boucherie": {
+     "data": {
+      "secteur": "boucherie",
+      "titre": "Guide de bonnes pratiques d'hygiène — Boucherie (plusieurs tomes)",
+      "editeur": "CFBCT (Confédération française de la boucherie, boucherie-charcuterie, traiteurs), via CGAD",
+      "annee": "1999 (révisions ultérieures — à vérifier)",
+      "pages": "à vérifier",
+      "prix_eur": "Gratuit en téléchargement sur agriculture.gouv.fr ; version imprimée payante via La Documentation française (vie-publique.fr/catalogue) — prix à vérifier",
+      "lien_documentation_francaise": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph",
+      "resume": "Guide dédié à la boucherie artisanale de détail : réception et traçabilité des viandes, maîtrise du froid, découpe et transformation, hygiène du matériel (billot, hachoir, trancheur), gestion des sous-produits animaux. Aborde l'agrément sanitaire en cas de cession à d'autres commerces.",
+      "points_cles": [
+       "Traçabilité des viandes (lot, origine, abattoir)",
+       "Maîtrise du froid en découpe (≤ +4 °C, ≤ +2 °C recommandé)",
+       "Hygiène et bionettoyage du matériel de découpe",
+       "Gestion des sous-produits animaux (catégories C1/C2/C3)",
+       "Agrément sanitaire CE si transformation et cession"
+      ],
+      "obligations_liees": [
+       "Règlement (CE) n° 852/2004 — plan de maîtrise sanitaire (PMS) et bonnes pratiques d'hygiène (présomption de conformité)",
+       "Arrêté du 21 décembre 2009 — températures de conservation et relevés",
+       "Règlement (CE) n° 178/2002 — traçabilité (art. 18) et procédures de retrait/rappel (art. 19)",
+       "Règlement (UE) n° 1169/2011 (INCO) — information du consommateur sur les allergènes",
+       "Décret n° 2011-731 / arrêté du 12 février 2024 — formation hygiène alimentaire obligatoire",
+       "Règlement (CE) n° 853/2004 — denrées d'origine animale",
+       "Arrêté du 8 juin 2006 — agrément sanitaire (si cession à d'autres commerces)"
+      ],
+      "source": "Liste officielle des GBPH validés — Ministère de l'Agriculture et de la Souveraineté alimentaire (agriculture.gouv.fr). Les GBPH sont d'application volontaire mais leur usage vaut présomption de conformité au règlement (CE) n° 852/2004."
+     },
+     "type": "guide_pratique",
+     "sources": [
+      {
+       "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+       "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+      },
+      {
+       "titre": "Règlement (CE) n° 852/2004 — hygiène des denrées alimentaires",
+       "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0852"
+      }
+     ],
+     "derniere_verification": "2026-05-21",
+     "version_schema": "2.0",
+     "prochaine_revision": "2026-11-21",
+     "source": "Frigolog — frigolog.fr",
+     "avertissement": "Ces informations sont fournies à titre indicatif. Consultez la réglementation officielle via les liens du champ 'sources' (Légifrance, EUR-Lex, DGAL, DGCCRF) et vérifiez les tarifs sur les sites des éditeurs."
+    },
+    "charcuterie": {
+     "data": {
+      "secteur": "charcuterie",
+      "titre": "Guide de bonnes pratiques d'hygiène — Charcuterie artisanale",
+      "editeur": "CNCT (Confédération nationale des charcutiers-traiteurs et traiteurs)",
+      "annee": 2016,
+      "pages": "à vérifier",
+      "prix_eur": "Gratuit en téléchargement sur agriculture.gouv.fr ; version imprimée payante via La Documentation française (vie-publique.fr/catalogue) — prix à vérifier",
+      "lien_documentation_francaise": "https://agriculture.gouv.fr/sites/default/files/documents/pdf/gph_20085920_0001_p000_cle06a617.pdf",
+      "resume": "Guide de la charcuterie artisanale : fabrication des produits de charcuterie (cuisson, salaison, séchage), maîtrise des couples temps/température, risque Listeria monocytogenes, hygiène des ateliers et traçabilité. Inclut l'activité traiteur associée.",
+      "points_cles": [
+       "Maîtrise des barèmes de cuisson et de la salaison",
+       "Prévention de Listeria monocytogenes (CE 2073/2005)",
+       "Refroidissement rapide et chaîne du froid",
+       "Hygiène des ateliers et du matériel",
+       "Traçabilité et étiquetage"
+      ],
+      "obligations_liees": [
+       "Règlement (CE) n° 852/2004 — plan de maîtrise sanitaire (PMS) et bonnes pratiques d'hygiène (présomption de conformité)",
+       "Arrêté du 21 décembre 2009 — températures de conservation et relevés",
+       "Règlement (CE) n° 178/2002 — traçabilité (art. 18) et procédures de retrait/rappel (art. 19)",
+       "Règlement (UE) n° 1169/2011 (INCO) — information du consommateur sur les allergènes",
+       "Décret n° 2011-731 / arrêté du 12 février 2024 — formation hygiène alimentaire obligatoire",
+       "Règlement (CE) n° 853/2004 — denrées d'origine animale",
+       "Règlement (CE) n° 2073/2005 — critères microbiologiques (Listeria)"
+      ],
+      "source": "Liste officielle des GBPH validés — Ministère de l'Agriculture et de la Souveraineté alimentaire (agriculture.gouv.fr). Les GBPH sont d'application volontaire mais leur usage vaut présomption de conformité au règlement (CE) n° 852/2004."
+     },
+     "type": "guide_pratique",
+     "sources": [
+      {
+       "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+       "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+      },
+      {
+       "titre": "Règlement (CE) n° 852/2004 — hygiène des denrées alimentaires",
+       "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0852"
+      }
+     ],
+     "derniere_verification": "2026-05-21",
+     "version_schema": "2.0",
+     "prochaine_revision": "2026-11-21",
+     "source": "Frigolog — frigolog.fr",
+     "avertissement": "Ces informations sont fournies à titre indicatif. Consultez la réglementation officielle via les liens du champ 'sources' (Légifrance, EUR-Lex, DGAL, DGCCRF) et vérifiez les tarifs sur les sites des éditeurs."
+    },
+    "fromagerie": {
+     "data": {
+      "secteur": "fromagerie",
+      "titre": "GBPH produits laitiers / fromages fermiers — à vérifier dans la liste officielle",
+      "editeur": "à vérifier (fédérations laitières / FNEC)",
+      "annee": "à vérifier",
+      "pages": "à vérifier",
+      "prix_eur": "Gratuit en téléchargement sur agriculture.gouv.fr ; version imprimée payante via La Documentation française (vie-publique.fr/catalogue) — prix à vérifier",
+      "lien_documentation_francaise": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph",
+      "resume": "Pour la transformation et l'affinage fromagers, un guide « produits laitiers / fromages fermiers » peut exister selon l'activité ; sa validation est à vérifier sur la liste officielle. Le risque dominant est Listeria monocytogenes (CE 2073/2005), avec plan d'autocontrôles, maîtrise de l'affinage (température/hygrométrie) et de l'agrément sanitaire le cas échéant.",
+      "points_cles": [
+       "Plan d'autocontrôles Listeria monocytogenes (CE 2073/2005)",
+       "Maîtrise de l'affinage (température et hygrométrie par famille)",
+       "Surveillance du lait cru et des couples temps/température",
+       "Agrément sanitaire CE si cession à d'autres commerces",
+       "Hygiène des caves et du matériel de fabrication"
+      ],
+      "obligations_liees": [
+       "Règlement (CE) n° 852/2004 — plan de maîtrise sanitaire (PMS) et bonnes pratiques d'hygiène (présomption de conformité)",
+       "Arrêté du 21 décembre 2009 — températures de conservation et relevés",
+       "Règlement (CE) n° 178/2002 — traçabilité (art. 18) et procédures de retrait/rappel (art. 19)",
+       "Règlement (UE) n° 1169/2011 (INCO) — information du consommateur sur les allergènes",
+       "Décret n° 2011-731 / arrêté du 12 février 2024 — formation hygiène alimentaire obligatoire",
+       "Règlement (CE) n° 853/2004 — produits laitiers",
+       "Règlement (CE) n° 2073/2005 — critères microbiologiques (Listeria)"
+      ],
+      "note": "À vérifier : validation et référence exactes du guide sur agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph.",
+      "source": "Liste officielle des GBPH validés — Ministère de l'Agriculture et de la Souveraineté alimentaire (agriculture.gouv.fr). Les GBPH sont d'application volontaire mais leur usage vaut présomption de conformité au règlement (CE) n° 852/2004."
+     },
+     "type": "guide_pratique",
+     "sources": [
+      {
+       "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+       "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+      },
+      {
+       "titre": "Règlement (CE) n° 852/2004 — hygiène des denrées alimentaires",
+       "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0852"
+      }
+     ],
+     "derniere_verification": "2026-05-21",
+     "version_schema": "2.0",
+     "prochaine_revision": "2026-11-21",
+     "source": "Frigolog — frigolog.fr",
+     "avertissement": "Ces informations sont fournies à titre indicatif. Consultez la réglementation officielle via les liens du champ 'sources' (Légifrance, EUR-Lex, DGAL, DGCCRF) et vérifiez les tarifs sur les sites des éditeurs."
+    },
+    "poissonnerie": {
+     "data": {
+      "secteur": "poissonnerie",
+      "titre": "Guide de bonnes pratiques d'hygiène — Poissonnier détaillant",
+      "editeur": "CGAD (Confédération générale de l'alimentation en détail)",
+      "annee": 2001,
+      "pages": "à vérifier",
+      "prix_eur": "Gratuit en téléchargement sur agriculture.gouv.fr ; version imprimée payante via La Documentation française (vie-publique.fr/catalogue) — prix à vérifier",
+      "lien_documentation_francaise": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph",
+      "resume": "Guide du poissonnier détaillant : maintien des produits de la pêche sous glace fondante (0 à +2 °C), maîtrise de l'histamine, traçabilité (zone FAO, méthode de pêche), hygiène de l'étal et des eaux, transformation (filetage, écaillage).",
+      "points_cles": [
+       "Conservation sous glace fondante (0 à +2 °C)",
+       "Maîtrise de l'histamine (espèces scombridés)",
+       "Traçabilité maritime (zone FAO, méthode de pêche, nom scientifique)",
+       "Hygiène de l'étal et gestion des eaux",
+       "Information sur les produits décongelés"
+      ],
+      "obligations_liees": [
+       "Règlement (CE) n° 852/2004 — plan de maîtrise sanitaire (PMS) et bonnes pratiques d'hygiène (présomption de conformité)",
+       "Arrêté du 21 décembre 2009 — températures de conservation et relevés",
+       "Règlement (CE) n° 178/2002 — traçabilité (art. 18) et procédures de retrait/rappel (art. 19)",
+       "Règlement (UE) n° 1169/2011 (INCO) — information du consommateur sur les allergènes",
+       "Décret n° 2011-731 / arrêté du 12 février 2024 — formation hygiène alimentaire obligatoire",
+       "Règlement (CE) n° 853/2004 — produits de la pêche",
+       "Règlement (UE) n° 1379/2013 — étiquetage des produits de la pêche",
+       "Règlement (CE) n° 2073/2005 — histamine"
+      ],
+      "source": "Liste officielle des GBPH validés — Ministère de l'Agriculture et de la Souveraineté alimentaire (agriculture.gouv.fr). Les GBPH sont d'application volontaire mais leur usage vaut présomption de conformité au règlement (CE) n° 852/2004."
+     },
+     "type": "guide_pratique",
+     "sources": [
+      {
+       "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+       "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+      },
+      {
+       "titre": "Règlement (CE) n° 852/2004 — hygiène des denrées alimentaires",
+       "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0852"
+      }
+     ],
+     "derniere_verification": "2026-05-21",
+     "version_schema": "2.0",
+     "prochaine_revision": "2026-11-21",
+     "source": "Frigolog — frigolog.fr",
+     "avertissement": "Ces informations sont fournies à titre indicatif. Consultez la réglementation officielle via les liens du champ 'sources' (Légifrance, EUR-Lex, DGAL, DGCCRF) et vérifiez les tarifs sur les sites des éditeurs."
+    },
+    "traiteur": {
+     "data": {
+      "secteur": "traiteur",
+      "titre": "GBPH traiteur — couvert par « Charcuterie artisanale » (CNCT) ou guide traiteur selon activité",
+      "editeur": "CNCT (charcutiers-traiteurs) — guide traiteur spécifique à vérifier",
+      "annee": "à vérifier",
+      "pages": "à vérifier",
+      "prix_eur": "Gratuit en téléchargement sur agriculture.gouv.fr ; version imprimée payante via La Documentation française (vie-publique.fr/catalogue) — prix à vérifier",
+      "lien_documentation_francaise": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph",
+      "resume": "L'activité traiteur artisanale est en partie couverte par le GBPH « Charcuterie artisanale » (CNCT). Pour les traiteurs organisateurs de réception, vérifier l'existence d'un guide dédié sur la liste officielle. Points critiques : refroidissement rapide, liaison froide/chaude, transport réfrigéré et plats témoins en événementiel.",
+      "points_cles": [
+       "Refroidissement rapide (+63 °C → +10 °C en moins de 2 h)",
+       "Liaison froide (≤ +4 °C) et transport réfrigéré tracé",
+       "Plats témoins fortement recommandés en événementiel",
+       "Maîtrise des grandes quantités et de la marche en avant",
+       "Traçabilité et gestion des allergènes"
+      ],
+      "obligations_liees": [
+       "Règlement (CE) n° 852/2004 — plan de maîtrise sanitaire (PMS) et bonnes pratiques d'hygiène (présomption de conformité)",
+       "Arrêté du 21 décembre 2009 — températures de conservation et relevés",
+       "Règlement (CE) n° 178/2002 — traçabilité (art. 18) et procédures de retrait/rappel (art. 19)",
+       "Règlement (UE) n° 1169/2011 (INCO) — information du consommateur sur les allergènes",
+       "Décret n° 2011-731 / arrêté du 12 février 2024 — formation hygiène alimentaire obligatoire",
+       "Règlement (CE) n° 853/2004 — denrées d'origine animale",
+       "Arrêté du 21 décembre 2009 — liaison froide/chaude, transport, plats témoins"
+      ],
+      "note": "À vérifier : guide traiteur dédié sur la liste officielle agriculture.gouv.fr. Le guide « Charcuterie artisanale » couvre une partie de l'activité.",
+      "source": "Liste officielle des GBPH validés — Ministère de l'Agriculture et de la Souveraineté alimentaire (agriculture.gouv.fr). Les GBPH sont d'application volontaire mais leur usage vaut présomption de conformité au règlement (CE) n° 852/2004."
+     },
+     "type": "guide_pratique",
+     "sources": [
+      {
+       "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+       "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+      },
+      {
+       "titre": "Règlement (CE) n° 852/2004 — hygiène des denrées alimentaires",
+       "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0852"
+      }
+     ],
+     "derniere_verification": "2026-05-21",
+     "version_schema": "2.0",
+     "prochaine_revision": "2026-11-21",
+     "source": "Frigolog — frigolog.fr",
+     "avertissement": "Ces informations sont fournies à titre indicatif. Consultez la réglementation officielle via les liens du champ 'sources' (Légifrance, EUR-Lex, DGAL, DGCCRF) et vérifiez les tarifs sur les sites des éditeurs."
+    },
+    "glacier": {
+     "data": {
+      "secteur": "glacier",
+      "titre": "Guide de bonnes pratiques d'hygiène — Glacier fabricant",
+      "editeur": "CNGF (Confédération nationale des glaciers de France)",
+      "annee": 2000,
+      "pages": "à vérifier",
+      "prix_eur": "Gratuit en téléchargement sur agriculture.gouv.fr ; version imprimée payante via La Documentation française (vie-publique.fr/catalogue) — prix à vérifier",
+      "lien_documentation_francaise": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph",
+      "resume": "Guide du glacier fabricant : pasteurisation du mix, maturation, surgélation/conservation à -18 °C, vitrine de vente à -12/-14 °C, prévention de Salmonella et Listeria sur les mix à base d'œufs et de produits laitiers.",
+      "points_cles": [
+       "Pasteurisation du mix (85 °C/30 s ou 72 °C/15 s) et enregistrements",
+       "Conservation réserve à -18 °C, vitrine -12 à -14 °C",
+       "Jamais de recongélation d'un produit décongelé",
+       "Prévention Salmonella/Listeria (mix œufs et lait)",
+       "Hygiène stricte de la turbine et des ustensiles de portionnage"
+      ],
+      "obligations_liees": [
+       "Règlement (CE) n° 852/2004 — plan de maîtrise sanitaire (PMS) et bonnes pratiques d'hygiène (présomption de conformité)",
+       "Arrêté du 21 décembre 2009 — températures de conservation et relevés",
+       "Règlement (CE) n° 178/2002 — traçabilité (art. 18) et procédures de retrait/rappel (art. 19)",
+       "Règlement (UE) n° 1169/2011 (INCO) — information du consommateur sur les allergènes",
+       "Décret n° 2011-731 / arrêté du 12 février 2024 — formation hygiène alimentaire obligatoire",
+       "Règlement (CE) n° 853/2004 — produits laitiers et ovoproduits",
+       "Règlement (CE) n° 2073/2005 — critères microbiologiques"
+      ],
+      "source": "Liste officielle des GBPH validés — Ministère de l'Agriculture et de la Souveraineté alimentaire (agriculture.gouv.fr). Les GBPH sont d'application volontaire mais leur usage vaut présomption de conformité au règlement (CE) n° 852/2004."
+     },
+     "type": "guide_pratique",
+     "sources": [
+      {
+       "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+       "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+      },
+      {
+       "titre": "Règlement (CE) n° 852/2004 — hygiène des denrées alimentaires",
+       "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0852"
+      }
+     ],
+     "derniere_verification": "2026-05-21",
+     "version_schema": "2.0",
+     "prochaine_revision": "2026-11-21",
+     "source": "Frigolog — frigolog.fr",
+     "avertissement": "Ces informations sont fournies à titre indicatif. Consultez la réglementation officielle via les liens du champ 'sources' (Légifrance, EUR-Lex, DGAL, DGCCRF) et vérifiez les tarifs sur les sites des éditeurs."
+    },
+    "restauration_collective": {
+     "data": {
+      "secteur": "restauration_collective",
+      "titre": "Guide de bonnes pratiques d'hygiène — Restauration collective de plein air (et guides associés)",
+      "editeur": "Confédération « La Jeunesse au Plein Air » (guide de plein air, 2010)",
+      "annee": 2010,
+      "pages": "à vérifier",
+      "prix_eur": "Gratuit en téléchargement sur agriculture.gouv.fr ; version imprimée payante via La Documentation française (vie-publique.fr/catalogue) — prix à vérifier",
+      "lien_documentation_francaise": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph",
+      "resume": "La restauration collective relève des principes du règlement (CE) n° 852/2004 et de l'arrêté du 21 décembre 2009 (liaison chaude/froide, plats témoins). Le GBPH validé spécifique concerne la restauration collective de plein air. La restauration collective à caractère social se réfère aussi aux recommandations nutritionnelles (GEMRCN).",
+      "points_cles": [
+       "Liaison froide (≤ +4 °C) et liaison chaude (≥ +63 °C)",
+       "Conservation des plats témoins (80 g, 5 jours, +3 °C)",
+       "Maîtrise des grandes quantités et du refroidissement rapide",
+       "Traçabilité renforcée et gestion des allergènes en collectivité",
+       "Recommandations GEMRCN (volet nutritionnel) selon le public"
+      ],
+      "obligations_liees": [
+       "Règlement (CE) n° 852/2004 — plan de maîtrise sanitaire (PMS) et bonnes pratiques d'hygiène (présomption de conformité)",
+       "Arrêté du 21 décembre 2009 — températures de conservation et relevés",
+       "Règlement (CE) n° 178/2002 — traçabilité (art. 18) et procédures de retrait/rappel (art. 19)",
+       "Règlement (UE) n° 1169/2011 (INCO) — information du consommateur sur les allergènes",
+       "Décret n° 2011-731 / arrêté du 12 février 2024 — formation hygiène alimentaire obligatoire",
+       "Arrêté du 21 décembre 2009 — liaison froide/chaude et plats témoins"
+      ],
+      "note": "Plusieurs guides de restauration collective coexistent ; vérifier le guide applicable à l'activité précise sur la liste officielle agriculture.gouv.fr.",
+      "source": "Liste officielle des GBPH validés — Ministère de l'Agriculture et de la Souveraineté alimentaire (agriculture.gouv.fr). Les GBPH sont d'application volontaire mais leur usage vaut présomption de conformité au règlement (CE) n° 852/2004."
+     },
+     "type": "guide_pratique",
+     "sources": [
+      {
+       "titre": "Guides de bonnes pratiques d'hygiène (GBPH) — Direction générale de l'alimentation (DGAL), agriculture.gouv.fr",
+       "url": "https://agriculture.gouv.fr/guides-de-bonnes-pratiques-dhygiene-gbph"
+      },
+      {
+       "titre": "Règlement (CE) n° 852/2004 — hygiène des denrées alimentaires",
+       "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32004R0852"
+      }
+     ],
+     "derniere_verification": "2026-05-21",
+     "version_schema": "2.0",
+     "prochaine_revision": "2026-11-21",
+     "source": "Frigolog — frigolog.fr",
+     "avertissement": "Ces informations sont fournies à titre indicatif. Consultez la réglementation officielle via les liens du champ 'sources' (Légifrance, EUR-Lex, DGAL, DGCCRF) et vérifiez les tarifs sur les sites des éditeurs."
+    }
+   }
+  },
+  {
+   "outil": "get_seuils_microbiologiques",
+   "description": "Retourne les critères microbiologiques réglementaires applicables aux denrées alimentaires conformément au règlement (CE) n° 2073/2005 modifié par le règlement (CE) n° 1441/2007. Couvre les critères de sécurité des denrées (Salmonella, Listeria monocytogenes, E. coli STEC, entérotoxines staphylococciques, histamine) et les critères d'hygiène des procédés (E. coli, Enterobacteriaceae, germes aérobies). Pour chaque critère : catégorie d'aliment, germe, plan d'échantillonnage (n, c, m, M), stade d'application (mise sur le marché / fin de fabrication), action en cas de dépassement. Signale l'évolution du critère Listeria au 1er juillet 2026 (UE 2024/2895).\n\n[EN] Returns the regulatory microbiological criteria for foodstuffs under Regulation (EC) 2073/2005 (amended by 1441/2007): food-safety criteria (Salmonella, Listeria, STEC E. coli, staphylococcal enterotoxins, histamine) and process-hygiene criteria, with the sampling plan (n, c, m, M), application stage and action on exceedance. Note: Listeria criterion changes from 1 July 2026 (EU 2024/2895). Optional 'categorie'.",
+   "contenu": {
+    "data": [
+     {
+      "categorie": "viandes",
+      "criteres_securite": [
+       {
+        "categorie_aliment": "Viande hachée et préparations de viande destinées à être consommées cuites",
+        "germe": "Salmonella",
+        "n": 5,
+        "c": 0,
+        "m": "—",
+        "M": "Absence dans 25 g",
+        "stade": "Produits mis sur le marché pendant leur durée de conservation",
+        "action_si_depassement": "Denrée dangereuse : retrait/rappel + information DDPP/DGCCRF"
+       },
+       {
+        "categorie_aliment": "Viande séparée mécaniquement (VSM)",
+        "germe": "Salmonella",
+        "n": 5,
+        "c": 0,
+        "m": "—",
+        "M": "Absence dans 25 g",
+        "stade": "Produits mis sur le marché pendant leur durée de conservation",
+        "action_si_depassement": "Retrait/rappel"
+       },
+       {
+        "categorie_aliment": "Viandes hachées et préparations de viande de volaille destinées à être consommées cuites",
+        "germe": "Salmonella",
+        "n": 5,
+        "c": 0,
+        "m": "—",
+        "M": "Absence dans 25 g",
+        "stade": "Produits mis sur le marché pendant leur durée de conservation",
+        "action_si_depassement": "Retrait/rappel"
+       }
+      ],
+      "criteres_hygiene_procede": [
+       {
+        "categorie_aliment": "Viande hachée",
+        "germe": "E. coli",
+        "n": 5,
+        "c": 2,
+        "m": "50 ufc/g",
+        "M": "500 ufc/g",
+        "stade": "Fin du procédé de fabrication",
+        "action_si_depassement": "Amélioration de l'hygiène de production et de la sélection/origine des matières premières"
+       },
+       {
+        "categorie_aliment": "Viande hachée",
+        "germe": "Germes aérobies (flore aérobie mésophile à 30 °C)",
+        "n": 5,
+        "c": 2,
+        "m": "5 × 10⁵ ufc/g",
+        "M": "5 × 10⁶ ufc/g",
+        "stade": "Fin du procédé de fabrication",
+        "action_si_depassement": "Amélioration de l'hygiène de production"
+       },
+       {
+        "categorie_aliment": "Préparations de viande",
+        "germe": "E. coli",
+        "n": 5,
+        "c": 2,
+        "m": "500 ufc/g",
+        "M": "5 000 ufc/g",
+        "stade": "Fin du procédé de fabrication",
+        "action_si_depassement": "Amélioration de l'hygiène",
+        "note": "Unités selon présentation (g ou cm²) — à vérifier annexe I"
+       },
+       {
+        "categorie_aliment": "Carcasses de bovins, ovins, caprins et équidés",
+        "germe": "Enterobacteriaceae",
+        "n": "—",
+        "c": "—",
+        "m": "1,5 log ufc/cm² (moyenne log journalière)",
+        "M": "2,5 log ufc/cm²",
+        "stade": "Après habillage, avant réfrigération",
+        "action_si_depassement": "Amélioration de l'hygiène d'abattage",
+        "note": "Plan d'échantillonnage spécifique (moyenne logarithmique journalière) — à vérifier annexe I"
+       }
+      ],
+      "reglement": "Règlement (CE) n° 2073/2005 modifié par le règlement (CE) n° 1441/2007 (annexe I, versions consolidées ultérieures)",
+      "notes": "n = nombre d'unités composant l'échantillon ; c = nombre d'unités tolérées entre m et M (critères d'hygiène) ou pouvant dépasser la limite (critères de sécurité). Critère de sécurité des denrées : non-respect = denrée dangereuse → retrait/rappel et information des autorités. Critère d'hygiène des procédés : non-respect = action sur l'hygiène de fabrication (pas de retrait automatique). ⚠️ Le règlement (UE) 2024/2895 fait évoluer le critère Listeria monocytogenes des denrées prêtes à consommer à compter du 1er juillet 2026 — vérifier la version applicable. Valeurs complètes et exactes : annexe I du règlement (CE) n° 2073/2005 consolidé (EUR-Lex).",
+      "source": "Règlement (CE) n° 2073/2005 (EUR-Lex) — critères microbiologiques applicables aux denrées alimentaires."
+     },
+     {
+      "categorie": "produits_laitiers",
+      "criteres_securite": [
+       {
+        "categorie_aliment": "Denrées prêtes à consommer permettant le développement de L. monocytogenes (hors nourrissons / usages médicaux spéciaux)",
+        "germe": "Listeria monocytogenes",
+        "n": 5,
+        "c": 0,
+        "m": "—",
+        "M": "100 ufc/g",
+        "stade": "Produits mis sur le marché pendant leur durée de conservation",
+        "action_si_depassement": "Denrée dangereuse : retrait/rappel",
+        "note": "Avant que le producteur n'en ait perdu la maîtrise et s'il ne peut démontrer le respect de 100 ufc/g : critère « absence dans 25 g ». ⚠️ Évolution au 1er juillet 2026 (UE 2024/2895)."
+       },
+       {
+        "categorie_aliment": "Denrées prêtes à consommer ne permettant pas le développement de L. monocytogenes (pH ≤ 4,4 ou aw ≤ 0,92, etc.)",
+        "germe": "Listeria monocytogenes",
+        "n": 5,
+        "c": 0,
+        "m": "—",
+        "M": "100 ufc/g",
+        "stade": "Produits mis sur le marché pendant leur durée de conservation",
+        "action_si_depassement": "Retrait/rappel"
+       },
+       {
+        "categorie_aliment": "Fromages, lait en poudre et lactosérum en poudre",
+        "germe": "Entérotoxines staphylococciques",
+        "n": 5,
+        "c": 0,
+        "m": "—",
+        "M": "Non détectées dans 25 g",
+        "stade": "Produits mis sur le marché pendant leur durée de conservation",
+        "action_si_depassement": "Retrait/rappel + recherche de la cause (staphylocoques)"
+       }
+      ],
+      "criteres_hygiene_procede": [
+       {
+        "categorie_aliment": "Fromages au lait cru ou ayant subi un traitement thermique inférieur à la pasteurisation",
+        "germe": "E. coli",
+        "n": 5,
+        "c": 2,
+        "m": "100 ufc/g",
+        "M": "1 000 ufc/g",
+        "stade": "Au moment où le nombre d'E. coli est le plus élevé durant la fabrication",
+        "action_si_depassement": "Amélioration de l'hygiène de production et sélection du lait"
+       },
+       {
+        "categorie_aliment": "Fromages au lait cru",
+        "germe": "Staphylocoques à coagulase positive",
+        "n": 5,
+        "c": 2,
+        "m": "10⁴ ufc/g",
+        "M": "10⁵ ufc/g",
+        "stade": "Au moment où le nombre est le plus élevé durant la fabrication",
+        "action_si_depassement": "Amélioration de l'hygiène ; si > 10⁵ ufc/g : recherche d'entérotoxines staphylococciques"
+       }
+      ],
+      "reglement": "Règlement (CE) n° 2073/2005 modifié par le règlement (CE) n° 1441/2007 (annexe I, versions consolidées ultérieures)",
+      "notes": "n = nombre d'unités composant l'échantillon ; c = nombre d'unités tolérées entre m et M (critères d'hygiène) ou pouvant dépasser la limite (critères de sécurité). Critère de sécurité des denrées : non-respect = denrée dangereuse → retrait/rappel et information des autorités. Critère d'hygiène des procédés : non-respect = action sur l'hygiène de fabrication (pas de retrait automatique). ⚠️ Le règlement (UE) 2024/2895 fait évoluer le critère Listeria monocytogenes des denrées prêtes à consommer à compter du 1er juillet 2026 — vérifier la version applicable. Valeurs complètes et exactes : annexe I du règlement (CE) n° 2073/2005 consolidé (EUR-Lex).",
+      "source": "Règlement (CE) n° 2073/2005 (EUR-Lex) — critères microbiologiques applicables aux denrées alimentaires."
+     },
+     {
+      "categorie": "plats_cuisines",
+      "criteres_securite": [
+       {
+        "categorie_aliment": "Denrées prêtes à consommer permettant le développement de L. monocytogenes",
+        "germe": "Listeria monocytogenes",
+        "n": 5,
+        "c": 0,
+        "m": "—",
+        "M": "100 ufc/g",
+        "stade": "Produits mis sur le marché pendant leur durée de conservation",
+        "action_si_depassement": "Retrait/rappel",
+        "note": "Ou « absence dans 25 g » avant perte de maîtrise par le producteur. ⚠️ Évolution au 1er juillet 2026 (UE 2024/2895)."
+       },
+       {
+        "categorie_aliment": "Denrées prêtes à consommer contenant des œufs crus / plats cuisinés prêts à consommer concernés",
+        "germe": "Salmonella",
+        "n": 5,
+        "c": 0,
+        "m": "—",
+        "M": "Absence dans 25 g",
+        "stade": "Produits mis sur le marché pendant leur durée de conservation",
+        "action_si_depassement": "Retrait/rappel"
+       }
+      ],
+      "criteres_hygiene_procede": [],
+      "reglement": "Règlement (CE) n° 2073/2005 modifié par le règlement (CE) n° 1441/2007 (annexe I, versions consolidées ultérieures)",
+      "notes": "Les plats cuisinés prêts à consommer relèvent principalement des critères de sécurité (Listeria monocytogenes, Salmonella). Les critères d'hygiène des procédés (E. coli, Enterobacteriaceae, germes aérobies) s'appliquent aux matières premières et étapes de fabrication concernées (voir catégories viandes, produits laitiers, etc.). n = nombre d'unités composant l'échantillon ; c = nombre d'unités tolérées entre m et M (critères d'hygiène) ou pouvant dépasser la limite (critères de sécurité). Critère de sécurité des denrées : non-respect = denrée dangereuse → retrait/rappel et information des autorités. Critère d'hygiène des procédés : non-respect = action sur l'hygiène de fabrication (pas de retrait automatique). ⚠️ Le règlement (UE) 2024/2895 fait évoluer le critère Listeria monocytogenes des denrées prêtes à consommer à compter du 1er juillet 2026 — vérifier la version applicable. Valeurs complètes et exactes : annexe I du règlement (CE) n° 2073/2005 consolidé (EUR-Lex).",
+      "source": "Règlement (CE) n° 2073/2005 (EUR-Lex) — critères microbiologiques applicables aux denrées alimentaires."
+     },
+     {
+      "categorie": "produits_mer",
+      "criteres_securite": [
+       {
+        "categorie_aliment": "Produits de la pêche d'espèces à forte teneur en histidine (Scombridés, Clupéidés, Engraulidés, Coryphénidés, Pomatomidés, Scombrésocidés)",
+        "germe": "Histamine",
+        "n": 9,
+        "c": 2,
+        "m": "100 mg/kg",
+        "M": "200 mg/kg",
+        "stade": "Produits mis sur le marché pendant leur durée de conservation",
+        "action_si_depassement": "Retrait/rappel"
+       },
+       {
+        "categorie_aliment": "Produits de la pêche ayant subi une maturation enzymatique en saumure (espèces à forte histidine)",
+        "germe": "Histamine",
+        "n": 9,
+        "c": 2,
+        "m": "200 mg/kg",
+        "M": "400 mg/kg",
+        "stade": "Produits mis sur le marché pendant leur durée de conservation",
+        "action_si_depassement": "Retrait/rappel"
+       },
+       {
+        "categorie_aliment": "Mollusques bivalves vivants, échinodermes, tuniciers et gastéropodes vivants",
+        "germe": "Salmonella",
+        "n": 5,
+        "c": 0,
+        "m": "—",
+        "M": "Absence dans 25 g",
+        "stade": "Produits mis sur le marché pendant leur durée de conservation",
+        "action_si_depassement": "Retrait/rappel ; réexamen du classement de la zone"
+       },
+       {
+        "categorie_aliment": "Produits de la pêche prêts à consommer (ex. poisson fumé)",
+        "germe": "Listeria monocytogenes",
+        "n": 5,
+        "c": 0,
+        "m": "—",
+        "M": "100 ufc/g",
+        "stade": "Produits mis sur le marché pendant leur durée de conservation",
+        "action_si_depassement": "Retrait/rappel",
+        "note": "Ou « absence dans 25 g » avant perte de maîtrise. ⚠️ Évolution au 1er juillet 2026 (UE 2024/2895)."
+       }
+      ],
+      "criteres_hygiene_procede": [
+       {
+        "categorie_aliment": "Mollusques bivalves vivants",
+        "germe": "E. coli",
+        "n": "—",
+        "c": "—",
+        "m": "—",
+        "M": "230 NPP/100 g de chair et de liquide intervalvaire",
+        "stade": "Production / mise sur le marché",
+        "action_si_depassement": "Reparcage/purification, réexamen du classement de la zone de production",
+        "note": "Plan d'échantillonnage spécifique aux coquillages — à vérifier annexe I"
+       }
+      ],
+      "reglement": "Règlement (CE) n° 2073/2005 modifié par le règlement (CE) n° 1441/2007 (annexe I, versions consolidées ultérieures)",
+      "notes": "n = nombre d'unités composant l'échantillon ; c = nombre d'unités tolérées entre m et M (critères d'hygiène) ou pouvant dépasser la limite (critères de sécurité). Critère de sécurité des denrées : non-respect = denrée dangereuse → retrait/rappel et information des autorités. Critère d'hygiène des procédés : non-respect = action sur l'hygiène de fabrication (pas de retrait automatique). ⚠️ Le règlement (UE) 2024/2895 fait évoluer le critère Listeria monocytogenes des denrées prêtes à consommer à compter du 1er juillet 2026 — vérifier la version applicable. Valeurs complètes et exactes : annexe I du règlement (CE) n° 2073/2005 consolidé (EUR-Lex).",
+      "source": "Règlement (CE) n° 2073/2005 (EUR-Lex) — critères microbiologiques applicables aux denrées alimentaires."
+     },
+     {
+      "categorie": "fruits_legumes",
+      "criteres_securite": [
+       {
+        "categorie_aliment": "Graines germées prêtes à consommer",
+        "germe": "Salmonella",
+        "n": 5,
+        "c": 0,
+        "m": "—",
+        "M": "Absence dans 25 g",
+        "stade": "Produits mis sur le marché pendant leur durée de conservation",
+        "action_si_depassement": "Retrait/rappel"
+       },
+       {
+        "categorie_aliment": "Graines germées prêtes à consommer",
+        "germe": "E. coli STEC (sérogroupes O157, O26, O111, O103, O145, O104:H4)",
+        "n": 5,
+        "c": 0,
+        "m": "—",
+        "M": "Absence dans 25 g",
+        "stade": "Produits mis sur le marché pendant leur durée de conservation",
+        "action_si_depassement": "Retrait/rappel"
+       },
+       {
+        "categorie_aliment": "Fruits et légumes précoupés prêts à consommer / jus de fruits et légumes non pasteurisés",
+        "germe": "Salmonella",
+        "n": 5,
+        "c": 0,
+        "m": "—",
+        "M": "Absence dans 25 g",
+        "stade": "Produits mis sur le marché pendant leur durée de conservation",
+        "action_si_depassement": "Retrait/rappel"
+       }
+      ],
+      "criteres_hygiene_procede": [
+       {
+        "categorie_aliment": "Fruits et légumes précoupés prêts à consommer",
+        "germe": "E. coli",
+        "n": 5,
+        "c": 2,
+        "m": "100 ufc/g",
+        "M": "1 000 ufc/g",
+        "stade": "Procédé de fabrication",
+        "action_si_depassement": "Amélioration de l'hygiène de production et sélection des matières premières"
+       },
+       {
+        "categorie_aliment": "Jus de fruits et de légumes non pasteurisés prêts à consommer",
+        "germe": "E. coli",
+        "n": 5,
+        "c": 2,
+        "m": "100 ufc/g",
+        "M": "1 000 ufc/g",
+        "stade": "Procédé de fabrication",
+        "action_si_depassement": "Amélioration de l'hygiène de production"
+       }
+      ],
+      "reglement": "Règlement (CE) n° 2073/2005 modifié par le règlement (CE) n° 1441/2007 (annexe I, versions consolidées ultérieures)",
+      "notes": "n = nombre d'unités composant l'échantillon ; c = nombre d'unités tolérées entre m et M (critères d'hygiène) ou pouvant dépasser la limite (critères de sécurité). Critère de sécurité des denrées : non-respect = denrée dangereuse → retrait/rappel et information des autorités. Critère d'hygiène des procédés : non-respect = action sur l'hygiène de fabrication (pas de retrait automatique). ⚠️ Le règlement (UE) 2024/2895 fait évoluer le critère Listeria monocytogenes des denrées prêtes à consommer à compter du 1er juillet 2026 — vérifier la version applicable. Valeurs complètes et exactes : annexe I du règlement (CE) n° 2073/2005 consolidé (EUR-Lex).",
+      "source": "Règlement (CE) n° 2073/2005 (EUR-Lex) — critères microbiologiques applicables aux denrées alimentaires."
+     },
+     {
+      "categorie": "ovoproduits",
+      "criteres_securite": [
+       {
+        "categorie_aliment": "Ovoproduits",
+        "germe": "Salmonella",
+        "n": 5,
+        "c": 0,
+        "m": "—",
+        "M": "Absence dans 25 g (ou 25 ml)",
+        "stade": "Produits mis sur le marché pendant leur durée de conservation",
+        "action_si_depassement": "Retrait/rappel"
+       }
+      ],
+      "criteres_hygiene_procede": [
+       {
+        "categorie_aliment": "Ovoproduits",
+        "germe": "Enterobacteriaceae",
+        "n": 5,
+        "c": 2,
+        "m": "10 ufc/g (ou ml)",
+        "M": "100 ufc/g (ou ml)",
+        "stade": "Fin du procédé de fabrication",
+        "action_si_depassement": "Amélioration de l'hygiène de production"
+       }
+      ],
+      "reglement": "Règlement (CE) n° 2073/2005 modifié par le règlement (CE) n° 1441/2007 (annexe I, versions consolidées ultérieures)",
+      "notes": "n = nombre d'unités composant l'échantillon ; c = nombre d'unités tolérées entre m et M (critères d'hygiène) ou pouvant dépasser la limite (critères de sécurité). Critère de sécurité des denrées : non-respect = denrée dangereuse → retrait/rappel et information des autorités. Critère d'hygiène des procédés : non-respect = action sur l'hygiène de fabrication (pas de retrait automatique). ⚠️ Le règlement (UE) 2024/2895 fait évoluer le critère Listeria monocytogenes des denrées prêtes à consommer à compter du 1er juillet 2026 — vérifier la version applicable. Valeurs complètes et exactes : annexe I du règlement (CE) n° 2073/2005 consolidé (EUR-Lex).",
+      "source": "Règlement (CE) n° 2073/2005 (EUR-Lex) — critères microbiologiques applicables aux denrées alimentaires."
+     }
+    ],
+    "type": "reglementaire_officiel",
+    "sources": [
+     {
+      "titre": "Règlement (CE) n° 2073/2005 — critères microbiologiques applicables aux denrées alimentaires",
+      "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32005R2073"
+     },
+     {
+      "titre": "Règlement (CE) n° 1441/2007 — modifie le règlement (CE) n° 2073/2005 sur les critères microbiologiques",
+      "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32007R1441"
+     },
+     {
+      "titre": "Règlement (UE) 2024/2895 — fait évoluer le critère Listeria monocytogenes des denrées prêtes à consommer (applicable au 1er juillet 2026)",
+      "url": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32024R2895"
+     }
+    ],
+    "derniere_verification": "2026-05-21",
+    "version_schema": "2.0",
+    "prochaine_revision": "2026-11-21",
+    "source": "Frigolog — frigolog.fr",
+    "avertissement": "Ces informations sont fournies à titre indicatif. Consultez la réglementation officielle via les liens du champ 'sources' (Légifrance, EUR-Lex, DGAL, DGCCRF) et vérifiez les tarifs sur les sites des éditeurs."
+   }
+  }
+ ]
+}
