@@ -18,7 +18,7 @@
 //  3. Les outils n'ont AUCUN moyen d'interroger la base hors de leur contexte.
 //     C'est la contrainte n°1 du chantier, et elle se tient par construction.
 import assert from 'node:assert/strict';
-import { createHmac } from 'node:crypto';
+import { createHash, createHmac } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -428,5 +428,41 @@ ok('aucun secret ni donnée de santé demandé par un outil', () => {
   }
   assert.ok(!/select=\*/.test(src), 'un outil fait un select=* — colonnes explicites obligatoires');
 });
+
+// ─── LE VECTEUR PARTAGÉ AVEC LE DÉPÔT frigolog ────────────────────────
+// Ici on VÉRIFIE les clés ; c'est `api/_lib/clesMcp.js`, dans le dépôt
+// frigolog, qui les ÉMET. Deux déploiements, aucun fichier partageable.
+//
+// Une divergence d'un seul caractère — une lettre retirée de l'alphabet, une
+// longueur qui passe de 40 à 42 — rendrait invalides à la vérification TOUTES
+// les clés déjà distribuées. Et elle ne ferait rougir aucun test : chaque dépôt
+// exercerait sa propre moitié et se trouverait parfaitement cohérent.
+//
+// Ce vecteur est le seul lien entre les deux. Le même bloc existe dans
+// `tests/clesMcp.test.mjs` là-bas. S'il change ici, il doit changer là-bas dans
+// le même mouvement — sinon l'un des deux tombe et nomme la divergence.
+// Ne le régénérez pas pour « le faire passer ».
+const VECTEUR_PARTAGE = {
+  cle: 'frg_abcdefghabcdefghjkmnpqrstvwxyz23456789abcdefghjk',
+  prefixe: 'abcdefgh',
+  empreinte: '36b6f501b484176c2c45dea4aabdd59828045ed7b7c4b133fe4f0d04f3634bb3',
+};
+
+ok('le vecteur partagé avec le dépôt frigolog est intact', () => {
+  assert.equal(VECTEUR_PARTAGE.cle.length, 52);
+  assert.ok(formeValide(VECTEUR_PARTAGE.cle),
+    "le vecteur ne passe plus la forme — le format a bougé d'un côté");
+  assert.equal(prefixeDe(VECTEUR_PARTAGE.cle), VECTEUR_PARTAGE.prefixe);
+  assert.equal(empreinteCle(VECTEUR_PARTAGE.cle), VECTEUR_PARTAGE.empreinte,
+    "l'empreinte du vecteur a changé : toute clé déjà émise devient invérifiable");
+  // Recalculée sans passer par notre propre fonction : si `empreinteCle` se
+  // mettait à saler ou à changer d'algorithme, la ligne du dessus resterait
+  // verte en comparant une erreur à elle-même.
+  assert.equal(
+    createHash('sha256').update(VECTEUR_PARTAGE.cle, 'utf8').digest('hex'),
+    VECTEUR_PARTAGE.empreinte,
+  );
+});
+
 
 console.log(`\n${passed} tests OK — MCP privé : clés, jeton, point de passage\n`);
