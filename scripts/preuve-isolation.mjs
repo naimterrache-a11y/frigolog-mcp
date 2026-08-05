@@ -69,7 +69,15 @@ let ko = 0;
 const dire = (bon, txt, detail = '') => { if (!bon) ko++; console.log(`  ${bon ? '✓' : '✗'} ${txt}${detail ? ' — ' + detail : ''}`); };
 
 // ── Deux établissements réels de staging ───────────────────────────────
-const ests = await (await admin('establishments?select=id,name&limit=2&order=created_at')).json();
+// ⚠️ DEUX ÉTABLISSEMENTS RÉELS, ni démo ni test. Ce filtre n'est pas cosmétique :
+// les policies frigolog_demo_read et frigolog_terrain_read laissent un
+// établissement is_demo/is_test lire TOUS ses semblables, sans passer par
+// get_my_establishment_id(). Mesurer l'isolation depuis un compte de test, ce
+// serait la mesurer sous une règle plus permissive que celle des vrais clients
+// — et croire avoir prouvé ce qu'on n'a pas regardé.
+const ests = await (await admin(
+  'establishments?select=id,name&is_demo=eq.false&is_test=eq.false&deleted_at=is.null&limit=2&order=created_at'
+)).json();
 if (!Array.isArray(ests) || ests.length < 2) {
   console.error('Il faut au moins 2 établissements sur staging. Trouvé :', ests);
   process.exit(1);
@@ -129,6 +137,35 @@ const rpcFaux = await fetch(`${URL_}/rest/v1/rpc/mcp_resolve_api_key`, {
 });
 const resFaux = await rpcFaux.json().catch(() => []);
 dire(Array.isArray(resFaux) && resFaux.length === 0, 'une clé inconnue ne résout vers rien');
+
+// ── Une clé sur un compte démo/terrain ne doit RIEN ouvrir ───────────
+// Ces comptes lisent par frigolog_demo_read / frigolog_terrain_read, qui ne
+// passent pas par get_my_establishment_id() : un compte is_test voit TOUS les
+// autres is_test. Constaté le 2026-08-05 — 215 équipements renvoyés à un
+// établissement qui en possède un. La porte doit donc les refuser.
+console.log('\n3bis. Une clé sur un compte de démo ou terrain');
+const [testEst] = await (await admin('establishments?select=id,name&is_test=eq.true&limit=1')).json();
+if (testEst) {
+  const prefT = tirer(8), cleT = 'frg_' + prefT + tirer(40);
+  const insT = await admin('api_keys', {
+    method: 'POST',
+    body: JSON.stringify({ establishment_id: testEst.id, key_hash: empreinte(cleT), key_prefix: prefT, label: 'essai compte test (jetable)', permissions: ['read'] }),
+  });
+  if (insT.ok) {
+    const [ligneT] = await insT.json();
+    const rT = await fetch(`${URL_}/rest/v1/rpc/mcp_resolve_api_key`, {
+      method: 'POST', headers: { apikey: ANON, Authorization: `Bearer ${ANON}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_key_hash: empreinte(cleT) }),
+    });
+    const rj = await rT.json().catch(() => []);
+    dire(Array.isArray(rj) && rj.length === 0,
+      `une clé sur « ${testEst.name} » (is_test) ne résout vers rien`,
+      rj.length ? 'migration 20260805110000 non appliquée' : '');
+    await admin(`api_keys?id=eq.${ligneT.id}`, { method: 'DELETE' });
+  }
+} else {
+  dire(true, 'aucun compte is_test sur cette base — rien à vérifier');
+}
 
 // ── LE test : le jeton de A face aux données de B ──────────────────────
 console.log('\n4. LA question — A peut-il voir B ?');
