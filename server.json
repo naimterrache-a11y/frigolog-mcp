@@ -3,13 +3,15 @@
   "name": "io.github.naimterrache-a11y/frigolog-haccp",
   "title": "Frigolog HACCP — French Food Safety Compliance",
   "description": "French HACCP for restaurants: temperatures, DLC, allergens, DDPP controls, live recalls. Sourced.",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "websiteUrl": "https://frigolog.fr/?utm_source=claude&utm_medium=mcp&utm_campaign=mcp_directory",
   "icons": [
     {
-      "src": "https://frigolog.fr/favicon.png",
+      "src": "https://frigolog.fr/favicon-512.png",
       "mimeType": "image/png",
-      "sizes": ["any"]
+      "sizes": [
+        "512x512"
+      ]
     }
   ],
   "repository": {
