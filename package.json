@@ -40,7 +40,8 @@
     "test": "node tests/mcp.test.js",
     "deploy": "vercel --prod",
     "test:prive": "node tests/prive.test.mjs",
-    "preuve:isolation": "node scripts/preuve-isolation.mjs"
+    "preuve:isolation": "node scripts/preuve-isolation.mjs",
+    "export:gpt": "node scripts/export-connaissance-gpt.mjs"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
