@@ -1,0 +1,119 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Publication au registre MCP officiel
+# ═══════════════════════════════════════════════════════════════════════
+# Pourquoi ce fichier existe : entre le 1er juillet et le 5 août 2026, le dépôt
+# est passé en 3.0.0 et le registre est resté en 2.2.1, sans titre ni icône.
+# Rien ne les reliait — la publication était un geste manuel, et un geste manuel
+# finit toujours par ne plus être fait.
+#
+# Coût : ce dépôt est PUBLIC, donc ses minutes Actions sont gratuites et ne
+# touchent pas au quota du compte (épuisé à 90 % le 5 août par les deux dépôts
+# privés). C'est aussi pour ça que la publication vit ici.
+#
+# Auth : OIDC. Le jeton est fabriqué par GitHub pour ce dépôt et vit quelques
+# minutes ; le registre vérifie qu'il vient de `naimterrache-a11y`, ce qui est
+# exactement ce qui autorise le namespace `io.github.naimterrache-a11y/…`.
+# Aucun secret n'est stocké, donc aucun secret ne peut fuir.
+
+name: Registre MCP
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # indispensable : c'est lui qui autorise l'OIDC
+
+concurrency:
+  group: registre-mcp
+  cancel-in-progress: false
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Le garde qui aurait évité la dérive. `server.json` et `package.json`
+      # décrivent le même serveur : s'ils ne disent pas la même version, on
+      # s'arrête AVANT de publier plutôt que de figer un mensonge au registre.
+      #
+      # La longueur est vérifiée ici parce que le registre la refuse en 422 et
+      # qu'un 422 découvert au moment de publier, c'est une version qui n'existe
+      # nulle part pendant qu'on la corrige.
+      - name: server.json et package.json disent la même chose
+        run: |
+          node -e "
+            const s = require('./server.json');
+            const p = require('./package.json');
+            const err = [];
+            if (s.version !== p.version) err.push(\`version : \${s.version} vs \${p.version}\`);
+            if (s.name !== p.mcpName)   err.push(\`nom MCP : \${s.name} vs \${p.mcpName}\`);
+            if (!s.title)               err.push('title absent — les annuaires afficheraient le nom technique');
+            if ((s.description ?? '').length > 100) err.push(\`description : \${s.description.length} caractères, 100 maximum\`);
+            if ((s.title ?? '').length > 100)       err.push(\`title : \${s.title.length} caractères, 100 maximum\`);
+            if (!s.icons?.length)       err.push('icons absent — la ligne serait muette dans les annuaires');
+            if (err.length) { console.error('::error::' + err.join(' | ')); process.exit(1); }
+            console.log('version', s.version, '| description', s.description.length, 'car. | titre', s.title.length, 'car.');
+          "
+
+      # L'endpoint annoncé doit répondre AVANT qu'on l'annonce. Publier un
+      # `remotes` mort, c'est envoyer dans un mur chaque client qui nous
+      # découvre — et le registre est justement là pour qu'il y en ait.
+      - name: L'endpoint annoncé répond, et expose des outils
+        run: |
+          url=$(node -p "require('./server.json').remotes?.[0]?.url ?? ''")
+          if [ -z "$url" ]; then echo "Aucun remote déclaré."; exit 0; fi
+          code=$(curl -s -o reponse.json -w '%{http_code}' -X POST "$url" \
+            -H 'Content-Type: application/json' \
+            -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}')
+          echo "$url → HTTP $code"
+          if [ "$code" != "200" ]; then
+            echo "::error::$url répond $code — publication annulée."
+            head -c 400 reponse.json
+            exit 1
+          fi
+          node -e "
+            const r = require('./reponse.json');
+            const n = r?.result?.tools?.length ?? 0;
+            console.log('outils exposés :', n);
+            if (n < 1) { console.error('::error::aucun outil listé'); process.exit(1); }
+          "
+
+      - name: Installer mcp-publisher
+        env:
+          VERSION: 1.8.0
+        run: |
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/download/v${VERSION}/mcp-publisher_linux_amd64.tar.gz" \
+            | tar xz mcp-publisher
+          ./mcp-publisher --version
+
+      - name: Authentification (OIDC GitHub)
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publier
+        run: ./mcp-publisher publish
+
+      # Relire ce que le registre annonce VRAIMENT. Un publish qui répond 200
+      # n'est pas une preuve que la ligne affichée a changé.
+      - name: Relire la fiche publiée
+        run: |
+          sleep 5
+          curl -s "https://registry.modelcontextprotocol.io/v0/servers?search=frigolog" > registre.json
+          node -e "
+            const j = require('./registre.json').servers ?? [];
+            const a = j.find(e => e._meta?.['io.modelcontextprotocol.registry/official']?.isLatest);
+            if (!a) { console.error('::error::aucune version marquée isLatest'); process.exit(1); }
+            const s = a.server;
+            console.log('version :', s.version);
+            console.log('titre   :', s.title ?? '(aucun)');
+            console.log('desc    :', s.description);
+            console.log('remote  :', s.remotes?.[0]?.url ?? '(aucun)');
+            const attendu = require('./server.json').version;
+            if (s.version !== attendu) {
+              console.error(\`::error::le registre annonce \${s.version}, on vient de publier \${attendu}\`);
+              process.exit(1);
+            }
+          "
