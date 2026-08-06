@@ -33,6 +33,7 @@ const {
 } = await import('../lib/prive/cles.ts');
 const { signerJetonEtablissement, TTL_JETON_SECONDES } = await import('../lib/prive/jwt.ts');
 const { VAR_HOTES, hoteDeLaRequete, deploiementAutorise } = await import('../lib/prive/hote.ts');
+const { bornerChemin } = await import('../lib/prive/borne.ts');
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const lire = (...p) => readFileSync(path.join(ROOT, ...p), 'utf8');
@@ -464,5 +465,78 @@ ok('le vecteur partagé avec le dépôt frigolog est intact', () => {
   );
 });
 
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// LA BORNE D'ÉTABLISSEMENT — la ceinture qui ne dépend d'aucune policy
+// ═══════════════════════════════════════════════════════════════════════
+// Jusqu'au 2026-08-06, l'isolation reposait ENTIÈREMENT sur la RLS bornée par
+// le claim du jeton. Solide pour un compte client ; pas pour tous les comptes.
+// `frigolog_terrain_read` accorde à tout établissement `is_test` la vue sur
+// TOUS ses semblables, sans passer par le claim : une clé de test lisait 215
+// équipements pour un établissement qui en a UN.
+//
+// La parade d'alors — refuser les comptes de test à la porte — protégeait, et
+// interdisait du même geste de TESTER le service. Elle est remplacée par une
+// borne dans `lire()` : on ne DEMANDE que ses propres lignes, donc ce que la
+// policy autorise en plus ne sort jamais.
+
+const EST_A = '11111111-1111-4111-8111-111111111111';
+const EST_B = '22222222-2222-4222-8222-222222222222';
+
+ok('chaque table lue porte sa borne d\'établissement', () => {
+  const chemins = [
+    'equipments?select=id,name&order=zone,name',
+    'cleaning_stations?select=name,zone&order=zone,name',
+    'cleaning_logs?select=post_name&created_at=gte.2026-01-01&limit=50',
+    'reception_logs?select=supplier&created_at=gte.2026-01-01&limit=50',
+  ];
+  for (const c of chemins) {
+    const borne = bornerChemin(c, EST_A);
+    assert.ok(borne.includes(`establishment_id=eq.${EST_A}`),
+      `${c} sort sans borne — la RLS serait le SEUL rempart`);
+  }
+});
+
+ok('temperature_logs est borné par l\'enceinte, en jointure INTERNE', () => {
+  const c = 'temperature_logs?select=temperature,equipments(name,zone,min,max)&limit=50';
+  const borne = bornerChemin(c, EST_A);
+  // `temperature_logs` ne porte pas `establishment_id` : il pointe l'enceinte.
+  assert.ok(borne.includes(`equipments.establishment_id=eq.${EST_A}`),
+    'le filtre doit porter sur la ressource embarquée');
+  // Sans `!inner`, PostgREST fait une jointure EXTERNE : les lignes dont
+  // l'embed ne matche pas ressortent quand même, avec un embed nul. C'est
+  // exactement la fuite qu'on croit avoir fermée.
+  assert.ok(borne.includes('equipments!inner('),
+    'la jointure doit être interne, sinon le filtre ne filtre rien');
+});
+
+ok('une table sans borne déclarée fait ÉCHOUER la lecture', () => {
+  // Ferme par défaut. Le prochain outil qui interrogera une table nouvelle
+  // tombera dessus en développement, avec un message qui dit quoi faire —
+  // plutôt que de servir en silence les lignes de tout le monde.
+  assert.throws(() => bornerChemin('users?select=*', EST_A), /borne d'établissement déclarée/);
+  assert.throws(() => bornerChemin('establishments?select=*', EST_A), /borne/);
+});
+
+ok('deux établissements ne produisent jamais la même requête', () => {
+  const c = 'equipments?select=id,name';
+  assert.notEqual(bornerChemin(c, EST_A), bornerChemin(c, EST_B));
+  assert.ok(!bornerChemin(c, EST_A).includes(EST_B));
+});
+
+ok('TOUT chemin écrit dans les outils ressort borné', () => {
+  // Le test le plus important du lot : il ne lit pas une liste tenue à la main,
+  // il extrait les requêtes réellement écrites dans `outils.ts` et les fait
+  // passer par la borne. Un sixième outil ajouté demain sur une table sans
+  // borne déclarée fait tomber CE test, pas la production.
+  const src = lire('lib', 'prive', 'outils.ts');
+  const chemins = [...src.matchAll(/'([a-z_]+\?select=[^']*)'/g)].map((m) => m[1]);
+  assert.ok(chemins.length >= 5, `seulement ${chemins.length} requêtes trouvées — l'extraction ne marche plus`);
+  for (const c of chemins) {
+    const borne = bornerChemin(c, EST_A);
+    assert.ok(borne.includes(`=eq.${EST_A}`), `requête non bornée : ${c}`);
+  }
+});
 
 console.log(`\n${passed} tests OK — MCP privé : clés, jeton, point de passage\n`);
