@@ -24,6 +24,7 @@
 // lecture ne puisse pas devenir un outil d'écriture par inadvertance de frappe.
 
 import { empreinteCle, formeValide } from './cles.js';
+import { bornerChemin } from './borne.js';
 import { signerJetonEtablissement } from './jwt.js';
 
 export type Permission = 'read' | 'write';
@@ -140,7 +141,9 @@ function construireContexte(establishmentId: string, permissions: Permission[]):
       // et une requête MCP dure moins d'une seconde. Rien à faire expirer,
       // rien à rafraîchir, rien à garder en mémoire entre deux invocations.
       const jeton = signerJetonEtablissement(establishmentId);
-      const res = await appelRest(chemin, { Authorization: `Bearer ${jeton}` });
+      const res = await appelRest(bornerChemin(chemin, establishmentId), {
+        Authorization: `Bearer ${jeton}`,
+      });
 
       if (!res.ok) {
         // 401 ici ne peut vouloir dire qu'une chose : PostgREST refuse notre
