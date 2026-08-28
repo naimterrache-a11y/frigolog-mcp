@@ -31,6 +31,7 @@ import { contextePourCle, CleRefusee } from '../lib/prive/contexte.js';
 import { deploiementAutorise, MESSAGE_HOTE_REFUSE } from '../lib/prive/hote.js';
 import { OUTILS_PRIVES, OUTIL_PAR_NOM } from '../lib/prive/outils.js';
 import { RESSOURCE } from './oauth-ressource.js';
+import { journaliserAppel } from '../lib/prive/journal.js';
 
 // L'en-tête que lit un client pour savoir OÙ demander un accès. `resource_metadata`
 // pointe la fiche décrite par la RFC 9728 ; `Bearer` dit le schéma attendu.
@@ -205,15 +206,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           "Cette clé est en lecture seule. Une clé avec la permission 'write' est nécessaire."));
         return;
       }
+      // Le chronomètre part ici, pas plus haut : ce qu'on veut mesurer est le
+      // temps de l'OUTIL, pas celui de l'authentification.
+      const debut = Date.now();
       try {
         const donnees = await outil.executer(ctx, params.arguments ?? {});
         res.status(200).json({
           jsonrpc: '2.0', id,
           result: { content: [{ type: 'text', text: JSON.stringify(donnees, null, 2) }] },
         });
+        // Après la réponse, et sans `await` : le client attend ses données, pas
+        // notre comptabilité.
+        journaliserAppel({ outil: outil.name, statut: 200, dureeMs: Date.now() - debut });
       } catch (e) {
         console.error('[mcp-prive] outil en échec', params.name, (e as Error)?.message);
         res.status(200).json(erreur(id, -32603, (e as Error)?.message || "L'outil a échoué"));
+        // Les ÉCHECS sont journalisés aussi. Un outil qui casse en silence pour
+        // un seul client est précisément ce qu'un journal doit rendre visible —
+        // et c'est le cas qu'on ne pense jamais à instrumenter.
+        journaliserAppel({ outil: outil.name, statut: 500, dureeMs: Date.now() - debut });
       }
       return;
     }
