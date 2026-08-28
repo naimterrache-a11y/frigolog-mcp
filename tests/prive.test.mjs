@@ -539,4 +539,56 @@ ok('TOUT chemin écrit dans les outils ressort borné', () => {
   }
 });
 
+// ─── OAuth : ce qui rend le « un clic » possible ───────────────────────
+// Le parcours d'autorisation vit dans l'app, pas ici. Ce dépôt n'en porte que
+// DEUX pièces — et si l'une des deux manque, un client MCP ne peut pas
+// découvrir qu'il a le droit de demander un accès. Il voit un 401, et
+// s'arrête. Silencieusement, sans rien signaler à personne.
+
+ok('le 401 dit OÙ demander une autorisation', () => {
+  // Sans `WWW-Authenticate`, un client ne connaît de nous qu'une URL qui
+  // refuse. C'est le seul fil qu'il ait, et sa disparition ne casse aucun test
+  // fonctionnel : le serveur répond toujours 401, correctement. Elle casse
+  // seulement la découverte — donc l'acquisition, en silence.
+  const src = lire('api', 'mcp-prive.ts');
+  const poses = (src.match(/setHeader\('WWW-Authenticate'/g) || []).length;
+  assert.equal(poses, 2,
+    "l'en-tête doit être posé sur les DEUX 401 : clé absente ET clé refusée");
+  assert.match(src, /resource_metadata=/,
+    "l'en-tête doit pointer la fiche RFC 9728, sinon il n'indique rien");
+});
+
+ok('un jeton expiré relance le parcours, il ne meurt pas en silence', () => {
+  // Le 401 « clé refusée » couvre le cas d'un jeton OAuth arrivé à ses 90
+  // jours. Sans en-tête sur CE chemin-là, l'assistant d'un client cesse de
+  // répondre sans jamais proposer de se reconnecter.
+  const src = lire('api', 'mcp-prive.ts');
+  const zone = src.slice(src.indexOf('CleRefusee'), src.indexOf('Clé API invalide ou révoquée'));
+  assert.match(zone, /WWW-Authenticate/,
+    'le refus de clé doit lui aussi relancer le parcours');
+});
+
+ok('la fiche de ressource annonce le bon serveur d’autorisation', () => {
+  const src = lire('api', 'oauth-ressource.ts');
+  assert.match(src, /authorization_servers/,
+    'sans ce champ, la fiche ne mène nulle part');
+  assert.match(src, /app\.frigolog\.fr/,
+    "l'autorisation se demande sur l'app, qui a les comptes et l'écran de connexion");
+  // Le même garde d'hôte que le MCP privé : ce dépôt est déployé par deux
+  // projets Vercel, et celui qui n'a pas le droit de servir des données client
+  // n'a pas non plus à annoncer comment en demander l'accès.
+  assert.match(src, /deploiementAutorise/,
+    'la fiche doit être soumise au garde d’hôte, comme le MCP privé');
+});
+
+ok('la fiche est atteignable à l’adresse que le protocole impose', () => {
+  // Un client cherche `/.well-known/oauth-protected-resource`, pas
+  // `/api/oauth-ressource`. Sans le rewrite, le fichier existe et personne ne
+  // le trouve — la panne la plus frustrante qui soit.
+  const conf = JSON.parse(lire('vercel.json'));
+  const sources = (conf.rewrites || []).map((r) => r.source);
+  assert.ok(sources.includes('/.well-known/oauth-protected-resource'),
+    'le chemin .well-known doit être réécrit vers le handler');
+});
+
 console.log(`\n${passed} tests OK — MCP privé : clés, jeton, point de passage\n`);

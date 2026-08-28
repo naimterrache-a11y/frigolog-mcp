@@ -30,6 +30,12 @@ import { cleDepuisEnTete, cleLisible } from '../lib/prive/cles.js';
 import { contextePourCle, CleRefusee } from '../lib/prive/contexte.js';
 import { deploiementAutorise, MESSAGE_HOTE_REFUSE } from '../lib/prive/hote.js';
 import { OUTILS_PRIVES, OUTIL_PAR_NOM } from '../lib/prive/outils.js';
+import { RESSOURCE } from './oauth-ressource.js';
+
+// L'en-tête que lit un client pour savoir OÙ demander un accès. `resource_metadata`
+// pointe la fiche décrite par la RFC 9728 ; `Bearer` dit le schéma attendu.
+const enteteAuthentification = () =>
+  `Bearer resource_metadata="${RESSOURCE.replace(/\/api\/mcp-prive$/, '')}/.well-known/oauth-protected-resource"`;
 
 const PROTOCOL_VERSION = '2024-11-05';
 const SERVER_NAME = 'frigolog-prive';
@@ -104,8 +110,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // ── L'authentification, sur TOUTES les méthodes ───────────────────────
+  //
+  // ⚠️ Le 401 porte `WWW-Authenticate`, et ce n'est pas décoratif : c'est le
+  //    SEUL fil qu'un client MCP a pour découvrir qu'il peut demander un accès.
+  //    Il ne connaît de nous qu'une URL ; il appelle, prend un 401, et lit cet
+  //    en-tête. Sans lui, il s'arrête là — il n'a aucun moyen de deviner que
+  //    l'autorisation se demande sur un autre domaine. C'est la RFC 9728, et
+  //    c'est ce qui rend le parcours « se connecter en un clic » possible.
   const cle = cleDepuisEnTete(req.headers.authorization);
   if (!cle) {
+    res.setHeader('WWW-Authenticate', enteteAuthentification());
     res.status(401).json(erreur(null, -32001,
       "Clé API requise : en-tête `Authorization: Bearer frg_…`. Le serveur public frigolog-haccp, lui, n'en demande pas."));
     return;
@@ -119,6 +133,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Un seul et même refus, quelle qu'en soit la cause. Le préfixe suffit à
       // retrouver la clé dans nos logs sans jamais l'y écrire en entier.
       console.warn('[mcp-prive] clé refusée', cleLisible(cle));
+      // Même en-tête ici : un jeton expiré ou révoqué doit RELANCER le parcours
+      // d'autorisation. Sans lui, l'assistant d'un client dont le jeton a
+      // atteint ses 90 jours cesse simplement de répondre, sans jamais proposer
+      // de se reconnecter — la panne silencieuse type.
+      res.setHeader('WWW-Authenticate', enteteAuthentification());
       res.status(401).json(erreur(null, -32001, 'Clé API invalide ou révoquée'));
       return;
     }
