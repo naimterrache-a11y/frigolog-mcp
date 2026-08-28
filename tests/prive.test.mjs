@@ -539,4 +539,96 @@ ok('TOUT chemin écrit dans les outils ressort borné', () => {
   }
 });
 
+// ─── OAuth : ce qui rend le « un clic » possible ───────────────────────
+// Le parcours d'autorisation vit dans l'app, pas ici. Ce dépôt n'en porte que
+// DEUX pièces — et si l'une des deux manque, un client MCP ne peut pas
+// découvrir qu'il a le droit de demander un accès. Il voit un 401, et
+// s'arrête. Silencieusement, sans rien signaler à personne.
+
+ok('le 401 dit OÙ demander une autorisation', () => {
+  // Sans `WWW-Authenticate`, un client ne connaît de nous qu'une URL qui
+  // refuse. C'est le seul fil qu'il ait, et sa disparition ne casse aucun test
+  // fonctionnel : le serveur répond toujours 401, correctement. Elle casse
+  // seulement la découverte — donc l'acquisition, en silence.
+  const src = lire('api', 'mcp-prive.ts');
+  const poses = (src.match(/setHeader\('WWW-Authenticate'/g) || []).length;
+  assert.equal(poses, 2,
+    "l'en-tête doit être posé sur les DEUX 401 : clé absente ET clé refusée");
+  assert.match(src, /resource_metadata=/,
+    "l'en-tête doit pointer la fiche RFC 9728, sinon il n'indique rien");
+});
+
+ok('un jeton expiré relance le parcours, il ne meurt pas en silence', () => {
+  // Le 401 « clé refusée » couvre le cas d'un jeton OAuth arrivé à ses 90
+  // jours. Sans en-tête sur CE chemin-là, l'assistant d'un client cesse de
+  // répondre sans jamais proposer de se reconnecter.
+  const src = lire('api', 'mcp-prive.ts');
+  const zone = src.slice(src.indexOf('CleRefusee'), src.indexOf('Clé API invalide ou révoquée'));
+  assert.match(zone, /WWW-Authenticate/,
+    'le refus de clé doit lui aussi relancer le parcours');
+});
+
+ok('la fiche de ressource annonce le bon serveur d’autorisation', () => {
+  const src = lire('api', 'oauth-ressource.ts');
+  assert.match(src, /authorization_servers/,
+    'sans ce champ, la fiche ne mène nulle part');
+  assert.match(src, /app\.frigolog\.fr/,
+    "l'autorisation se demande sur l'app, qui a les comptes et l'écran de connexion");
+  // Le même garde d'hôte que le MCP privé : ce dépôt est déployé par deux
+  // projets Vercel, et celui qui n'a pas le droit de servir des données client
+  // n'a pas non plus à annoncer comment en demander l'accès.
+  assert.match(src, /deploiementAutorise/,
+    'la fiche doit être soumise au garde d’hôte, comme le MCP privé');
+});
+
+ok('la fiche est atteignable à l’adresse que le protocole impose', () => {
+  // Un client cherche `/.well-known/oauth-protected-resource`, pas
+  // `/api/oauth-ressource`. Sans le rewrite, le fichier existe et personne ne
+  // le trouve — la panne la plus frustrante qui soit.
+  const conf = JSON.parse(lire('vercel.json'));
+  const sources = (conf.rewrites || []).map((r) => r.source);
+  assert.ok(sources.includes('/.well-known/oauth-protected-resource'),
+    'le chemin .well-known doit être réécrit vers le handler');
+});
+
+// ─── Le journal : savoir si ça sert, sans savoir ce qu'on a demandé ────
+// Le MCP privé tournait depuis le 6 août sans écrire une seule trace. La
+// question « ça sert à qui ? » n'a eu qu'une réponse indirecte, trouvée en
+// regardant la table des clés. C'est l'erreur que le MCP public avait déjà
+// faite — Smithery comptait 717 appels quand notre tableau affichait zéro.
+
+ok('le journal n’écrit JAMAIS les paramètres d’un appel', () => {
+  // Ici l'appelant est un client qui paie : recopier ses paramètres, ce serait
+  // mettre le nom d'un produit reçu ou une plage de dates dans une table de
+  // télémétrie. Le serveur public le fait ; celui-ci ne doit pas.
+  const src = lire('lib', 'prive', 'journal.ts');
+  assert.match(src, /p_params: null/,
+    'les paramètres d’un client ne doivent jamais partir dans le journal');
+  assert.ok(!/establishment/i.test(src),
+    'le journal ne doit pas identifier l’établissement : savoir QUE ça sert n’exige pas de savoir qui');
+  assert.ok(!/p_agent_raw_ua: [^n]/.test(src),
+    'pas d’agent brut : même raison');
+});
+
+ok('le journal ne peut pas ralentir ni casser une réponse client', () => {
+  const src = lire('lib', 'prive', 'journal.ts');
+  assert.match(src, /AbortController/, 'un journal sans délai maximal peut retenir la réponse');
+  assert.match(src, /\.catch\(/, 'une panne de journal ne doit jamais remonter à l’appelant');
+  // La fonction ne rend rien : impossible de l'attendre par mégarde.
+  assert.match(src, /\): void \{/, 'la signature doit interdire d’attendre le journal');
+
+  const appelant = lire('api', 'mcp-prive.ts');
+  assert.ok(!/await journaliserAppel/.test(appelant),
+    'le client attend ses données, pas notre comptabilité');
+});
+
+ok('les échecs sont journalisés autant que les succès', () => {
+  // Un outil qui casse en silence pour un seul client est précisément ce qu'un
+  // journal doit rendre visible — et le cas qu'on n'instrumente jamais.
+  const src = lire('api', 'mcp-prive.ts');
+  const appels = (src.match(/journaliserAppel\(/g) || []).length;
+  assert.equal(appels, 2, 'le succès ET l’échec doivent écrire une ligne');
+  assert.match(src, /statut: 500/, 'l’échec doit être distinguable dans le journal');
+});
+
 console.log(`\n${passed} tests OK — MCP privé : clés, jeton, point de passage\n`);
