@@ -28,12 +28,23 @@ if (!process.features.typescript) {
   process.exit(1);
 }
 
+// Le crochet `.js` → `.ts` AVANT tout import de module qui en importe d'autres
+// (contexte.ts, outils.ts) : sans lui, seuls les modules sans dépendance locale
+// s'importaient, et les outils ne pouvaient être vérifiés qu'en relisant leur
+// texte. Cf. tests/resolveur-ts.mjs.
+await import('./resolveur-ts.mjs');
+
 const {
   PREFIXE_CLE, genererCle, empreinteCle, formeValide, prefixeDe, cleLisible, cleDepuisEnTete,
 } = await import('../lib/prive/cles.ts');
 const { signerJetonEtablissement, TTL_JETON_SECONDES } = await import('../lib/prive/jwt.ts');
 const { VAR_HOTES, hoteDeLaRequete, deploiementAutorise } = await import('../lib/prive/hote.ts');
 const { bornerChemin } = await import('../lib/prive/borne.ts');
+const {
+  contexteDeTestSansVerification, totalDepuisContentRange, PLAFOND_LECTURE, TAILLE_PAGE,
+} = await import('../lib/prive/contexte.ts');
+const { OUTIL_PAR_NOM } = await import('../lib/prive/outils.ts');
+const { jugerReleve, STATUT_TEMPERATURE } = await import('../lib/prive/conformite.ts');
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const lire = (...p) => readFileSync(path.join(ROOT, ...p), 'utf8');
@@ -49,6 +60,8 @@ const lireCode = (...p) => lire(...p)
 
 let passed = 0;
 const ok = (label, fn) => { fn(); passed++; console.log('  ✓', label); };
+// La même chose pour ce qui s'EXÉCUTE pour de vrai : outils, pagination.
+const okAsync = async (label, fn) => { await fn(); passed++; console.log('  ✓', label); };
 
 // ─── 1. Le format des clés ─────────────────────────────────────────────
 ok('une clé générée est reconnue par son propre validateur', () => {
@@ -408,15 +421,20 @@ ok('aucun outil ne filtre par établissement — et c\'est voulu', () => {
 });
 
 ok('les outils bornent ce que l\'appelant demande', () => {
-  // Un `limite` négatif ou absurde partirait sinon tel quel dans l'URL PostgREST.
-  const src = lire('lib', 'prive', 'outils.ts');
+  // Un `limite` négatif ou absurde partirait sinon tel quel vers PostgREST.
+  // Depuis que `lire()` pagine, un outil ne pose plus de `limit=` : il passe un
+  // `plafond`, borné par `borne()` ou par la constante de lecture — et `lire()`
+  // le rabat de toute façon à PLAFOND_LECTURE (testé plus bas, pour de vrai).
+  const src = lireCode('lib', 'prive', 'outils.ts');
   assert.ok(/LIMITE_MAX\s*=\s*\d+/.test(src), 'plus de plafond sur le nombre de lignes');
   assert.ok(/function borne\(/.test(src) && /function depuisIso\(/.test(src),
     'les bornes sur limite/jours ont disparu');
-  const appels = [...src.matchAll(/limit=\$\{([^}]+)\}/g)].map((m) => m[1]);
-  assert.ok(appels.length > 0, 'extraction à revoir');
-  for (const a of appels) {
-    assert.ok(a.includes('borne('), `un limit non borné : ${a}`);
+  assert.ok(!/[?&]limit=|[?&]offset=/.test(src),
+    'un outil pagine lui-même : la pagination appartient à lire(), qui sait dire si la réponse est complète');
+  const plafonds = [...src.matchAll(/plafond:\s*([^}\n]+)/g)].map((m) => m[1].trim());
+  assert.ok(plafonds.length >= 3, `seulement ${plafonds.length} plafonds trouvés — extraction à revoir`);
+  for (const p of plafonds) {
+    assert.ok(/^(borne\(|PLAFOND_LECTURE\b)/.test(p), `un plafond non borné : ${p}`);
   }
 });
 
@@ -488,7 +506,6 @@ ok('chaque table lue porte sa borne d\'établissement', () => {
   const chemins = [
     'equipments?select=id,name&order=zone,name',
     'cleaning_stations?select=name,zone&order=zone,name',
-    'cleaning_logs?select=post_name&created_at=gte.2026-01-01&limit=50',
     'reception_logs?select=supplier&created_at=gte.2026-01-01&limit=50',
   ];
   for (const c of chemins) {
@@ -629,6 +646,340 @@ ok('les échecs sont journalisés autant que les succès', () => {
   const appels = (src.match(/journaliserAppel\(/g) || []).length;
   assert.equal(appels, 2, 'le succès ET l’échec doivent écrire une ligne');
   assert.match(src, /statut: 500/, 'l’échec doit être distinguable dans le journal');
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// DES DONNÉES JUSTES — ce que le connecteur dit à l'assistant d'un client
+// ═══════════════════════════════════════════════════════════════════════
+// Un assistant IA ne recoupe rien : il croit la réponse et en tire une phrase
+// que le gérant croira à son tour. Quatre défauts de ce serveur lui faisaient
+// dire des choses fausses — sans aucune erreur visible. Chacun a ici un test
+// qui EXÉCUTE le code, et qui tombe si le correctif est retiré.
+
+// Un faux contexte qui enregistre ce que l'outil demande et rend ce qu'on veut.
+function faux(lignes, { total = lignes.length, complete } = {}) {
+  const appels = [];
+  return {
+    appels,
+    ctx: {
+      establishmentId: EST_A,
+      permissions: ['read'],
+      peutEcrire: () => false,
+      async lire(chemin, options = {}) {
+        appels.push({ chemin, options });
+        const plafond = options.plafond ?? PLAFOND_LECTURE;
+        const rendues = lignes.slice(0, plafond);
+        return {
+          lignes: rendues,
+          total,
+          complete: complete ?? (total !== null && rendues.length >= total),
+        };
+      },
+    },
+  };
+}
+
+// ─── 1. PROD-08 : le nettoyage se lit par son poste ───────────────────
+ok('PROD-08 — les nettoyages se bornent par le POSTE, jamais par leur establishment_id', () => {
+  // `cleaning_logs.establishment_id` manque sur un quart des nettoyages du parc.
+  // Borner dessus faisait disparaître un nettoyage sur quatre. La requête
+  // vérifiée est celle RÉELLEMENT écrite dans l'outil, pas un exemple.
+  const src = lireCode('lib', 'prive', 'outils.ts');
+  const chemin = src.match(/'(cleaning_logs\?select=[^']*)'/)?.[1];
+  assert.ok(chemin, 'requête des nettoyages introuvable — extraction à revoir');
+  const borne = bornerChemin(chemin, EST_A);
+  assert.ok(borne.includes(`cleaning_stations.establishment_id=eq.${EST_A}`),
+    'la borne doit porter sur le poste embarqué');
+  assert.ok(borne.includes('cleaning_stations!inner('),
+    'jointure INTERNE obligatoire, sinon le filtre sur le poste ne filtre rien');
+  assert.ok(!/(^|[?&])establishment_id=/.test(borne),
+    'cleaning_logs est filtré sur sa propre colonne establishment_id — viole PROD-08');
+});
+
+ok('une table bornée par une jointure sans son embed est REFUSÉE', () => {
+  // Sans l'embed, PostgREST rejetterait le filtre ; avec un alias, il viserait
+  // un nom inexistant. Dans les deux cas : refus net en développement.
+  assert.throws(() => bornerChemin('cleaning_logs?select=post_name,created_at', EST_A),
+    /cleaning_stations/);
+  assert.throws(() => bornerChemin('cleaning_logs?select=moment,poste:cleaning_stations(name)', EST_A),
+    /cleaning_stations/);
+  assert.throws(() => bornerChemin('temperature_logs?select=temperature', EST_A), /equipments/);
+  // L'embed juste après `select=` est reconnu, et passé en jointure interne.
+  assert.ok(bornerChemin('cleaning_logs?select=cleaning_stations(name)', EST_A)
+    .includes('select=cleaning_stations!inner(name)'));
+});
+
+// ─── 2. La conformité se juge contre la plage ─────────────────────────
+ok('la conformité d\'un relevé se JUGE — mêmes cas limites que evaluateTempLog', () => {
+  const plage = { min: 0, max: 4 };
+  assert.equal(jugerReleve({ temperature: 3 }, plage), STATUT_TEMPERATURE.CONFORME);
+  assert.equal(jugerReleve({ temperature: 4 }, plage), STATUT_TEMPERATURE.CONFORME, 'bornes incluses');
+  assert.equal(jugerReleve({ temperature: 0 }, plage), STATUT_TEMPERATURE.CONFORME, 'bornes incluses');
+  assert.equal(jugerReleve({ temperature: 6.2 }, plage), STATUT_TEMPERATURE.HORS_PLAGE);
+  assert.equal(jugerReleve({ temperature: -0.5 }, plage), STATUT_TEMPERATURE.HORS_PLAGE);
+  // Un seuil inconnu n'est ni un écart ni une conformité.
+  assert.equal(jugerReleve({ temperature: 3 }, { min: null, max: 4 }), STATUT_TEMPERATURE.SEUIL_INCONNU);
+  assert.equal(jugerReleve({ temperature: 3 }, { min: 0 }), STATUT_TEMPERATURE.SEUIL_INCONNU);
+  assert.equal(jugerReleve({ temperature: 3 }, null), STATUT_TEMPERATURE.SEUIL_INCONNU);
+  assert.equal(jugerReleve({ temperature: null }, plage), STATUT_TEMPERATURE.SEUIL_INCONNU);
+  assert.equal(jugerReleve({ temperature: NaN }, plage), STATUT_TEMPERATURE.SEUIL_INCONNU);
+  assert.equal(jugerReleve({ temperature: '3' }, plage), STATUT_TEMPERATURE.SEUIL_INCONNU,
+    'même règle que l\'app : une mesure non numérique ne se juge pas');
+  // `is_compliant` n'a AUCUNE voix au chapitre.
+  assert.equal(jugerReleve({ temperature: 9, is_compliant: true }, plage), STATUT_TEMPERATURE.HORS_PLAGE);
+  assert.equal(jugerReleve({ temperature: 2, is_compliant: false }, plage), STATUT_TEMPERATURE.CONFORME);
+});
+
+await okAsync('les non-conformités se comptent sur la VALEUR, pas sur is_compliant', async () => {
+  const eq = { name: 'Saladette', zone: 'froid', min: 0, max: 4 };
+  const { ctx, appels } = faux([
+    // is_compliant NULL (la majorité du parc) mais hors plage : c'est un écart.
+    { temperature: 6.2, is_compliant: null, equipments: eq, created_at: '2026-09-10T10:00:00Z' },
+    // is_compliant false mais dans la plage : ce n'est PAS un écart.
+    { temperature: 2, is_compliant: false, equipments: eq, created_at: '2026-09-10T09:00:00Z' },
+    { temperature: 3, is_compliant: false, equipments: eq, created_at: '2026-09-10T08:00:00Z' },
+    // Enceinte sans plage : inconnu, jamais compté conforme.
+    { temperature: 5, is_compliant: null, equipments: { name: 'Four', min: null, max: null }, created_at: '2026-09-10T07:00:00Z' },
+  ]);
+  const r = await OUTIL_PAR_NOM.mes_derniers_releves_temperature.executer(ctx, {});
+  // Compter `is_compliant === false` donnerait 2, et raterait le seul vrai écart.
+  assert.equal(r.non_conformes, 1, 'les non-conformités ne sont pas jugées sur la valeur');
+  assert.equal(r.seuil_inconnu, 1);
+  assert.deepEqual(r.releves.map((l) => l.conformite),
+    ['hors_plage', 'conforme', 'conforme', 'seuil_inconnu']);
+  assert.ok(!/is_compliant/.test(appels[0].chemin), 'la colonne à l\'abandon est encore demandée');
+  assert.ok(/equipments\([^)]*min[^)]*max/.test(appels[0].chemin),
+    'sans min/max de l\'enceinte, la conformité ne peut pas se juger');
+});
+
+await okAsync('les compteurs portent sur TOUTE la période, pas sur les N relevés listés', async () => {
+  const eq = { name: 'Chambre froide', min: 0, max: 4 };
+  const lignes = Array.from({ length: 137 }, (_, i) => ({
+    temperature: i >= 130 ? 9 : 2, equipments: eq, created_at: `2026-09-01T00:00:${String(i % 60).padStart(2, '0')}Z`,
+  }));
+  const { ctx } = faux(lignes);
+  const r = await OUTIL_PAR_NOM.mes_derniers_releves_temperature.executer(ctx, { limite: 20 });
+  assert.equal(r.renvoyes, 20);
+  // Les 7 écarts sont les PLUS ANCIENS : absents des 20 listés, présents au compteur.
+  assert.equal(r.non_conformes, 7, 'un écart hors des relevés listés disparaît du compteur');
+  assert.equal(r.compteurs_complets, true);
+});
+
+// ─── 3. Le nom du poste vient de la jointure ──────────────────────────
+await okAsync('le nettoyage dit QUEL poste, par la jointure, avec l\'ancienne colonne en repli', async () => {
+  const { ctx, appels } = faux([
+    { post_name: '', cleaning_stations: { name: 'Hotte' }, moment: 'soir', notes: null, created_at: '2026-09-10' },
+    { post_name: null, cleaning_stations: { name: 'Plan de travail' }, moment: 'midi', notes: null, created_at: '2026-09-09' },
+    // Le seul repli atteignable : un poste dont le nom est vide. (Un poste
+    // absent ne sort pas du tout — la jointure est interne.)
+    { post_name: 'Trancheuse', cleaning_stations: { name: '' }, moment: 'matin', notes: null, created_at: '2026-06-01' },
+  ]);
+  const r = await OUTIL_PAR_NOM.mes_nettoyages_recents.executer(ctx, {});
+  assert.deepEqual(r.nettoyages.map((n) => n.poste), ['Hotte', 'Plan de travail', 'Trancheuse']);
+  assert.ok(/cleaning_stations\(name\)/.test(appels[0].chemin),
+    'le nom du poste n\'est plus demandé à cleaning_stations');
+});
+
+// ─── 4. Une réponse tronquée le DIT ───────────────────────────────────
+await okAsync('une liste tronquée le dit, en toutes lettres, avec le vrai total', async () => {
+  const lignes = Array.from({ length: 137 }, (_, i) => ({ supplier: `F${i}`, created_at: '2026-09-01' }));
+  const { ctx, appels } = faux(lignes);
+  const r = await OUTIL_PAR_NOM.mes_receptions_recentes.executer(ctx, { limite: 20 });
+  assert.equal(appels[0].options.plafond, 20);
+  assert.equal(r.renvoyes, 20);
+  assert.equal(r.total_sur_la_periode, 137);
+  assert.equal(r.tronque, true, 'une réponse amputée se présente comme complète');
+  assert.match(r.avertissement, /TRONQUÉE/);
+  assert.match(r.avertissement, /20 .*137/);
+  assert.ok(!('total' in r && r.total === 20), 'le nombre renvoyé se fait passer pour un total');
+});
+
+await okAsync('une liste complète ne crie pas au loup, et un total inconnu n\'est pas un total', async () => {
+  const { ctx } = faux([{ supplier: 'A' }, { supplier: 'B' }]);
+  const r = await OUTIL_PAR_NOM.mes_receptions_recentes.executer(ctx, {});
+  assert.equal(r.tronque, false);
+  assert.equal(r.avertissement, undefined);
+
+  const inconnu = faux([{ supplier: 'A' }], { total: null });
+  const r2 = await OUTIL_PAR_NOM.mes_receptions_recentes.executer(inconnu.ctx, {});
+  assert.equal(r2.tronque, true, 'sans décompte, on ne peut PAS affirmer que la liste est complète');
+  assert.match(r2.avertissement, /INCOMPLÈTE/);
+});
+
+await okAsync('chaque outil signale sa troncature', async () => {
+  // Un sixième outil qui renverrait une liste sans `tronque` referait le défaut.
+  const lignes = Array.from({ length: 5 }, () => ({ name: 'x', next_due_at: null }));
+  for (const nom of Object.keys(OUTIL_PAR_NOM)) {
+    const { ctx } = faux(lignes, { total: 500, complete: false });
+    const r = await OUTIL_PAR_NOM[nom].executer(ctx, { limite: 5 });
+    assert.equal(r.tronque, true, `${nom} ne dit pas qu'il a tronqué`);
+    assert.equal(typeof r.avertissement, 'string', `${nom} tronque sans phrase`);
+  }
+});
+
+// ─── 5. lire() pagine, compte, et ne ment pas sur ce qu'elle a ─────────
+process.env.SUPABASE_URL = 'https://base-de-test.invalid';
+process.env.SUPABASE_ANON_KEY = 'anon-de-test';
+
+// Un PostgREST simulé : `n` lignes, un plafond serveur `maxRows`, et le
+// Content-Range qu'il pose quand on demande `count=exact`.
+// Les lignes sont triées « plus récente d'abord » : une insertion (`apresPage`)
+// arrive EN TÊTE et fait glisser toutes les suivantes d'un rang, comme en vrai.
+// `avancerHorloge` fait passer le temps de N ms à chaque requête.
+function simulerPostgrest(n, { maxRows = TAILLE_PAGE, compter = true, insererApresPage, avancerHorloge } = {}) {
+  const requetes = [];
+  let lignesBase = Array.from({ length: n }, (_, i) => ({ i }));
+  const original = globalThis.fetch;
+  const dateOriginale = Date.now;
+  let decalage = 0;
+  if (avancerHorloge) Date.now = () => dateOriginale() + decalage;
+  globalThis.fetch = async (url, init) => {
+    if (avancerHorloge) decalage += avancerHorloge;
+    const u = new URL(url);
+    const limit = Number(u.searchParams.get('limit'));
+    const offset = Number(u.searchParams.get('offset'));
+    requetes.push({ url: String(url), prefer: init?.headers?.Prefer });
+    const corps = lignesBase.slice(offset, offset + Math.min(limit, maxRows));
+    const total = lignesBase.length;
+    if (insererApresPage === requetes.length) lignesBase = [{ i: 'nouvelle' }, ...lignesBase];
+    const headers = new Headers();
+    if (compter && init?.headers?.Prefer === 'count=exact') {
+      headers.set('content-range', corps.length ? `${offset}-${offset + corps.length - 1}/${total}` : `*/${total}`);
+    }
+    // PostgREST répond 206 quand la page ne couvre pas tout.
+    const statut = corps.length < total ? 206 : 200;
+    return new Response(JSON.stringify(corps), { status: statut, headers });
+  };
+  return {
+    requetes,
+    restaurer: () => { globalThis.fetch = original; Date.now = dateOriginale; },
+  };
+}
+
+ok('le Content-Range se lit, et son absence reste une absence', () => {
+  assert.equal(totalDepuisContentRange('0-19/137'), 137);
+  assert.equal(totalDepuisContentRange('*/0'), 0);
+  assert.equal(totalDepuisContentRange('0-19/*'), null);
+  assert.equal(totalDepuisContentRange(null), null);
+  assert.equal(totalDepuisContentRange(''), null);
+});
+
+await okAsync('au-delà de 1000 lignes, lire() pagine jusqu\'au bout et le prouve', async () => {
+  const sim = simulerPostgrest(2500);
+  try {
+    const ctx = contexteDeTestSansVerification(EST_A);
+    const l = await ctx.lire('equipments?select=id&order=zone,name,id');
+    assert.equal(l.lignes.length, 2500, 'le plafond de 1000 lignes de PostgREST coupe en silence');
+    assert.equal(l.total, 2500);
+    assert.equal(l.complete, true);
+    assert.equal(sim.requetes.length, 3);
+    assert.equal(new Set(l.lignes.map((x) => x.i)).size, 2500, 'des pages se chevauchent');
+    assert.equal(sim.requetes.filter((r) => r.prefer === 'count=exact').length, 1);
+    for (const r of sim.requetes) {
+      assert.ok(r.url.includes(`establishment_id=eq.${EST_A}`), 'une page sort sans borne');
+    }
+  } finally { sim.restaurer(); }
+});
+
+await okAsync('un serveur qui coupe plus bas que prévu ne fait pas croire à la fin', async () => {
+  const sim = simulerPostgrest(2500, { maxRows: 400 });
+  try {
+    const l = await contexteDeTestSansVerification(EST_A).lire('equipments?select=id');
+    assert.equal(l.lignes.length, 2500);
+    assert.equal(l.complete, true);
+  } finally { sim.restaurer(); }
+});
+
+await okAsync('un plafond atteint rend complete: false et le vrai total', async () => {
+  const sim = simulerPostgrest(137);
+  try {
+    const l = await contexteDeTestSansVerification(EST_A).lire('reception_logs?select=supplier', { plafond: 20 });
+    assert.equal(l.lignes.length, 20);
+    assert.equal(l.total, 137);
+    assert.equal(l.complete, false);
+    assert.equal(sim.requetes.length, 1);
+  } finally { sim.restaurer(); }
+});
+
+await okAsync('sans décompte, lire() ne se déclare jamais complète', async () => {
+  const sim = simulerPostgrest(12, { compter: false });
+  try {
+    const l = await contexteDeTestSansVerification(EST_A).lire('reception_logs?select=supplier');
+    assert.equal(l.lignes.length, 12);
+    assert.equal(l.total, null);
+    assert.equal(l.complete, false);
+  } finally { sim.restaurer(); }
+});
+
+await okAsync('le plafond est rabattu, et limit/offset dans le chemin sont refusés', async () => {
+  const sim = simulerPostgrest(PLAFOND_LECTURE + 500);
+  try {
+    const ctx = contexteDeTestSansVerification(EST_A);
+    const l = await ctx.lire('equipments?select=id', { plafond: 1e9 });
+    assert.equal(l.lignes.length, PLAFOND_LECTURE);
+    assert.equal(l.complete, false);
+    await assert.rejects(() => ctx.lire('equipments?select=id&limit=5'), /plafond/);
+    await assert.rejects(() => ctx.lire('equipments?select=id&offset=5'), /plafond/);
+  } finally { sim.restaurer(); }
+});
+
+await okAsync('un plafond absurde vaut UNE ligne, jamais le maximum', async () => {
+  const sim = simulerPostgrest(50);
+  try {
+    const ctx = contexteDeTestSansVerification(EST_A);
+    for (const p of [0, -5, NaN]) {
+      const l = await ctx.lire('equipments?select=id', { plafond: p });
+      assert.equal(l.lignes.length, 1, `plafond ${p} a lu ${l.lignes.length} lignes`);
+    }
+  } finally { sim.restaurer(); }
+});
+
+await okAsync('chaque page d\'une table bornée par jointure garde sa borne', async () => {
+  const sim = simulerPostgrest(2300);
+  try {
+    const l = await contexteDeTestSansVerification(EST_A)
+      .lire('temperature_logs?select=temperature,equipments(min,max)&order=created_at.desc,id.desc');
+    assert.equal(l.complete, true);
+    assert.ok(sim.requetes.length >= 3);
+    for (const r of sim.requetes) {
+      assert.ok(r.url.includes(`equipments.establishment_id=eq.${EST_A}`), 'une page sort sans borne');
+      assert.ok(r.url.includes('equipments!inner('), 'une page sort en jointure externe');
+    }
+  } finally { sim.restaurer(); }
+});
+
+await okAsync('une ligne insérée PENDANT la lecture empêche de se dire complet', async () => {
+  // Le cas le plus traître : un total multiple exact de la taille de page. Le
+  // glissement fait entrer un doublon et sortir la plus ancienne, et le compte
+  // tombe pile sur le total — sans la page de vérification, « complet ».
+  for (const n of [2000, 2500]) {
+    const sim = simulerPostgrest(n, { insererApresPage: 1 });
+    try {
+      const l = await contexteDeTestSansVerification(EST_A).lire('equipments?select=id');
+      assert.equal(l.complete, false, `n=${n} : une lecture qui a glissé se déclare complète`);
+    } finally { sim.restaurer(); }
+  }
+});
+
+await okAsync('au-delà du budget de temps, lire() rend ce qu\'elle a et le dit — sans lever', async () => {
+  // 5 s par page : la 3e dépasserait les 12 s. Vercel coupe à 20 s, et une
+  // coupure ne rend RIEN au client.
+  const sim = simulerPostgrest(9000, { avancerHorloge: 5000 });
+  try {
+    const l = await contexteDeTestSansVerification(EST_A).lire('equipments?select=id');
+    assert.ok(l.lignes.length > 0 && l.lignes.length < 9000, `${l.lignes.length} lignes lues`);
+    assert.equal(l.total, 9000);
+    assert.equal(l.complete, false, 'une lecture interrompue se déclare complète');
+    assert.ok(sim.requetes.length <= 3, `${sim.requetes.length} requêtes : le budget ne mord pas`);
+  } finally { sim.restaurer(); }
+});
+
+ok('seul le select porte l\'embed : un order= qui nomme la ressource n\'est ni pris ni réécrit', () => {
+  assert.throws(() => bornerChemin('temperature_logs?select=temperature&order=equipments(name).asc', EST_A),
+    /equipments/);
+  const b = bornerChemin('temperature_logs?select=equipments(name)&order=equipments(name).asc', EST_A);
+  assert.ok(b.includes('select=equipments!inner(name)'));
+  assert.ok(b.includes('order=equipments(name).asc'), 'le order= a été réécrit');
 });
 
 console.log(`\n${passed} tests OK — MCP privé : clés, jeton, point de passage\n`);
