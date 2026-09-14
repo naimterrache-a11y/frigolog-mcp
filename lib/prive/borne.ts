@@ -34,7 +34,15 @@ type Borne = { colonne: string } | { via: string; colonne: string };
 
 const BORNES: Record<string, Borne> = {
   equipments: { colonne: 'establishment_id' },
-  cleaning_logs: { colonne: 'establishment_id' },
+  // ⚠️ PROD-08 : `cleaning_logs` se borne par son POSTE, JAMAIS par sa propre
+  //    colonne `establishment_id`. Celle-ci n'est posée que si le navigateur la
+  //    connaissait au moment de la validation : elle manque sur un quart des
+  //    nettoyages du parc. Borner dessus faisait disparaître un nettoyage sur
+  //    quatre, et l'outil répondait « voici vos nettoyages » en les cachant.
+  //    Un poste, lui, appartient à un seul établissement : la borne passe par
+  //    lui, exactement comme le score, le dossier de contrôle et l'assistant
+  //    de l'app. Ne « simplifiez » jamais ceci vers establishment_id.
+  cleaning_logs: { via: 'cleaning_stations', colonne: 'establishment_id' },
   cleaning_stations: { colonne: 'establishment_id' },
   reception_logs: { colonne: 'establishment_id' },
   // `temperature_logs` ne porte PAS `establishment_id` : il pointe l'enceinte,
@@ -50,16 +58,27 @@ export function bornerChemin(chemin: string, establishmentId: string): string {
   if (!borne) {
     throw new Error(
       `Lecture refusée : la table « ${table} » n'a pas de borne d'établissement déclarée. `
-      + `Ajoutez-la dans BORNES (lib/prive/contexte.ts) avant de l'interroger.`,
+      + `Ajoutez-la dans BORNES (lib/prive/borne.ts) avant de l'interroger.`,
     );
   }
 
   if ('via' in borne) {
+    // Le filtre porte sur la ressource EMBARQUÉE : sans l'embed dans le select,
+    // PostgREST refuserait la requête — ou pire, avec un alias, le filtre
+    // viserait un nom qui n'existe pas. On refuse donc tout ce qui n'est pas
+    // la forme exacte `via(…)` ou `via!inner(…)`, plutôt que de deviner.
+    const embed = new RegExp(`(^|[?&=,])${borne.via}(!inner)?\\(`);
+    if (!embed.test(chemin)) {
+      throw new Error(
+        `Lecture refusée : « ${table} » se borne par « ${borne.via} », qui doit être embarqué `
+        + `sans alias dans le select (ex. ${borne.via}(name)).`,
+      );
+    }
     // L'embed doit être `!inner`. S'il est écrit sans, on le corrige plutôt que
     // de refuser : l'outil a demandé la bonne donnée, c'est la forme de la
     // jointure qui décide de l'isolation, et elle n'appartient pas à l'outil.
     const avecInner = chemin.replace(
-      new RegExp(`(^|[?&,])${borne.via}\\(`, 'g'),
+      new RegExp(`(^|[?&=,])${borne.via}\\(`, 'g'),
       `$1${borne.via}!inner(`,
     );
     return `${avecInner}&${borne.via}.${borne.colonne}=eq.${establishmentId}`;

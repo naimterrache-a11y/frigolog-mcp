@@ -29,20 +29,58 @@ import { signerJetonEtablissement } from './jwt.js';
 
 export type Permission = 'read' | 'write';
 
+/**
+ * Le résultat d'une lecture, AVEC ce qu'il faut pour savoir s'il est entier.
+ *
+ * ⚠️ Pourquoi pas un simple tableau, comme avant. Un tableau ne dit pas s'il
+ *    est complet. PostgREST coupe en silence — à la `limit` demandée, et au
+ *    plafond du serveur (1000 lignes) quand on n'en demande pas. Un outil qui
+ *    renvoyait « total: 20 » pour les 20 derniers relevés d'une année en
+ *    comptant 3 000 présentait une réponse amputée comme exhaustive : c'est
+ *    le défaut le plus grave qu'un connecteur de données puisse avoir, parce
+ *    qu'un assistant IA en tire des conclusions (« aucune non-conformité »)
+ *    que personne ne recoupe.
+ */
+export interface Lecture<T> {
+  lignes: T[];
+  /** Nombre de lignes qui répondent à la requête EN BASE, ou null si PostgREST ne l'a pas dit. */
+  total: number | null;
+  /** Vrai seulement si le décompte PROUVE que `lignes` les contient toutes. */
+  complete: boolean;
+}
+
 export interface Contexte {
   readonly establishmentId: string;
   readonly permissions: readonly Permission[];
   /** Vrai si la clé porte 'write'. Les outils d'écriture le vérifient. */
   peutEcrire(): boolean;
   /**
-   * Lecture PostgREST bornée à l'établissement de la clé — par le claim, pas
-   * par un filtre applicatif. `chemin` est une requête PostgREST sans le
-   * préfixe, ex. `temperature_logs?select=id,value&order=created_at.desc`.
+   * Lecture PostgREST bornée à l'établissement de la clé. `chemin` est une
+   * requête PostgREST sans le préfixe NI `limit`/`offset`, ex.
+   * `temperature_logs?select=temperature,equipments(name)&order=created_at.desc`.
+   * La pagination appartient à `lire()` : on lui dit combien de lignes on veut
+   * au plus (`plafond`), elle va les chercher page par page et dit si elle a
+   * tout.
    */
-  lire<T = unknown>(chemin: string): Promise<T[]>;
+  lire<T = unknown>(chemin: string, options?: { plafond?: number }): Promise<Lecture<T>>;
 }
 
 const TIMEOUT_MS = 8000;
+
+/** Au-delà, une lecture s'arrête et le DIT (`complete: false`). */
+export const PLAFOND_LECTURE = 10_000;
+/** Le plafond `max-rows` de PostgREST sur Supabase. Une page plus grande serait coupée. */
+export const TAILLE_PAGE = 1000;
+
+/**
+ * `Content-Range: 0-19/137` → 137. `*\/0` → 0. Absent ou `…/*` → null.
+ * Un total inconnu n'est JAMAIS remplacé par le nombre de lignes reçues :
+ * c'est exactement la confusion que ce module existe pour empêcher.
+ */
+export function totalDepuisContentRange(entete: string | null | undefined): number | null {
+  const m = /^\s*(?:\d+-\d+|\*)\/(\d+)\s*$/.exec(String(entete ?? ''));
+  return m ? Number(m[1]) : null;
+}
 
 function env(nom: string): string {
   const v = process.env[nom];
@@ -136,29 +174,66 @@ function construireContexte(establishmentId: string, permissions: Permission[]):
     permissions,
     peutEcrire: () => permissions.includes('write'),
 
-    async lire<T>(chemin: string): Promise<T[]> {
-      // Le jeton est signé à chaque appel plutôt que gardé : il vit 5 minutes,
-      // et une requête MCP dure moins d'une seconde. Rien à faire expirer,
-      // rien à rafraîchir, rien à garder en mémoire entre deux invocations.
-      const jeton = signerJetonEtablissement(establishmentId);
-      const res = await appelRest(bornerChemin(chemin, establishmentId), {
-        Authorization: `Bearer ${jeton}`,
-      });
-
-      if (!res.ok) {
-        // 401 ici ne peut vouloir dire qu'une chose : PostgREST refuse notre
-        // signature, donc SUPABASE_JWT_SECRET diverge de celui du projet
-        // Supabase. Le dire, plutôt que de rendre une liste vide qui se lirait
-        // « ce client n'a aucune donnée ».
-        if (res.status === 401) {
-          throw new Error(
-            'PostgREST refuse la signature du MCP — SUPABASE_JWT_SECRET incohérent avec le projet Supabase',
-          );
-        }
-        throw new Error(`Lecture impossible (HTTP ${res.status})`);
+    async lire<T>(chemin: string, options: { plafond?: number } = {}): Promise<Lecture<T>> {
+      if (/[?&](limit|offset)=/.test(chemin)) {
+        throw new Error(
+          'Lecture refusée : `limit`/`offset` n\'appartiennent pas au chemin — passez { plafond } à lire(), '
+          + 'qui pagine et dit si la réponse est complète.',
+        );
       }
-      const json = await res.json().catch(() => []);
-      return Array.isArray(json) ? (json as T[]) : [];
+      const demande = Math.trunc(Number(options.plafond ?? PLAFOND_LECTURE));
+      const plafond = Number.isFinite(demande) && demande >= 1
+        ? Math.min(demande, PLAFOND_LECTURE)
+        : PLAFOND_LECTURE;
+      const borne = bornerChemin(chemin, establishmentId);
+
+      const lignes: T[] = [];
+      let total: number | null = null;
+      let premiere = true;
+
+      while (lignes.length < plafond) {
+        const taille = Math.min(TAILLE_PAGE, plafond - lignes.length);
+        // Le jeton est signé à chaque appel plutôt que gardé : il vit 5 minutes,
+        // et une page dure moins d'une seconde. Rien à faire expirer, rien à
+        // rafraîchir, rien à garder en mémoire entre deux invocations.
+        const jeton = signerJetonEtablissement(establishmentId);
+        const res = await appelRest(`${borne}&limit=${taille}&offset=${lignes.length}`, {
+          Authorization: `Bearer ${jeton}`,
+          // Le décompte n'est demandé qu'une fois : c'est lui, et non la taille
+          // de la dernière page, qui dit si l'on a tout.
+          ...(premiere ? { Prefer: 'count=exact' } : {}),
+        });
+
+        if (!res.ok) {
+          // 401 ici ne peut vouloir dire qu'une chose : PostgREST refuse notre
+          // signature, donc SUPABASE_JWT_SECRET diverge de celui du projet
+          // Supabase. Le dire, plutôt que de rendre une liste vide qui se lirait
+          // « ce client n'a aucune donnée ».
+          if (res.status === 401) {
+            throw new Error(
+              'PostgREST refuse la signature du MCP — SUPABASE_JWT_SECRET incohérent avec le projet Supabase',
+            );
+          }
+          throw new Error(`Lecture impossible (HTTP ${res.status})`);
+        }
+        if (premiere) total = totalDepuisContentRange(res.headers.get('content-range'));
+        premiere = false;
+
+        const json = await res.json().catch(() => null);
+        // Un corps illisible n'est pas « aucune ligne » : c'est une lecture ratée.
+        if (!Array.isArray(json)) throw new Error('Lecture impossible (réponse illisible)');
+        lignes.push(...(json as T[]));
+
+        if (json.length === 0) break;
+        if (total !== null && lignes.length >= total) break;
+        // Sans décompte, une page plus courte que demandée est la seule fin
+        // qu'on puisse constater — et elle ne prouve rien : `complete` restera
+        // faux. (Avec décompte, une page courte signifie seulement que le
+        // serveur coupe plus bas que TAILLE_PAGE ; on continue.)
+        if (total === null && json.length < taille) break;
+      }
+
+      return { lignes, total, complete: total !== null && lignes.length >= total };
     },
   };
 }

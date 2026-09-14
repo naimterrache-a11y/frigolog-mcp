@@ -21,10 +21,39 @@
 // est un client qui PAIE et qui lit ses propres relevés. Lui servir « essai
 // gratuit 14 jours » collé à ses températures serait au mieux ridicule.
 
-import type { Contexte } from './contexte.js';
+import type { Contexte, Lecture } from './contexte.js';
+import { PLAFOND_LECTURE } from './contexte.js';
+import { jugerReleve, STATUT_TEMPERATURE } from './conformite.js';
 
 const LIMITE_DEFAUT = 20;
 const LIMITE_MAX = 100;
+
+// ── Une réponse amputée ne se présente JAMAIS comme complète ───────────
+// Chaque liste renvoyée dit combien il en existe sur la période, et si elle
+// est tronquée, elle le dit en toutes lettres — dans un champ que l'assistant
+// ne peut pas manquer. Avant, `total` valait le nombre de lignes RENVOYÉES :
+// « total: 20 » pour une semaine qui en comptait 140. Un assistant en tirait
+// « vous avez fait 20 relevés », ou pire, « aucune non-conformité ».
+function signalerTroncature(
+  renvoyes: number,
+  lecture: Lecture<unknown>,
+  quoi: string,
+): { tronque: boolean; avertissement?: string } {
+  if (lecture.total !== null && renvoyes >= lecture.total) return { tronque: false };
+  if (lecture.total === null) {
+    return {
+      tronque: true,
+      avertissement: `Liste possiblement INCOMPLÈTE (${quoi} : ${renvoyes} dans cette réponse) : le nombre `
+        + `total n'a pas pu être vérifié. Ne présentez pas cette liste comme exhaustive.`,
+    };
+  }
+  return {
+    tronque: true,
+    avertissement: `Liste TRONQUÉE (${quoi} : ${renvoyes} dans cette réponse sur ${lecture.total} sur la période). `
+      + `N'en concluez rien sur ce qui n'est pas listé ; augmentez « limite » (max ${LIMITE_MAX}) `
+      + `ou réduisez « jours » pour tout voir.`,
+  };
+}
 
 // Un entier borné, quoi qu'envoie l'appelant. Un `limit` négatif ou absurde
 // part sinon tel quel dans l'URL PostgREST.
@@ -58,35 +87,65 @@ export const OUTILS_PRIVES: OutilPrive[] = [
     inputSchema: { type: 'object', properties: {} },
     permission: 'read',
     async executer(ctx) {
-      const lignes = await ctx.lire<Record<string, unknown>>(
-        'equipments?select=id,name,type,zone,min,max&order=zone,name',
+      const lecture = await ctx.lire<Record<string, unknown>>(
+        'equipments?select=id,name,type,zone,min,max&order=zone,name,id',
       );
-      return { equipements: lignes, total: lignes.length };
+      const n = lecture.lignes.length;
+      return {
+        equipements: lecture.lignes,
+        total: lecture.total,
+        ...signalerTroncature(n, lecture, 'équipements'),
+      };
     },
   },
 
   {
     name: 'mes_derniers_releves_temperature',
     description:
-      "Renvoie les derniers relevés de température de VOTRE établissement, du plus récent au plus ancien : valeur, moment de la journée, équipement concerné, et si le relevé était conforme à la plage attendue.",
+      "Renvoie les derniers relevés de température de VOTRE établissement, du plus récent au plus ancien : valeur, moment de la journée, équipement concerné, et la conformité jugée contre la plage de l'équipement (conforme, hors_plage, ou seuil_inconnu si l'équipement n'a pas de plage). Les compteurs (non_conformes, seuil_inconnu) portent sur TOUTE la période, pas seulement sur les relevés listés.",
     inputSchema: {
       type: 'object',
       properties: {
-        limite: { type: 'number', description: 'Nombre de relevés (1 à 100, défaut 20).' },
+        limite: { type: 'number', description: 'Nombre de relevés listés (1 à 100, défaut 20).' },
         jours: { type: 'number', description: "Fenêtre en jours (défaut 7, max 365)." },
       },
     },
     permission: 'read',
     async executer(ctx, args) {
-      // L'embed `equipments(...)` traverse la clé étrangère : la RLS de
-      // temperature_logs passe par equipment_id, donc rien ne fuit ici.
-      const lignes = await ctx.lire<Record<string, unknown>>(
-        'temperature_logs?select=temperature,moment,is_compliant,corrective_action,created_at,equipments(name,zone,min,max)' +
+      // L'embed `equipments(...)` porte la plage : sans min/max, la conformité
+      // ne se juge pas. Toute la période est lue (paginée), parce que les
+      // compteurs doivent parler de la période et non des N relevés affichés.
+      // `is_compliant` n'est PAS demandé : colonne à l'abandon, NULL sur plus
+      // d'un relevé sur deux (cf. lib/prive/conformite.ts).
+      const lecture = await ctx.lire<Record<string, unknown>>(
+        'temperature_logs?select=temperature,moment,corrective_action,created_at,equipments(name,zone,min,max)' +
           `&created_at=gte.${depuisIso(args.jours)}` +
-          `&order=created_at.desc&limit=${borne(args.limite)}`,
+          '&order=created_at.desc,id.desc',
+        { plafond: PLAFOND_LECTURE },
       );
-      const nonConformes = lignes.filter((l) => l.is_compliant === false).length;
-      return { releves: lignes, total: lignes.length, non_conformes: nonConformes };
+      const juges = lecture.lignes.map((l) => ({
+        ...l,
+        conformite: jugerReleve(l, l.equipments as { min?: unknown; max?: unknown } | null),
+      }));
+      const horsPlage = juges.filter((l) => l.conformite === STATUT_TEMPERATURE.HORS_PLAGE).length;
+      const seuilInconnu = juges.filter((l) => l.conformite === STATUT_TEMPERATURE.SEUIL_INCONNU).length;
+
+      const releves = juges.slice(0, borne(args.limite));
+      return {
+        releves,
+        renvoyes: releves.length,
+        total_sur_la_periode: lecture.total,
+        ...signalerTroncature(releves.length, lecture, 'relevés'),
+        non_conformes: horsPlage,
+        seuil_inconnu: seuilInconnu,
+        compteurs_complets: lecture.complete,
+        ...(lecture.complete ? {} : {
+          avertissement_compteurs:
+            `Compteurs PARTIELS : calculés sur ${juges.length} relevés lus`
+            + (lecture.total !== null ? ` sur ${lecture.total}` : '')
+            + '. Réduisez « jours » pour un décompte exact.',
+        }),
+      };
     },
   },
 
@@ -103,12 +162,32 @@ export const OUTILS_PRIVES: OutilPrive[] = [
     },
     permission: 'read',
     async executer(ctx, args) {
-      const lignes = await ctx.lire<Record<string, unknown>>(
-        'cleaning_logs?select=post_name,moment,notes,created_at' +
+      // Le nom du poste vit dans `cleaning_stations` : `post_name` est vide sur
+      // tous les nettoyages depuis juillet 2026. On lit la jointure d'abord et
+      // la colonne héritée en repli, pour les nettoyages plus anciens — le même
+      // ordre que l'assistant, le Mode contrôle et le rapport public de l'app.
+      // L'embed sert AUSSI de borne (PROD-08, cf. lib/prive/borne.ts).
+      const lecture = await ctx.lire<Record<string, unknown>>(
+        'cleaning_logs?select=post_name,moment,notes,created_at,cleaning_stations(name)' +
           `&created_at=gte.${depuisIso(args.jours)}` +
-          `&order=created_at.desc&limit=${borne(args.limite)}`,
+          '&order=created_at.desc,id.desc',
+        { plafond: borne(args.limite) },
       );
-      return { nettoyages: lignes, total: lignes.length };
+      const nettoyages = lecture.lignes.map((l) => {
+        const poste = (l.cleaning_stations as { name?: unknown } | null)?.name;
+        return {
+          poste: (typeof poste === 'string' && poste) || (typeof l.post_name === 'string' && l.post_name) || null,
+          moment: l.moment,
+          notes: l.notes,
+          created_at: l.created_at,
+        };
+      });
+      return {
+        nettoyages,
+        renvoyes: nettoyages.length,
+        total_sur_la_periode: lecture.total,
+        ...signalerTroncature(nettoyages.length, lecture, 'nettoyages'),
+      };
     },
   },
 
@@ -125,12 +204,19 @@ export const OUTILS_PRIVES: OutilPrive[] = [
     },
     permission: 'read',
     async executer(ctx, args) {
-      const lignes = await ctx.lire<Record<string, unknown>>(
+      const lecture = await ctx.lire<Record<string, unknown>>(
         'reception_logs?select=supplier,product_name,category,lot_number,dlc,temperature,non_conformities,created_at' +
           `&created_at=gte.${depuisIso(args.jours, 30)}` +
-          `&order=created_at.desc&limit=${borne(args.limite)}`,
+          '&order=created_at.desc,id.desc',
+        { plafond: borne(args.limite) },
       );
-      return { receptions: lignes, total: lignes.length };
+      const n = lecture.lignes.length;
+      return {
+        receptions: lecture.lignes,
+        renvoyes: n,
+        total_sur_la_periode: lecture.total,
+        ...signalerTroncature(n, lecture, 'réceptions'),
+      };
     },
   },
 
@@ -141,15 +227,20 @@ export const OUTILS_PRIVES: OutilPrive[] = [
     inputSchema: { type: 'object', properties: {} },
     permission: 'read',
     async executer(ctx) {
-      const lignes = await ctx.lire<Record<string, unknown>>(
-        'cleaning_stations?select=name,zone,frequency,recurrence_days,last_cleaned_at,next_due_at&order=zone,name',
+      const lecture = await ctx.lire<Record<string, unknown>>(
+        'cleaning_stations?select=name,zone,frequency,recurrence_days,last_cleaned_at,next_due_at&order=zone,name,id',
       );
       const maintenant = Date.now();
-      const enRetard = lignes.filter((l) => {
+      const enRetard = lecture.lignes.filter((l) => {
         const d = l.next_due_at;
         return typeof d === 'string' && Date.parse(d) < maintenant;
       }).length;
-      return { postes: lignes, total: lignes.length, en_retard: enRetard };
+      return {
+        postes: lecture.lignes,
+        total: lecture.total,
+        en_retard: enRetard,
+        ...signalerTroncature(lecture.lignes.length, lecture, 'postes'),
+      };
     },
   },
 ];
