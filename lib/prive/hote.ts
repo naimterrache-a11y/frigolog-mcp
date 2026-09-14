@@ -4,7 +4,7 @@
 // Constaté le 2026-08-04 : ce dépôt est déployé par DEUX projets Vercel.
 //
 //   frigologmcp   — le vrai. Cible du rewrite frigolog.fr/api/mcp, cité dans
-//                   le README, INTEGRATION_ROADMAP, server.json, et défaut de
+//                   le README, server.json, et défaut de
 //                   MCP_URL dans la suite de tests.
 //   frigolog-mcp  — un doublon. AUCUNE référence nulle part dans le dépôt.
 //                   Nommé d'après le repo : créé tout seul par un déploiement.

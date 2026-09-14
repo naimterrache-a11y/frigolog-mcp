@@ -23,7 +23,7 @@ Chaque réponse porte un champ `type` (officiel / guide / comparatif / temps ré
 
 > ⚠️ **Ce dépôt est déployé par DEUX projets Vercel.** `frigologmcp` est le bon :
 > c'est lui que vise le rewrite `frigolog.fr/api/mcp`, c'est lui qui est cité
-> dans `server.json`, dans `INTEGRATION_ROADMAP.md` et dans le défaut de
+> dans `server.json` et dans le défaut de
 > `MCP_URL` des tests. `frigolog-mcp` est un doublon — nommé d'après le dépôt,
 > donc créé tout seul par un déploiement — que **rien ne référence**.
 >
