@@ -67,8 +67,11 @@ export function bornerChemin(chemin: string, establishmentId: string): string {
     // PostgREST refuserait la requête — ou pire, avec un alias, le filtre
     // viserait un nom qui n'existe pas. On refuse donc tout ce qui n'est pas
     // la forme exacte `via(…)` ou `via!inner(…)`, plutôt que de deviner.
-    const embed = new RegExp(`(^|[?&=,])${borne.via}(!inner)?\\(`);
-    if (!embed.test(chemin)) {
+    // On ne cherche QUE dans la valeur de `select=` : un `order=` ou un filtre
+    // qui nommerait la ressource ne doit ni passer pour l'embed, ni être réécrit.
+    const select = /(^|[?&])select=([^&]*)/.exec(chemin);
+    const embed = new RegExp(`(^|,)${borne.via}(!inner)?\\(`);
+    if (!select || !embed.test(select[2])) {
       throw new Error(
         `Lecture refusée : « ${table} » se borne par « ${borne.via} », qui doit être embarqué `
         + `sans alias dans le select (ex. ${borne.via}(name)).`,
@@ -77,10 +80,13 @@ export function bornerChemin(chemin: string, establishmentId: string): string {
     // L'embed doit être `!inner`. S'il est écrit sans, on le corrige plutôt que
     // de refuser : l'outil a demandé la bonne donnée, c'est la forme de la
     // jointure qui décide de l'isolation, et elle n'appartient pas à l'outil.
-    const avecInner = chemin.replace(
-      new RegExp(`(^|[?&=,])${borne.via}\\(`, 'g'),
+    const selectInner = select[2].replace(
+      new RegExp(`(^|,)${borne.via}\\(`, 'g'),
       `$1${borne.via}!inner(`,
     );
+    const debutValeur = select.index + select[1].length + 'select='.length;
+    const avecInner = chemin.slice(0, debutValeur) + selectInner
+      + chemin.slice(debutValeur + select[2].length);
     return `${avecInner}&${borne.via}.${borne.colonne}=eq.${establishmentId}`;
   }
   return `${chemin}&${borne.colonne}=eq.${establishmentId}`;

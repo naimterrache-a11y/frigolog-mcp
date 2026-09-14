@@ -770,7 +770,9 @@ await okAsync('le nettoyage dit QUEL poste, par la jointure, avec l\'ancienne co
   const { ctx, appels } = faux([
     { post_name: '', cleaning_stations: { name: 'Hotte' }, moment: 'soir', notes: null, created_at: '2026-09-10' },
     { post_name: null, cleaning_stations: { name: 'Plan de travail' }, moment: 'midi', notes: null, created_at: '2026-09-09' },
-    { post_name: 'Trancheuse', cleaning_stations: null, moment: 'matin', notes: null, created_at: '2026-06-01' },
+    // Le seul repli atteignable : un poste dont le nom est vide. (Un poste
+    // absent ne sort pas du tout — la jointure est interne.)
+    { post_name: 'Trancheuse', cleaning_stations: { name: '' }, moment: 'matin', notes: null, created_at: '2026-06-01' },
   ]);
   const r = await OUTIL_PAR_NOM.mes_nettoyages_recents.executer(ctx, {});
   assert.deepEqual(r.nettoyages.map((n) => n.poste), ['Hotte', 'Plan de travail', 'Trancheuse']);
@@ -821,23 +823,37 @@ process.env.SUPABASE_ANON_KEY = 'anon-de-test';
 
 // Un PostgREST simulé : `n` lignes, un plafond serveur `maxRows`, et le
 // Content-Range qu'il pose quand on demande `count=exact`.
-function simulerPostgrest(n, { maxRows = TAILLE_PAGE, compter = true } = {}) {
+// Les lignes sont triées « plus récente d'abord » : une insertion (`apresPage`)
+// arrive EN TÊTE et fait glisser toutes les suivantes d'un rang, comme en vrai.
+// `avancerHorloge` fait passer le temps de N ms à chaque requête.
+function simulerPostgrest(n, { maxRows = TAILLE_PAGE, compter = true, insererApresPage, avancerHorloge } = {}) {
   const requetes = [];
+  let lignesBase = Array.from({ length: n }, (_, i) => ({ i }));
   const original = globalThis.fetch;
+  const dateOriginale = Date.now;
+  let decalage = 0;
+  if (avancerHorloge) Date.now = () => dateOriginale() + decalage;
   globalThis.fetch = async (url, init) => {
+    if (avancerHorloge) decalage += avancerHorloge;
     const u = new URL(url);
     const limit = Number(u.searchParams.get('limit'));
     const offset = Number(u.searchParams.get('offset'));
     requetes.push({ url: String(url), prefer: init?.headers?.Prefer });
-    const taille = Math.max(0, Math.min(limit, maxRows, n - offset));
-    const corps = Array.from({ length: taille }, (_, i) => ({ i: offset + i }));
+    const corps = lignesBase.slice(offset, offset + Math.min(limit, maxRows));
+    const total = lignesBase.length;
+    if (insererApresPage === requetes.length) lignesBase = [{ i: 'nouvelle' }, ...lignesBase];
     const headers = new Headers();
     if (compter && init?.headers?.Prefer === 'count=exact') {
-      headers.set('content-range', taille ? `${offset}-${offset + taille - 1}/${n}` : `*/${n}`);
+      headers.set('content-range', corps.length ? `${offset}-${offset + corps.length - 1}/${total}` : `*/${total}`);
     }
-    return new Response(JSON.stringify(corps), { status: 200, headers });
+    // PostgREST répond 206 quand la page ne couvre pas tout.
+    const statut = corps.length < total ? 206 : 200;
+    return new Response(JSON.stringify(corps), { status: statut, headers });
   };
-  return { requetes, restaurer: () => { globalThis.fetch = original; } };
+  return {
+    requetes,
+    restaurer: () => { globalThis.fetch = original; Date.now = dateOriginale; },
+  };
 }
 
 ok('le Content-Range se lit, et son absence reste une absence', () => {
@@ -905,6 +921,65 @@ await okAsync('le plafond est rabattu, et limit/offset dans le chemin sont refus
     await assert.rejects(() => ctx.lire('equipments?select=id&limit=5'), /plafond/);
     await assert.rejects(() => ctx.lire('equipments?select=id&offset=5'), /plafond/);
   } finally { sim.restaurer(); }
+});
+
+await okAsync('un plafond absurde vaut UNE ligne, jamais le maximum', async () => {
+  const sim = simulerPostgrest(50);
+  try {
+    const ctx = contexteDeTestSansVerification(EST_A);
+    for (const p of [0, -5, NaN]) {
+      const l = await ctx.lire('equipments?select=id', { plafond: p });
+      assert.equal(l.lignes.length, 1, `plafond ${p} a lu ${l.lignes.length} lignes`);
+    }
+  } finally { sim.restaurer(); }
+});
+
+await okAsync('chaque page d\'une table bornée par jointure garde sa borne', async () => {
+  const sim = simulerPostgrest(2300);
+  try {
+    const l = await contexteDeTestSansVerification(EST_A)
+      .lire('temperature_logs?select=temperature,equipments(min,max)&order=created_at.desc,id.desc');
+    assert.equal(l.complete, true);
+    assert.ok(sim.requetes.length >= 3);
+    for (const r of sim.requetes) {
+      assert.ok(r.url.includes(`equipments.establishment_id=eq.${EST_A}`), 'une page sort sans borne');
+      assert.ok(r.url.includes('equipments!inner('), 'une page sort en jointure externe');
+    }
+  } finally { sim.restaurer(); }
+});
+
+await okAsync('une ligne insérée PENDANT la lecture empêche de se dire complet', async () => {
+  // Le cas le plus traître : un total multiple exact de la taille de page. Le
+  // glissement fait entrer un doublon et sortir la plus ancienne, et le compte
+  // tombe pile sur le total — sans la page de vérification, « complet ».
+  for (const n of [2000, 2500]) {
+    const sim = simulerPostgrest(n, { insererApresPage: 1 });
+    try {
+      const l = await contexteDeTestSansVerification(EST_A).lire('equipments?select=id');
+      assert.equal(l.complete, false, `n=${n} : une lecture qui a glissé se déclare complète`);
+    } finally { sim.restaurer(); }
+  }
+});
+
+await okAsync('au-delà du budget de temps, lire() rend ce qu\'elle a et le dit — sans lever', async () => {
+  // 5 s par page : la 3e dépasserait les 12 s. Vercel coupe à 20 s, et une
+  // coupure ne rend RIEN au client.
+  const sim = simulerPostgrest(9000, { avancerHorloge: 5000 });
+  try {
+    const l = await contexteDeTestSansVerification(EST_A).lire('equipments?select=id');
+    assert.ok(l.lignes.length > 0 && l.lignes.length < 9000, `${l.lignes.length} lignes lues`);
+    assert.equal(l.total, 9000);
+    assert.equal(l.complete, false, 'une lecture interrompue se déclare complète');
+    assert.ok(sim.requetes.length <= 3, `${sim.requetes.length} requêtes : le budget ne mord pas`);
+  } finally { sim.restaurer(); }
+});
+
+ok('seul le select porte l\'embed : un order= qui nomme la ressource n\'est ni pris ni réécrit', () => {
+  assert.throws(() => bornerChemin('temperature_logs?select=temperature&order=equipments(name).asc', EST_A),
+    /equipments/);
+  const b = bornerChemin('temperature_logs?select=equipments(name)&order=equipments(name).asc', EST_A);
+  assert.ok(b.includes('select=equipments!inner(name)'));
+  assert.ok(b.includes('order=equipments(name).asc'), 'le order= a été réécrit');
 });
 
 console.log(`\n${passed} tests OK — MCP privé : clés, jeton, point de passage\n`);

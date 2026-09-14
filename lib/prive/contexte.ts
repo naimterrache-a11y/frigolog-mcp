@@ -71,6 +71,11 @@ const TIMEOUT_MS = 8000;
 export const PLAFOND_LECTURE = 10_000;
 /** Le plafond `max-rows` de PostgREST sur Supabase. Une page plus grande serait coupée. */
 export const TAILLE_PAGE = 1000;
+/**
+ * Temps maximal d'une lecture paginée. `api/mcp-prive.ts` a 20 s (vercel.json)
+ * pour authentifier, lire et répondre ; au-delà, le client ne reçoit rien.
+ */
+export const BUDGET_LECTURE_MS = 12_000;
 
 /**
  * `Content-Range: 0-19/137` → 137. `*\/0` → 0. Absent ou `…/*` → null.
@@ -109,6 +114,35 @@ async function appelRest(chemin: string, entetes: Record<string, string>, init?:
       headers: { apikey: env('SUPABASE_ANON_KEY'), ...entetes, ...(init?.headers as object) },
       signal: ctrl.signal,
     });
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+// Une page de lecture, corps COMPRIS dans le délai. `appelRest` lâche son
+// minuteur dès les en-têtes reçus ; sur une page de 1000 lignes jointes, c'est
+// le corps qui prend le temps, et il doit être borné lui aussi.
+class DelaiDepasse extends Error {
+  constructor() {
+    super('Lecture trop lente — délai dépassé');
+    this.name = 'DelaiDepasse';
+  }
+}
+
+async function pageRest(chemin: string, entetes: Record<string, string>, delaiMs: number) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), delaiMs);
+  try {
+    const res = await fetch(`${env('SUPABASE_URL')}/rest/v1/${chemin}`, {
+      headers: { apikey: env('SUPABASE_ANON_KEY'), ...entetes },
+      signal: ctrl.signal,
+    });
+    const corps: unknown = res.ok ? await res.json().catch(() => undefined) : undefined;
+    if (ctrl.signal.aborted) throw new DelaiDepasse();
+    return { res, corps };
+  } catch (e) {
+    if (ctrl.signal.aborted) throw new DelaiDepasse();
+    throw e;
   } finally {
     clearTimeout(t);
   }
@@ -181,28 +215,49 @@ function construireContexte(establishmentId: string, permissions: Permission[]):
           + 'qui pagine et dit si la réponse est complète.',
         );
       }
-      const demande = Math.trunc(Number(options.plafond ?? PLAFOND_LECTURE));
-      const plafond = Number.isFinite(demande) && demande >= 1
-        ? Math.min(demande, PLAFOND_LECTURE)
-        : PLAFOND_LECTURE;
+      // Absent : le plafond de lecture. Présent mais absurde (0, négatif, NaN) :
+      // UNE ligne — une demande invalide ne doit jamais devenir la plus grosse.
+      const demande = Math.trunc(Number(options.plafond));
+      const plafond = options.plafond === undefined
+        ? PLAFOND_LECTURE
+        : Number.isFinite(demande) && demande >= 1 ? Math.min(demande, PLAFOND_LECTURE) : 1;
       const borne = bornerChemin(chemin, establishmentId);
 
       const lignes: T[] = [];
       let total: number | null = null;
       let premiere = true;
+      let interrompue = false;
+      const debut = Date.now();
 
       while (lignes.length < plafond) {
         const taille = Math.min(TAILLE_PAGE, plafond - lignes.length);
+
+        // ── Le budget de temps ─────────────────────────────────────────
+        // Vercel coupe la fonction à 20 s, et une coupure ne rend RIEN au
+        // client — ni données, ni erreur, ni ligne de journal. On s'arrête
+        // donc avant, et on rend ce qu'on a en le disant (`complete: false`).
+        // La première page n'a pas ce luxe : sans elle il n'y a rien à rendre,
+        // son dépassement reste une erreur.
+        const reste = BUDGET_LECTURE_MS - (Date.now() - debut);
+        if (!premiere && reste < 250) { interrompue = true; break; }
+
         // Le jeton est signé à chaque appel plutôt que gardé : il vit 5 minutes,
         // et une page dure moins d'une seconde. Rien à faire expirer, rien à
         // rafraîchir, rien à garder en mémoire entre deux invocations.
         const jeton = signerJetonEtablissement(establishmentId);
-        const res = await appelRest(`${borne}&limit=${taille}&offset=${lignes.length}`, {
-          Authorization: `Bearer ${jeton}`,
-          // Le décompte n'est demandé qu'une fois : c'est lui, et non la taille
-          // de la dernière page, qui dit si l'on a tout.
-          ...(premiere ? { Prefer: 'count=exact' } : {}),
-        });
+        let page;
+        try {
+          page = await pageRest(`${borne}&limit=${taille}&offset=${lignes.length}`, {
+            Authorization: `Bearer ${jeton}`,
+            // Le décompte n'est demandé qu'une fois : c'est lui, et non la taille
+            // de la dernière page, qui dit si l'on a tout.
+            ...(premiere ? { Prefer: 'count=exact' } : {}),
+          }, premiere ? TIMEOUT_MS : Math.min(TIMEOUT_MS, reste));
+        } catch (e) {
+          if (!premiere && e instanceof DelaiDepasse) { interrompue = true; break; }
+          throw e;
+        }
+        const { res, corps: json } = page;
 
         if (!res.ok) {
           // 401 ici ne peut vouloir dire qu'une chose : PostgREST refuse notre
@@ -219,21 +274,30 @@ function construireContexte(establishmentId: string, permissions: Permission[]):
         if (premiere) total = totalDepuisContentRange(res.headers.get('content-range'));
         premiere = false;
 
-        const json = await res.json().catch(() => null);
         // Un corps illisible n'est pas « aucune ligne » : c'est une lecture ratée.
         if (!Array.isArray(json)) throw new Error('Lecture impossible (réponse illisible)');
         lignes.push(...(json as T[]));
 
         if (json.length === 0) break;
-        if (total !== null && lignes.length >= total) break;
-        // Sans décompte, une page plus courte que demandée est la seule fin
-        // qu'on puisse constater — et elle ne prouve rien : `complete` restera
-        // faux. (Avec décompte, une page courte signifie seulement que le
+        const courte = json.length < taille;
+        // Total atteint sur une page COURTE : c'est la fin. Sur une page PLEINE,
+        // on redemande une fois (le plus souvent : zéro ligne). C'est ce qui
+        // attrape une ligne insérée pendant la lecture : la pagination par
+        // décalage fait alors glisser tout d'un rang, un doublon entre, la plus
+        // ancienne sort — et sans cette page de plus, le compte tomberait
+        // pile sur le total et se déclarerait complet.
+        if (total !== null && lignes.length >= total && courte) break;
+        // Sans décompte, une page courte est la seule fin qu'on puisse
+        // constater — et elle ne prouve rien : `complete` restera faux. (Avec
+        // décompte, une page courte sous le total signifie seulement que le
         // serveur coupe plus bas que TAILLE_PAGE ; on continue.)
-        if (total === null && json.length < taille) break;
+        if (total === null && courte) break;
       }
 
-      return { lignes, total, complete: total !== null && lignes.length >= total };
+      // `===` et non `>=` : plus de lignes que le décompte, c'est qu'une
+      // écriture a eu lieu pendant la lecture — doublon possible, donc rien de
+      // prouvé. Les écarts de ce genre sont rares ; les taire ne l'est pas.
+      return { lignes, total, complete: !interrompue && total !== null && lignes.length === total };
     },
   };
 }

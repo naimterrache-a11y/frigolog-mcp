@@ -164,9 +164,12 @@ export const OUTILS_PRIVES: OutilPrive[] = [
     async executer(ctx, args) {
       // Le nom du poste vit dans `cleaning_stations` : `post_name` est vide sur
       // tous les nettoyages depuis juillet 2026. On lit la jointure d'abord et
-      // la colonne héritée en repli, pour les nettoyages plus anciens — le même
-      // ordre que l'assistant, le Mode contrôle et le rapport public de l'app.
-      // L'embed sert AUSSI de borne (PROD-08, cf. lib/prive/borne.ts).
+      // la colonne héritée en repli, si le poste n'a pas de nom — le même ordre
+      // que l'assistant, le Mode contrôle et le rapport public de l'app.
+      // L'embed sert AUSSI de borne (PROD-08, cf. lib/prive/borne.ts) : en
+      // jointure interne, un nettoyage sans poste ne sort pas. Aucun n'existe
+      // (vérifié lors de PROD-08 : 0 `station_id` NULL), et un nettoyage sans
+      // poste n'a de toute façon aucun établissement prouvable.
       const lecture = await ctx.lire<Record<string, unknown>>(
         'cleaning_logs?select=post_name,moment,notes,created_at,cleaning_stations(name)' +
           `&created_at=gte.${depuisIso(args.jours)}` +
