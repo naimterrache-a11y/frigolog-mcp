@@ -37,7 +37,7 @@
   "scripts": {
     "dev": "vercel dev",
     "build": "tsc --noEmit",
-    "test": "node tests/mcp.test.js",
+    "test": "node tests/erreurs.test.mjs && node tests/mcp.test.js",
     "deploy": "vercel --prod",
     "test:prive": "node tests/prive.test.mjs",
     "preuve:isolation": "node scripts/preuve-isolation.mjs",

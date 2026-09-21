@@ -14,6 +14,7 @@ import type {
   SourceLink,
   Sourced,
 } from '../lib/types.js';
+import { OutilInconnu, ErreurEntree, ErreurSource, classerEchec } from '../lib/erreurs.js';
 import { TEMPERATURES } from '../lib/data/temperatures.js';
 import { DOCUMENTS_DDPP } from '../lib/data/documents-ddpp.js';
 import { REGLES_DLC } from '../lib/data/regles-dlc.js';
@@ -642,13 +643,13 @@ async function fetchRappelsActifs(
     });
   } catch (err) {
     const detail = err instanceof Error ? err.message : 'unknown error';
-    throw new Error(
+    throw new ErreurSource(
       `API RappelConso temporairement indisponible (${detail}). Consultez rappel.conso.gouv.fr directement.`,
     );
   }
 
   if (!response.ok) {
-    throw new Error(
+    throw new ErreurSource(
       `API RappelConso temporairement indisponible (HTTP ${response.status}). Consultez rappel.conso.gouv.fr directement.`,
     );
   }
@@ -657,7 +658,7 @@ async function fetchRappelsActifs(
   try {
     json = (await response.json()) as RappelConsoResponse;
   } catch {
-    throw new Error(
+    throw new ErreurSource(
       "API RappelConso temporairement indisponible (réponse invalide). Consultez rappel.conso.gouv.fr directement.",
     );
   }
@@ -740,19 +741,19 @@ async function fetchAlimconfianceEtablissement(opts: {
   if (opts.siret) {
     const siret = sanitizeOdsqlString(opts.siret);
     if (!/^\d{14}$/.test(siret)) {
-      throw new Error("Le paramètre 'siret' doit contenir exactement 14 chiffres.");
+      throw new ErreurEntree("Le paramètre 'siret' doit contenir exactement 14 chiffres.");
     }
     whereClauses.push(`siret="${siret}"`);
   } else if (opts.nom) {
     const nom = sanitizeOdsqlString(opts.nom);
     if (nom.length < 2) {
-      throw new Error("Le paramètre 'nom' doit contenir au moins 2 caractères.");
+      throw new ErreurEntree("Le paramètre 'nom' doit contenir au moins 2 caractères.");
     }
     whereClauses.push(
       `(search(enseigne, "${nom}") OR search(raison_sociale, "${nom}") OR search(libelle_etablissement, "${nom}"))`,
     );
   } else {
-    throw new Error(
+    throw new ErreurEntree(
       "Au moins un critère de recherche est requis : 'siret' (recommandé, recherche univoque) ou 'nom'.",
     );
   }
@@ -786,13 +787,13 @@ async function fetchAlimconfianceEtablissement(opts: {
     });
   } catch (err) {
     const detail = err instanceof Error ? err.message : 'unknown error';
-    throw new Error(
+    throw new ErreurSource(
       `API Alim'confiance temporairement indisponible (${detail}). Consultez www.alim-confiance.gouv.fr directement.`,
     );
   }
 
   if (!response.ok) {
-    throw new Error(
+    throw new ErreurSource(
       `API Alim'confiance temporairement indisponible (HTTP ${response.status}). Consultez www.alim-confiance.gouv.fr directement.`,
     );
   }
@@ -801,7 +802,7 @@ async function fetchAlimconfianceEtablissement(opts: {
   try {
     json = (await response.json()) as AlimconfianceResponse;
   } catch {
-    throw new Error(
+    throw new ErreurSource(
       "API Alim'confiance temporairement indisponible (réponse invalide). Consultez www.alim-confiance.gouv.fr directement.",
     );
   }
@@ -1159,6 +1160,7 @@ async function runTool(
       const aliases: Record<string, string> = {
         restauration: 'restauration',
         restaurant: 'restauration',
+        restaurateur: 'restauration',
         boulangerie: 'boulangerie',
         patisserie: 'boulangerie',
         boucherie: 'boucherie',
@@ -1174,7 +1176,7 @@ async function runTool(
       const key = aliases[raw] ?? raw;
       const guide = GBPH_SECTEURS[key];
       if (!guide) {
-        throw new Error(
+        throw new ErreurEntree(
           `Secteur inconnu : '${raw}'. Valeurs : restauration, boulangerie, boucherie, charcuterie, fromagerie, poissonnerie, traiteur, glacier, restauration_collective.`,
         );
       }
@@ -1200,7 +1202,7 @@ async function runTool(
           : '';
       const config = ETABLISSEMENT_CATEGORIES[rawType];
       if (!config) {
-        throw new Error(
+        throw new ErreurEntree(
           `Type d'établissement inconnu : '${rawType || '(non précisé)'}'. Valeurs : ${Object.keys(
             ETABLISSEMENT_CATEGORIES,
           ).join(', ')}.`,
@@ -1249,7 +1251,7 @@ async function runTool(
           ? params.type_etablissement.toLowerCase().trim()
           : '';
       if (!rawType) {
-        throw new Error("Le paramètre 'type_etablissement' est requis.");
+        throw new ErreurEntree("Le paramètre 'type_etablissement' est requis.");
       }
       const now = new Date();
 
@@ -1312,12 +1314,12 @@ async function runTool(
           ? params.type_etablissement.toLowerCase().trim()
           : '';
       const rawDep = typeof params.departement === 'string' ? params.departement : '';
-      if (!rawType) throw new Error("Le paramètre 'type_etablissement' est requis.");
-      if (!rawDep) throw new Error("Le paramètre 'departement' est requis (code département français).");
+      if (!rawType) throw new ErreurEntree("Le paramètre 'type_etablissement' est requis.");
+      if (!rawDep) throw new ErreurEntree("Le paramètre 'departement' est requis (code département français).");
 
       const typeKey = RISQUE_INSPECTION_ALIASES[rawType];
       if (!typeKey) {
-        throw new Error(
+        throw new ErreurEntree(
           `Type d'établissement inconnu : '${rawType}'. Valeurs : ${Object.keys(
             RISQUE_INSPECTION,
           ).join(', ')}.`,
@@ -1387,7 +1389,7 @@ async function runTool(
     }
 
     default:
-      throw new Error(`Unknown tool: ${name}`);
+      throw new OutilInconnu(name);
   }
 }
 
@@ -1565,21 +1567,27 @@ async function handleRequest(
           },
         };
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Tool execution failed';
-        // Les échecs sont journalisés AUSSI : un outil qui casse en silence
-        // pour les agents IA est exactement ce qu'on veut voir sur le
-        // dashboard (colonne « en erreur »).
+        // Les échecs sont journalisés AUSSI, mais chacun avec son vrai statut :
+        // seul un 500 est une panne de notre côté (voir lib/erreurs.ts).
+        const c = classerEchec(err);
         await logToolCall({
           toolName: params.name,
           args: params.arguments,
-          status: 500,
+          status: c.statut,
           durationMs: Date.now() - startedAt,
           userAgent: ctx.userAgent ?? '',
         });
+        if (c.forme === 'resultat') {
+          return {
+            jsonrpc: '2.0',
+            id,
+            result: { content: [{ type: 'text', text: c.message }], isError: true },
+          };
+        }
         return {
           jsonrpc: '2.0',
           id,
-          error: { code: -32603, message },
+          error: { code: c.code, message: c.message },
         };
       }
     }
