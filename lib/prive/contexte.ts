@@ -24,6 +24,7 @@
 // lecture ne puisse pas devenir un outil d'écriture par inadvertance de frappe.
 
 import { empreinteCle, formeValide } from './cles.js';
+import { verdictAcces, messageCoupure, type FaitsAcces } from './acces.js';
 import { bornerChemin } from './borne.js';
 import { signerJetonEtablissement } from './jwt.js';
 
@@ -105,6 +106,20 @@ export class CleRefusee extends Error {
   }
 }
 
+// ── Un compte éteint n'est PAS une clé refusée ─────────────────────────
+// Ici on dit exactement pourquoi, contrairement à `CleRefusee` juste au-dessus,
+// et ce n'est pas une inconséquence : la clé est bonne, c'est l'abonnement qui
+// est fini. Celui qui lit ce message a prouvé qu'il détient une clé valide de
+// cet établissement — on ne lui apprend rien qu'il ne puisse déjà voir en se
+// connectant à l'application. Et un message muet ici, c'est un gérant qui
+// cherche un bug de clé pendant une heure.
+export class AbonnementSuspendu extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AbonnementSuspendu';
+  }
+}
+
 async function appelRest(chemin: string, entetes: Record<string, string>, init?: RequestInit) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
@@ -148,7 +163,11 @@ async function pageRest(chemin: string, entetes: Record<string, string>, delaiMs
   }
 }
 
-interface LigneCle {
+// Les colonnes de facturation sont OPTIONNELLES, et le resteront : ce fichier
+// se déploie AVANT la migration SQL qui les ajoute. Tant qu'elles sont absentes,
+// `verdictAcces` ne coupe rien (fail-ouvert). Déployer dans l'autre ordre
+// couperait tout le monde pendant le temps d'un déploiement.
+interface LigneCle extends FaitsAcces {
   establishment_id: string;
   permissions: string[];
 }
@@ -188,6 +207,16 @@ export async function contextePourCle(cleBrute: string): Promise<Contexte> {
   // lecture seule : elle vaut un refus. Retomber sur 'read' transformerait une
   // donnée corrompue en autorisation.
   if (permissions.length === 0) throw new CleRefusee();
+
+  // ── Le compte est-il encore actif ? ─────────────────────────────────
+  // Vérifié APRÈS la clé, jamais avant : il faut avoir prouvé qu'on détient une
+  // clé valide de cet établissement pour s'entendre dire que son abonnement est
+  // fini. L'ordre inverse transformerait ce message en oracle — « ce compte
+  // existe et il ne paie pas » — pour qui tâtonne des clés au hasard.
+  const verdict = verdictAcces(ligne);
+  if (verdict.coupe && verdict.motif) {
+    throw new AbonnementSuspendu(messageCoupure(verdict.motif));
+  }
 
   // Marque l'usage sans jamais faire attendre l'appelant, et sans jamais faire
   // échouer une requête légitime parce qu'une statistique n'a pas pu s'écrire.

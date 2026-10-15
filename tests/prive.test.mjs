@@ -45,6 +45,9 @@ const {
 } = await import('../lib/prive/contexte.ts');
 const { OUTIL_PAR_NOM } = await import('../lib/prive/outils.ts');
 const { jugerReleve, STATUT_TEMPERATURE } = await import('../lib/prive/conformite.ts');
+const {
+  verdictAcces, messageCoupure, VECTEURS_ACCES, URL_REACTIVATION, PAIEMENT_A_REGULARISER,
+} = await import('../lib/prive/acces.ts');
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const lire = (...p) => readFileSync(path.join(ROOT, ...p), 'utf8');
@@ -980,6 +983,83 @@ ok('seul le select porte l\'embed : un order= qui nomme la ressource n\'est ni p
   const b = bornerChemin('temperature_logs?select=equipments(name)&order=equipments(name).asc', EST_A);
   assert.ok(b.includes('select=equipments!inner(name)'));
   assert.ok(b.includes('order=equipments(name).asc'), 'le order= a été réécrit');
+});
+
+// ─── Accès : un compte éteint ne sert plus ses données ─────────────────
+// Décision de Naïm du 2026-10-15, après qu'une clé active a servi pendant cinq
+// mois un établissement dont l'essai s'était terminé le 2026-05-20.
+
+const faitsDuVecteur = ({ trial_jours, ...reste }) => (
+  trial_jours === undefined
+    ? reste
+    : { ...reste, trial_ends_at: new Date(Date.now() + trial_jours * 86400e3).toISOString() }
+);
+
+for (const v of VECTEURS_ACCES) {
+  ok(`accès — ${v.nom} : ${v.coupe ? 'coupé' : 'ouvert'}`, () => {
+    const verdict = verdictAcces(faitsDuVecteur(v.faits));
+    assert.equal(verdict.coupe, v.coupe);
+    // Un verdict qui coupe SANS motif ne produirait aucun message : le point de
+    // passage retomberait sur le 503 « service indisponible », soit la panne
+    // silencieuse qu'on cherche précisément à éviter.
+    if (v.coupe) assert.ok(verdict.motif, 'une coupure sans motif ne dit rien au gérant');
+    else assert.equal(verdict.motif, undefined);
+  });
+}
+
+ok('les vecteurs couvrent les deux verdicts, et le fichier miroir reste nommé', () => {
+  // Un jeu de vecteurs qui ne contiendrait que des `false` passerait avec une
+  // fonction qui ne coupe jamais — c'est-à-dire avec le défaut d'origine.
+  assert.ok(VECTEURS_ACCES.some((v) => v.coupe), 'aucun vecteur ne coupe');
+  assert.ok(VECTEURS_ACCES.some((v) => !v.coupe), 'aucun vecteur ne passe');
+  assert.ok(lire('lib', 'prive', 'acces.ts').includes('src/lib/billing.js'),
+    "le miroir côté app n'est plus nommé : la divergence redeviendrait silencieuse");
+});
+
+ok('un essai échu coupe, mais une carte refusée jamais', () => {
+  const echu = new Date(Date.now() - 100 * 86400e3).toISOString();
+  assert.equal(verdictAcces({ trial_ends_at: echu }).coupe, true);
+  for (const statut of PAIEMENT_A_REGULARISER) {
+    assert.equal(verdictAcces({ stripe_subscription_status: statut, trial_ends_at: echu }).coupe, false,
+      `${statut} coupe l'accès : c'est l'incident du Mafé qui recommence`);
+  }
+});
+
+ok('aucun fait servi ne coupe personne — la migration SQL peut arriver après', () => {
+  // Fail-OUVERT sur l'inconnu. Si cette assertion tombe, déployer ce dépôt
+  // avant la migration couperait TOUS les clients.
+  assert.equal(verdictAcces({}).coupe, false);
+  assert.equal(verdictAcces(null).coupe, false);
+  assert.equal(verdictAcces(undefined).coupe, false);
+});
+
+ok('le message de coupure porte le lien de réactivation et nomme la cause', () => {
+  for (const motif of ['essai_termine', 'abonnement_termine']) {
+    const m = messageCoupure(motif);
+    assert.ok(m.includes(URL_REACTIVATION), `${motif} : pas de lien cliquable`);
+    assert.ok(/réactiv/i.test(m), `${motif} : ne dit pas quoi faire`);
+    assert.ok(/intactes/.test(m), `${motif} : ne rassure pas sur les données`);
+  }
+  // Les deux motifs ne disent pas la même chose : un client qui a payé un an ne
+  // s'entend pas dire que son essai est terminé.
+  assert.notEqual(messageCoupure('essai_termine'), messageCoupure('abonnement_termine'));
+  assert.ok(/essai/i.test(messageCoupure('essai_termine')));
+  assert.ok(/abonnement/i.test(messageCoupure('abonnement_termine')));
+});
+
+ok("le point de passage répond 402 sans relancer l'autorisation", () => {
+  const code = lireCode('api', 'mcp-prive.ts');
+  const i = code.indexOf('if (e instanceof AbonnementSuspendu)');
+  assert.ok(i > 0, 'le point de passage ne traite pas AbonnementSuspendu');
+  // La branche, de son `if` à son `return` : c'est là que 402 doit être, et
+  // c'est là que WWW-Authenticate ne doit PAS être. Mesuré sur le code SANS
+  // commentaires — ce fichier explique longuement ce qu'il ne fait pas, et un
+  // garde qui mord sur une explication est un garde qu'on finit par désarmer.
+  const corps = code.slice(i, i + code.slice(i).indexOf('return;'));
+  assert.ok(corps.includes('402'), 'un compte suspendu ne répond pas 402');
+  assert.ok(!/WWW-Authenticate/i.test(corps),
+    "la branche relance le parcours d'autorisation : l'assistant bouclera sans jamais débloquer");
+  assert.ok(!corps.includes('401'), 'un 401 ferait chercher un bug de clé');
 });
 
 console.log(`\n${passed} tests OK — MCP privé : clés, jeton, point de passage\n`);
