@@ -17,14 +17,29 @@
 //    `VECTEURS_ACCES` plus bas, `tests/prive.test.mjs` ici, et
 //    `tests/billingAccess.test.mjs` là-bas.
 //
-// ── Pourquoi ce fichier existe ─────────────────────────────────────────
+// ── Pourquoi ce fichier existe ───────────────────────────────────
 //
-// Revue adverse du 2026-10-15, sur la base de PRODUCTION : une clé active
-// appartenait à un établissement sans abonnement dont l'essai s'était terminé
-// le 2026-05-20. Cinq mois sans payer, la clé fonctionnait toujours. Le paywall
-// bloquait bien l'écran (`App.jsx` redirige hors de `/parametres`), mais le MCP
-// privé le contournait entièrement : `mcp_resolve_api_key` ne regardait ni
-// `stripe_subscription_status`, ni `trial_ends_at`.
+// `mcp_resolve_api_key` ne regardait ni `stripe_subscription_status`, ni
+// `trial_ends_at` : elle ne filtrait que la clé (révocation, expiration) et le
+// compte de démo. Le paywall bloquait bien l'écran — `App.jsx` redirige un compte
+// paywallé hors de `/parametres` — mais le MCP privé ne le consultait pas. Le
+// premier vrai client qui cesserait de payer aurait donc perdu son application
+// et gardé son assistant IA.
+//
+// ⚠️ CE N'EST PAS LE RÉCIT D'UNE FUITE, et il faut le dire parce que ma
+//    première version de ce commentaire l'a raconté comme telle. La revue
+//    adverse du 2026-10-15 avait trouvé en production une clé active sur un
+//    établissement dont l'essai s'était terminé le 2026-05-20, et l'avait
+//    présenté — moi avec — comme cinq mois de service volé. C'était faux :
+//    décision de Naïm du 2026-10-16, « Chez Jenny c'est un compte interne,
+//    touche pas ». Son `is_test = true` est volontaire.
+//
+//    Conséquence à écrire noir sur blanc : les trois seules clés d'API de
+//    production au 2026-10-16 sont sur des comptes `is_test`, que `verdictAcces`
+//    n'a jamais coupés. Ce fichier ne change donc le verdict d'AUCUNE clé
+//    existante. C'est une garde pour l'avenir, pas la réparation d'un incident.
+//    Un module qui se présente comme le correctif d'une fuite qui n'a pas eu
+//    lieu fait chercher, dans six mois, un client lésé qui n'existe pas.
 //
 // Décision de Naïm, 2026-10-15 : couper à l'impayé, avec un message qui dit
 // pourquoi et un lien cliquable pour réactiver. Pas un 401 muet.

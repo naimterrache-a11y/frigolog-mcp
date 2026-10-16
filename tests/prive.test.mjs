@@ -986,8 +986,13 @@ ok('seul le select porte l\'embed : un order= qui nomme la ressource n\'est ni p
 });
 
 // ─── Accès : un compte éteint ne sert plus ses données ─────────────────
-// Décision de Naïm du 2026-10-15, après qu'une clé active a servi pendant cinq
-// mois un établissement dont l'essai s'était terminé le 2026-05-20.
+// Décision de Naïm du 2026-10-15 : couper, avec un message qui dit pourquoi et
+// un lien cliquable pour réactiver.
+//
+// Ce que ces vecteurs NE prouvent pas : qu'un client ait été servi gratuitement.
+// La clé trouvée en production sur un essai échu appartient à un compte interne
+// (décision du 2026-10-16), et `is_test` n'est jamais coupé. Ces cas-ci gardent
+// un comportement à venir, pas un incident passé.
 
 const faitsDuVecteur = ({ trial_jours, ...reste }) => (
   trial_jours === undefined
@@ -1059,7 +1064,7 @@ ok('les colonnes surveillées sont EXACTEMENT celles que FaitsAcces déclare', (
   const src = lire('lib', 'prive', 'acces.ts');
   const bloc = new RegExp('export interface FaitsAcces \\{([\\s\\S]*?)\\n}').exec(src);
   assert.ok(bloc, 'l’interface FaitsAcces n’a plus la forme attendue');
-  const champs = [...bloc[1].matchAll(new RegExp('^\\s*readonly\\s+([a-z_0-9]+)\\??:', 'gm'))].map((m) => m[1]);
+  const champs = [...bloc[1].matchAll(new RegExp('^\\s*(?:readonly\\s+)?([A-Za-z_0-9]+)\\??:', 'gm'))].map((m) => m[1]);
   assert.ok(champs.length >= 4, `${champs.length} champ(s) lus dans FaitsAcces : la lecture a cassé`);
   // `faitsServis(null)` rend toutes les colonnes surveillées : c'est la liste.
   // `is_demo` est le seul champ volontairement NON surveillé : la fonction SQL
