@@ -1045,6 +1045,40 @@ ok('la liste des comptes jamais coupés est figée, et sondée type par type', (
   }
 });
 
+ok('les colonnes surveillées sont EXACTEMENT celles que FaitsAcces déclare', () => {
+  // Condition posée par la revue adverse du 2026-10-17 : la liste des colonnes
+  // attendues est écrite en dur dans `faitsServis`. Une CINQUIÈME colonne
+  // ajoutée à `FaitsAcces` et servie par la migration ne serait surveillée par
+  // rien — mesuré : `tsc` 0 erreur, 92 tests OK, aucun avertissement. Le fait
+  // de facturation serait lu par `verdictAcces` sans que sa perte soit jamais
+  // signalée, ce qui est le défaut d'origine remis une couche plus haut.
+  //
+  // On lit donc l'interface dans le SOURCE et on la compare à ce que
+  // `faitsServis` surveille. Ajouter un champ sans l'ajouter à la liste fait
+  // tomber ce test, en le nommant.
+  const src = lire('lib', 'prive', 'acces.ts');
+  const bloc = new RegExp('export interface FaitsAcces \\{([\\s\\S]*?)\\n}').exec(src);
+  assert.ok(bloc, 'l’interface FaitsAcces n’a plus la forme attendue');
+  const champs = [...bloc[1].matchAll(new RegExp('^\\s*readonly\\s+([a-z_0-9]+)\\??:', 'gm'))].map((m) => m[1]);
+  assert.ok(champs.length >= 4, `${champs.length} champ(s) lus dans FaitsAcces : la lecture a cassé`);
+  // `faitsServis(null)` rend toutes les colonnes surveillées : c'est la liste.
+  // `is_demo` est le seul champ volontairement NON surveillé : la fonction SQL
+  // ne le sert jamais — elle l'utilise dans son `where` pour refuser la clé d'un
+  // compte de démo, et ne le renvoie pas. Le surveiller ferait crier le
+  // fail-ouvert à chaque requête, pour toujours. L'exclusion est donc nommée
+  // ici, avec sa raison, et toute AUTRE colonne ajoutée à l'interface devra
+  // être surveillée ou exclue explicitement.
+  const NON_SURVEILLEES = { is_demo: 'jamais servie : filtrée dans le where de mcp_resolve_api_key' };
+  for (const [champ, raison] of Object.entries(NON_SURVEILLEES)) {
+    assert.ok(champs.includes(champ), `${champ} exclu mais absent de FaitsAcces`);
+    assert.ok(raison.length > 30, `${champ} exclu sans raison lisible`);
+  }
+  const attendues = champs.filter((c) => !(c in NON_SURVEILLEES));
+  assert.deepEqual([...faitsServis(null)].sort(), [...attendues].sort(),
+    'FaitsAcces et faitsServis ne surveillent pas les mêmes colonnes — une colonne servie '
+    + 'mais non surveillée perd le droit de faire crier le fail-ouvert');
+});
+
 ok('faitsServis NOMME chaque colonne manquante — une seule suffit à fausser le verdict', () => {
   // Relevé le 2026-10-16 : avec un OU sur les quatre colonnes, perdre
   // `trial_ends_at` seule rendait « des faits sont servis ». Aucun
