@@ -1022,32 +1022,51 @@ ok('le vecteur partagé garde sa taille — en ajouter un ici sans le faire là-
   assert.equal(VECTEURS_ACCES.length, 14);
 });
 
-ok('la liste des comptes jamais coupés est figée, et miroitée dans frigolog', () => {
-  // `is_demo` et `is_test` sont traités à part dans `verdictAcces` (ce sont des
-  // booléens, pas des types de compte) ; ici on fige les `account_type`.
-  // Si cette liste change, `tests/billingAccess.test.mjs` du dépôt `frigolog`
-  // tombe aussi : c'est tout l'objet de la figer en double.
+ok('la liste des comptes jamais coupés est figée, et sondée type par type', () => {
+  // Miroir EXACT de la boucle de `tests/billingAccess.test.mjs` (dépôt frigolog).
+  //
+  // Relevé le 2026-10-16 : ma version ne sondait qu'UN seul type inconnu
+  // (`standard`). Un `if (faits.account_type === 'partner') return { coupe: false }`
+  // écrit en dur dans `verdictAcces`, sans toucher au Set, survivait — 92 tests
+  // OK. Le côté app bouclait, lui, sur huit valeurs et mordait : c'était ce
+  // côté-ci, le MCP, le maillon faible du miroir.
   assert.deepEqual([...TYPES_JAMAIS_COUPES].sort(), ['beta', 'founder']);
-  // Un type ajouté d'un seul côté se verrait ici, pas dans le verdict : on
-  // vérifie donc que chacun est RÉELLEMENT épargné par la fonction.
   const echu = new Date(Date.now() - 200 * 86400e3).toISOString();
   for (const t of TYPES_JAMAIS_COUPES) {
     assert.equal(verdictAcces({ account_type: t, trial_ends_at: echu }).coupe, false, t);
   }
-  // Et qu'un type INCONNU n'est pas épargné par mégarde.
-  assert.equal(verdictAcces({ account_type: 'standard', trial_ends_at: echu }).coupe, true);
+  // Tout autre type DOIT être coupé — y compris écrit en dur ailleurs dans la
+  // fonction. La liste des candidats couvre ce qui existe en base (`standard`)
+  // et ce qui est en cours d'arrivée.
+  for (const t of ['standard', 'partner', 'formateur', 'apporteur', 'reseau', null, undefined, '']) {
+    assert.equal(verdictAcces({ account_type: t, trial_ends_at: echu }).coupe, true,
+      `account_type ${JSON.stringify(t)} échappe à la coupure : ajoute-le à la liste de bypass`
+      + " de src/lib/billing.js (dépôt frigolog), ou retire-le d'ici");
+  }
 });
 
-ok('faitsServis distingue « aucune colonne servie » de « colonnes servies, valeurs nulles »', () => {
-  // C'est la distinction qui rend le fail-ouvert bruyant sans crier à tort. Un
-  // compte sans abonnement ET sans essai renseigné SERT bien ses colonnes : elles
-  // valent null. La migration non appliquée, elle, n'en sert aucune.
-  assert.equal(faitsServis({}), false);
-  assert.equal(faitsServis(null), false);
-  assert.equal(faitsServis(undefined), false);
-  assert.equal(faitsServis({ stripe_subscription_status: null }), true);
-  assert.equal(faitsServis({ trial_ends_at: null }), true);
-  assert.equal(faitsServis({ is_test: false }), true);
+ok('faitsServis NOMME chaque colonne manquante — une seule suffit à fausser le verdict', () => {
+  // Relevé le 2026-10-16 : avec un OU sur les quatre colonnes, perdre
+  // `trial_ends_at` seule rendait « des faits sont servis ». Aucun
+  // avertissement, et plus rien pour décider : accès rouvert à tout le monde en
+  // silence. Sans `trial_ends_at`, un essai échu ressemble à un essai en cours.
+  const QUATRE = ['is_test', 'account_type', 'stripe_subscription_status', 'trial_ends_at'];
+  assert.deepEqual(faitsServis(null), QUATRE);
+  assert.deepEqual(faitsServis(undefined), QUATRE);
+  assert.deepEqual(faitsServis({}), QUATRE);
+  // Colonnes servies avec des valeurs nulles : rien ne manque. Un compte sans
+  // abonnement ni essai renseigné est dans ce cas, et il ne doit rien crier.
+  assert.deepEqual(faitsServis({
+    is_test: false, account_type: null, stripe_subscription_status: null, trial_ends_at: null,
+  }), []);
+  // Chaque colonne perdue SEULE doit être nommée. C'est le cas qui échappait.
+  for (const perdue of QUATRE) {
+    const servies = {
+      is_test: false, account_type: null, stripe_subscription_status: null, trial_ends_at: null,
+    };
+    delete servies[perdue];
+    assert.deepEqual(faitsServis(servies), [perdue], `${perdue} perdue seule n'est pas nommée`);
+  }
 });
 
 ok('le message ne promet plus qu’une clé OAuth survivra à des mois de suspension', () => {

@@ -218,9 +218,13 @@ export async function contextePourCle(cleBrute: string): Promise<Contexte> {
   // tout le monde sans que rien ne le dise. Une clé qui résout sans aucun fait
   // de facturation est donc écrite dans les logs — avant la migration c'est le
   // cas normal et attendu, après c'est le signal qu'il faut lire.
-  if (!faitsServis(ligne)) {
-    console.warn('[mcp-prive] aucun fait de facturation servi par mcp_resolve_api_key'
-      + ' — accès laissé OUVERT (normal avant la migration du 2026-10-15, anormal après)');
+  const manquantes = faitsServis(ligne);
+  if (manquantes.length > 0) {
+    console.warn('[mcp-prive] colonne(s) de facturation non servie(s) par mcp_resolve_api_key : '
+      + manquantes.join(', ')
+      + ' — accès laissé OUVERT (normal avant la migration du 2026-10-15, anormal après).'
+      + ' Une seule colonne manquante suffit à rendre le verdict faux :'
+      + ' sans trial_ends_at, un essai échu ressemble à un essai en cours.');
   }
 
   const verdict = verdictAcces(ligne);

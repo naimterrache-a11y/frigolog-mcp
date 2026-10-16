@@ -80,7 +80,14 @@ export const URL_REACTIVATION = 'https://app.frigolog.fr/dashboard';
 export type MotifCoupure = 'essai_termine' | 'abonnement_termine';
 
 /**
- * La base a-t-elle servi au moins un fait de facturation ?
+ * Quelles colonnes de facturation la base n'a-t-elle PAS servies ?
+ *
+ * ⚠️ Rend la LISTE des manquantes, pas un booléen — et c'est le correctif d'un
+ *    défaut relevé le 2026-10-16. Avec un OU sur les quatre colonnes, perdre
+ *    `trial_ends_at` SEULE rendait « des faits sont servis » : aucun
+ *    avertissement, et plus rien pour décider de couper. Accès rouvert à tout
+ *    le monde, en silence. C'est exactement la panne « une colonne absente d'un
+ *    select arrive undefined, pas en erreur » que ce fichier cite plus haut.
  *
  * Existe pour rendre le fail-ouvert BRUYANT. `verdictAcces` ne coupe rien quand
  * aucun fait n'arrive, et c'est voulu — mais sans cette fonction, une régression
@@ -89,14 +96,10 @@ export type MotifCoupure = 'essai_termine' | 'abonnement_termine';
  * test PGlite, lui, lit le fichier du dépôt, et la prod reçoit ses migrations
  * collées à la main.
  */
-export function faitsServis(faits: FaitsAcces | null | undefined): boolean {
-  if (!faits) return false;
-  return (
-    faits.is_test !== undefined
-    || faits.account_type !== undefined
-    || faits.stripe_subscription_status !== undefined
-    || faits.trial_ends_at !== undefined
-  );
+export function faitsServis(faits: FaitsAcces | null | undefined): string[] {
+  const attendues = ['is_test', 'account_type', 'stripe_subscription_status', 'trial_ends_at'] as const;
+  if (!faits) return [...attendues];
+  return attendues.filter((c) => faits[c] === undefined);
 }
 
 export interface VerdictAcces {
