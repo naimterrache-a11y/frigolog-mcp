@@ -1,0 +1,63 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Tests — les suites de ce dépôt tournent sur chaque PR
+# ═══════════════════════════════════════════════════════════════════════
+# POURQUOI CE FICHIER EXISTE. Relevé par la revue adverse du 2026-10-16 : ce
+# dépôt n'avait AUCUNE CI qui lance ses tests. `registre-mcp.yml` ne vérifie que
+# la publication au registre. Les seuls checks sur une PR étaient trois
+# déploiements Vercel — qui disent qu'un build passe, jamais qu'un garde mord.
+#
+# Ça compte particulièrement ici, parce que le garde central du MCP privé est un
+# MIROIR entre deux dépôts : `lib/prive/acces.ts` doit rendre le même verdict
+# que `src/lib/billing.js` du dépôt `frigolog`, et `lib/prive/cles.ts` le même
+# format de clé que `api/_lib/clesMcp.js`. Une moitié du miroir était tenue par
+# la CI de `frigolog`, l'autre par personne. Un miroir dont un seul côté est
+# surveillé n'est pas un miroir : c'est une copie qui dérive.
+#
+# COÛT : ce dépôt est PUBLIC, donc ses minutes Actions sont gratuites et ne
+# touchent pas au quota du compte — épuisé deux fois en 2026 par les deux dépôts
+# privés (19/08 et 25/09). C'est la même raison qui fait vivre la publication
+# au registre ici.
+#
+# NODE 22.6 AU MINIMUM, et ce n'est pas un détail de version : `tests/prive.test.mjs`
+# importe du TypeScript directement et s'arrête net si `process.features.typescript`
+# est absent. Sur un Node plus ancien, la suite ne tombe pas — elle ne s'exécute
+# pas, ce qui est pire. Le `node --version` ci-dessous est là pour que le journal
+# dise toujours sur quoi les gardes ont tourné.
+
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: npm
+
+      - name: Version de Node (les tests privés exigent >= 22.6)
+        run: node --version
+
+      - name: Dependances
+        run: npm ci --no-audit --no-fund
+
+      - name: Types (tsc --noEmit)
+        run: npm run build
+
+      - name: Suite publique — erreurs et textes commerciaux
+        run: npm test
+
+      # Clés, jeton, bornes de lecture, et depuis le 2026-10-15 l'accès d'un
+      # compte éteint : le vecteur partagé avec le dépôt frigolog est asserté ici.
+      - name: Suite privée — clés, jeton, point de passage, accès
+        run: npm run test:prive

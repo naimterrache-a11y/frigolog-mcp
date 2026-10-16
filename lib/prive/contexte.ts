@@ -24,7 +24,7 @@
 // lecture ne puisse pas devenir un outil d'écriture par inadvertance de frappe.
 
 import { empreinteCle, formeValide } from './cles.js';
-import { verdictAcces, messageCoupure, type FaitsAcces } from './acces.js';
+import { verdictAcces, messageCoupure, faitsServis, type FaitsAcces } from './acces.js';
 import { bornerChemin } from './borne.js';
 import { signerJetonEtablissement } from './jwt.js';
 
@@ -213,6 +213,16 @@ export async function contextePourCle(cleBrute: string): Promise<Contexte> {
   // clé valide de cet établissement pour s'entendre dire que son abonnement est
   // fini. L'ordre inverse transformerait ce message en oracle — « ce compte
   // existe et il ne paie pas » — pour qui tâtonne des clés au hasard.
+  // Le fail-ouvert d'`acces.ts` est voulu, mais il ne doit pas être MUET : une
+  // régression SQL qui cesserait de servir les colonnes rouvrirait l'accès à
+  // tout le monde sans que rien ne le dise. Une clé qui résout sans aucun fait
+  // de facturation est donc écrite dans les logs — avant la migration c'est le
+  // cas normal et attendu, après c'est le signal qu'il faut lire.
+  if (!faitsServis(ligne)) {
+    console.warn('[mcp-prive] aucun fait de facturation servi par mcp_resolve_api_key'
+      + ' — accès laissé OUVERT (normal avant la migration du 2026-10-15, anormal après)');
+  }
+
   const verdict = verdictAcces(ligne);
   if (verdict.coupe && verdict.motif) {
     throw new AbonnementSuspendu(messageCoupure(verdict.motif));

@@ -72,12 +72,32 @@ export const PAIEMENT_A_REGULARISER: ReadonlySet<string> = new Set([
 // tout. Il est quand même traité ici : ce module doit rendre le même verdict que
 // son miroir, et un garde qui dépend d'un autre garde pour être juste est un
 // garde qu'on désarme en déplaçant l'autre.
-const TYPES_JAMAIS_COUPES = new Set(['founder', 'beta']);
+export const TYPES_JAMAIS_COUPES: ReadonlySet<string> = new Set(['founder', 'beta']);
 
 /** L'URL où un gérant réactive son abonnement. Le modal de paywall s'y ouvre. */
 export const URL_REACTIVATION = 'https://app.frigolog.fr/dashboard';
 
 export type MotifCoupure = 'essai_termine' | 'abonnement_termine';
+
+/**
+ * La base a-t-elle servi au moins un fait de facturation ?
+ *
+ * Existe pour rendre le fail-ouvert BRUYANT. `verdictAcces` ne coupe rien quand
+ * aucun fait n'arrive, et c'est voulu — mais sans cette fonction, une régression
+ * SQL qui cesserait de servir les colonnes rouvrirait l'accès à tout le monde
+ * EN SILENCE. Le point de passage s'en sert pour écrire un avertissement : le
+ * test PGlite, lui, lit le fichier du dépôt, et la prod reçoit ses migrations
+ * collées à la main.
+ */
+export function faitsServis(faits: FaitsAcces | null | undefined): boolean {
+  if (!faits) return false;
+  return (
+    faits.is_test !== undefined
+    || faits.account_type !== undefined
+    || faits.stripe_subscription_status !== undefined
+    || faits.trial_ends_at !== undefined
+  );
+}
 
 export interface VerdictAcces {
   readonly coupe: boolean;
@@ -136,8 +156,10 @@ export function messageCoupure(motif: MotifCoupure): string {
   return (
     `${quoi}, donc l'accès de votre assistant IA à vos relevés est suspendu. ` +
     `Vos données sont intactes et vous les retrouvez en réactivant votre ` +
-    `abonnement : ${URL_REACTIVATION} — la clé d'API que vous utilisez déjà ` +
-    `fonctionnera de nouveau, sans rien avoir à changer.`
+    `abonnement : ${URL_REACTIVATION}. Une clé d'API collée à la main ` +
+    `refonctionnera telle quelle ; un assistant connecté « en un clic » voit son ` +
+    `autorisation expirer au bout de 90 jours, et il suffira alors de la refaire ` +
+    `depuis l'assistant.`
   );
 }
 

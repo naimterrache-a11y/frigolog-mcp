@@ -46,7 +46,7 @@ const {
 const { OUTIL_PAR_NOM } = await import('../lib/prive/outils.ts');
 const { jugerReleve, STATUT_TEMPERATURE } = await import('../lib/prive/conformite.ts');
 const {
-  verdictAcces, messageCoupure, VECTEURS_ACCES, URL_REACTIVATION, PAIEMENT_A_REGULARISER,
+  verdictAcces, messageCoupure, VECTEURS_ACCES, URL_REACTIVATION, PAIEMENT_A_REGULARISER, TYPES_JAMAIS_COUPES, faitsServis,
 } = await import('../lib/prive/acces.ts');
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -1006,6 +1006,64 @@ for (const v of VECTEURS_ACCES) {
     else assert.equal(verdict.motif, undefined);
   });
 }
+
+// ─── Le vecteur partagé, asserté des DEUX côtés ────────────────────────
+//
+// Relevé par la revue adverse du 2026-10-16 : la taille figée (14) et la liste
+// de bypass n'étaient assertées QUE dans le dépôt `frigolog`. Deux divergences
+// passaient donc en silence :
+//   · un 15ᵉ vecteur ajouté ICI seulement : 89 tests OK ici, 32 là-bas ;
+//   · `|| account_type === 'partner'` ajouté à `isPaywalled` seulement : les
+//     DEUX suites passent, et le MCP coupe un `partner` à essai échu que l'app
+//     laisse travailler. C'est « le client qui paie et à qui on coupe l'IA »,
+//     le pire cas de ce chantier. Aucun `partner` en prod aujourd'hui, mais les
+//     apporteurs et les organismes de formation sont en cours.
+ok('le vecteur partagé garde sa taille — en ajouter un ici sans le faire là-bas ne protège rien', () => {
+  assert.equal(VECTEURS_ACCES.length, 14);
+});
+
+ok('la liste des comptes jamais coupés est figée, et miroitée dans frigolog', () => {
+  // `is_demo` et `is_test` sont traités à part dans `verdictAcces` (ce sont des
+  // booléens, pas des types de compte) ; ici on fige les `account_type`.
+  // Si cette liste change, `tests/billingAccess.test.mjs` du dépôt `frigolog`
+  // tombe aussi : c'est tout l'objet de la figer en double.
+  assert.deepEqual([...TYPES_JAMAIS_COUPES].sort(), ['beta', 'founder']);
+  // Un type ajouté d'un seul côté se verrait ici, pas dans le verdict : on
+  // vérifie donc que chacun est RÉELLEMENT épargné par la fonction.
+  const echu = new Date(Date.now() - 200 * 86400e3).toISOString();
+  for (const t of TYPES_JAMAIS_COUPES) {
+    assert.equal(verdictAcces({ account_type: t, trial_ends_at: echu }).coupe, false, t);
+  }
+  // Et qu'un type INCONNU n'est pas épargné par mégarde.
+  assert.equal(verdictAcces({ account_type: 'standard', trial_ends_at: echu }).coupe, true);
+});
+
+ok('faitsServis distingue « aucune colonne servie » de « colonnes servies, valeurs nulles »', () => {
+  // C'est la distinction qui rend le fail-ouvert bruyant sans crier à tort. Un
+  // compte sans abonnement ET sans essai renseigné SERT bien ses colonnes : elles
+  // valent null. La migration non appliquée, elle, n'en sert aucune.
+  assert.equal(faitsServis({}), false);
+  assert.equal(faitsServis(null), false);
+  assert.equal(faitsServis(undefined), false);
+  assert.equal(faitsServis({ stripe_subscription_status: null }), true);
+  assert.equal(faitsServis({ trial_ends_at: null }), true);
+  assert.equal(faitsServis({ is_test: false }), true);
+});
+
+ok('le message ne promet plus qu’une clé OAuth survivra à des mois de suspension', () => {
+  // Une suspension pour impayé dure des mois — celle de l'incident a duré cinq
+  // mois. Or un jeton d'assistant obtenu « en un clic » porte un `expires_at` à
+  // 90 jours (api/oauth/actions.js du dépôt frigolog, DUREE_JETON_JOURS = 90),
+  // et `mcp_resolve_api_key` filtre `expires_at > now()`. Promettre « elle
+  // refonctionnera sans rien changer » envoyait le gérant chasser un bug de clé
+  // sur un 401 — exactement ce que ce message existe pour éviter.
+  for (const motif of ['essai_termine', 'abonnement_termine']) {
+    const m = messageCoupure(motif);
+    assert.ok(/90 jours/.test(m), `${motif} : l'expiration du jeton n'est pas dite`);
+    assert.ok(!/sans rien avoir à changer/.test(m), `${motif} : la promesse fausse est revenue`);
+    assert.ok(/un clic/.test(m), `${motif} : la distinction clé collée / un clic a disparu`);
+  }
+});
 
 ok('les vecteurs couvrent les deux verdicts, et le fichier miroir reste nommé', () => {
   // Un jeu de vecteurs qui ne contiendrait que des `false` passerait avec une
