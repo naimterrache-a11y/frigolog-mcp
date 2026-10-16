@@ -42,6 +42,7 @@ const { VAR_HOTES, hoteDeLaRequete, deploiementAutorise } = await import('../lib
 const { bornerChemin } = await import('../lib/prive/borne.ts');
 const {
   contexteDeTestSansVerification, totalDepuisContentRange, PLAFOND_LECTURE, TAILLE_PAGE,
+  contextePourCle,
   CleRefusee, AbonnementSuspendu,
 } = await import('../lib/prive/contexte.ts');
 const { OUTIL_PAR_NOM } = await import('../lib/prive/outils.ts');
@@ -1065,23 +1066,45 @@ ok('les colonnes surveillées sont EXACTEMENT celles que FaitsAcces déclare', (
   const src = lire('lib', 'prive', 'acces.ts');
   const bloc = new RegExp('export interface FaitsAcces \\{([\\s\\S]*?)\\n}').exec(src);
   assert.ok(bloc, 'l’interface FaitsAcces n’a plus la forme attendue');
-  const champs = [...bloc[1].matchAll(new RegExp('^\\s*(?:readonly\\s+)?([A-Za-z_0-9]+)\\??:', 'gm'))].map((m) => m[1]);
-  assert.ok(champs.length >= 4, `${champs.length} champ(s) lus dans FaitsAcces : la lecture a cassé`);
-  // ⚠️ COMPTER les déclarations, pas seulement lire celles qu'on sait lire.
-  // Relevé le 2026-10-16 : trois écritures échappaient à l'extracteur EN
-  // SILENCE — un commentaire entre le nom et le type
-  // (`readonly x /* Stripe */ ?: boolean`), un type sur la ligne suivante, et un
-  // nom entre guillemets (`readonly 'x'?: boolean`). Un extracteur qui ignore ce
-  // qu'il ne comprend pas laisse passer exactement le champ qu'on cherchait.
-  // Une déclaration = un `:` de premier niveau dans le bloc, commentaires retirés.
-  const corps = bloc[1]
-    .replace(/[/][*][^]*?[*][/]/g, ' ')
-    .split(String.fromCharCode(10)).map((x) => x.replace(/[/][/].*$/, '')).join(String.fromCharCode(10));
-  const declarations = (corps.match(/:/g) || []).length;
-  assert.equal(champs.length, declarations,
-    `${declarations} déclaration(s) dans FaitsAcces, ${champs.length} lue(s) : une écriture `
-    + "échappe à l'extracteur. Les formes connues qui cassent : un commentaire entre le nom et "
-    + 'le type, un type sur la ligne suivante, un nom entre guillemets.');
+
+  // ⚠️ ON N'EXTRAIT PAS, ON EXIGE UNE FORME. Deux versions de cette garde ont
+  // échoué avant celle-ci, et dans les deux sens.
+  //
+  //  · la 1ʳᵉ EXTRAYAIT les champs avec une expression, et ignorait en silence
+  //    ce qu'elle ne savait pas lire : un commentaire entre le nom et le type
+  //    (`readonly x /* Stripe */ ?: boolean`), un type sur la ligne suivante, un
+  //    nom entre guillemets. Trois colonnes pouvaient être servies sans être
+  //    surveillées, suite verte ;
+  //  · la 2ᵈᵉ comptait les `:` du bloc pour détecter ce qu'elle ratait — et
+  //    ACCUSAIT À TORT une interface correctement écrite : un type objet
+  //    (`{ a: string }`), un littéral `'a:b'`, et même un commentaire de bloc
+  //    dont une ligne de suite a la forme `mot: …`. Une garde qui accuse à tort
+  //    se fait désactiver dans la semaine.
+  //
+  // D'où la règle inverse, et c'est la seule qui ne mente dans aucun sens :
+  // CHAQUE ligne du bloc doit être une déclaration canonique
+  // `readonly <nom_snake_case>?: <type>;`, ou rien du tout. Une ligne qui ne
+  // s'y conforme pas ne fait pas « rater un champ » : elle fait tomber le test,
+  // en se citant. Le snake_case est exigé parce que ces champs sont des COLONNES
+  // Postgres : un `factureImpayee` ne correspondrait à rien en base.
+  const CANONIQUE = /^\s*readonly\s+[a-z][a-z_0-9]*\?:\s*[^;]+;\s*$/;
+  const lignesBloc = bloc[1]
+    .replace(/[/][*][^]*?[*][/]/g, '')                     // commentaires de bloc
+    .split(String.fromCharCode(10))
+    .map((x) => x.replace(/[/][/].*$/, '').trimEnd())      // commentaires de fin de ligne
+    .filter((x) => x.trim() !== '');
+
+  const horsForme = lignesBloc.filter((x) => !CANONIQUE.test(x));
+  assert.deepEqual(horsForme, [],
+    'Ces lignes de FaitsAcces ne sont pas des déclarations lisibles :\n  '
+    + horsForme.join('\n  ')
+    + '\n\nÉcris chaque champ sous la forme `readonly <nom_snake_case>?: <type>;`, une par ligne.'
+    + ' C\'est ce qui garantit qu\'aucune colonne servie n\'échappe à la surveillance du'
+    + ' fail-ouvert — et un nom en camelCase ne correspondrait à aucune colonne Postgres.');
+
+  const champs = lignesBloc.map((x) => /readonly\s+([a-z][a-z_0-9]*)\?:/.exec(x)[1]);
+  assert.equal(champs.length, lignesBloc.length, 'un champ canonique n’a pas été lu');
+  assert.ok(champs.length >= 4, `${champs.length} champ(s) dans FaitsAcces : la lecture a cassé`);
   // `faitsServis(null)` rend toutes les colonnes surveillées : c'est la liste.
   // `is_demo` est le seul champ volontairement NON surveillé : la fonction SQL
   // ne le sert jamais — elle l'utilise dans son `where` pour refuser la clé d'un
@@ -1214,5 +1237,98 @@ ok("le point de passage répond 402 sans relancer l'autorisation", () => {
     "la branche relance le parcours d'autorisation : l'assistant bouclera sans jamais débloquer");
   assert.ok(!corps.includes('401'), 'un 401 ferait chercher un bug de clé');
 });
+
+// ─── Le fail-ouvert DOIT crier, et c'est le point d'appel qu'on exerce ─
+//
+// Relevé par la revue adverse du 2026-10-16, et c'est le défaut le plus grave
+// qu'elle ait trouvé dans mes gardes : **supprimer tout le bloc `console.warn`
+// de `contextePourCle` laissait 94 tests OK.** Les tests exerçaient
+// `faitsServis`, la fonction pure, jamais son USAGE. La promesse « le
+// fail-ouvert est bruyant » n'était gardée nulle part — donc une régression SQL
+// qui cesserait de servir les colonnes rouvrait l'accès à tout le monde en
+// silence, c'est-à-dire le défaut d'origine remis une couche plus haut.
+//
+// On exerce donc `contextePourCle` pour de vrai, avec un faux PostgREST, et on
+// lit ce qui part dans les logs.
+const resoudreAvecLigne = async (ligne, cle) => {
+  const fetchOriginal = globalThis.fetch;
+  const warnOriginal = console.warn;
+  const avertissements = [];
+  const appels = [];
+  process.env.SUPABASE_URL = process.env.SUPABASE_URL || 'https://exemple.test';
+  process.env.SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'anon-de-test';
+  console.warn = (...a) => avertissements.push(a.join(' '));
+  globalThis.fetch = async (url) => {
+    appels.push(String(url));
+    const corps = String(url).includes('mcp_resolve_api_key') ? [ligne] : [];
+    return new Response(JSON.stringify(corps), { status: 200 });
+  };
+  try {
+    const ctx = await contextePourCle(cle);
+    return { ctx, avertissements, appels };
+  } finally {
+    globalThis.fetch = fetchOriginal;
+    console.warn = warnOriginal;
+  }
+};
+
+const LIGNE_SERVIE = {
+  establishment_id: '11111111-1111-4111-8111-111111111111',
+  permissions: ['read'],
+  is_test: false,
+  account_type: null,
+  stripe_subscription_status: 'active',
+  trial_ends_at: null,
+};
+
+await (async () => {
+  const cle = genererCle().cle;
+
+  await okAsync('aucune colonne servie : l’avertissement part, et nomme les quatre', async () => {
+    const { ctx, avertissements } = await resoudreAvecLigne({
+      establishment_id: LIGNE_SERVIE.establishment_id, permissions: ['read'],
+    }, cle);
+    assert.ok(ctx, 'la clé doit résoudre quand même : le fail-ouvert ne coupe pas');
+    assert.equal(avertissements.length, 1, `${avertissements.length} avertissement(s) : le fail-ouvert est muet`);
+    for (const colonne of ['is_test', 'account_type', 'stripe_subscription_status', 'trial_ends_at']) {
+      assert.ok(avertissements[0].includes(colonne), `${colonne} n’est pas nommée dans l’avertissement`);
+    }
+  });
+
+  await okAsync('une seule colonne perdue : elle est nommée, et elle seule', async () => {
+    const { trial_ends_at, ...sansEssai } = LIGNE_SERVIE;
+    const { avertissements } = await resoudreAvecLigne(sansEssai, cle);
+    assert.equal(avertissements.length, 1, 'perdre trial_ends_at seule ne dit rien');
+    assert.ok(avertissements[0].includes('trial_ends_at'));
+    assert.ok(!avertissements[0].includes('is_test'), 'une colonne servie est signalée comme manquante');
+  });
+
+  await okAsync('colonnes servies à null : aucun bruit', async () => {
+    const { avertissements } = await resoudreAvecLigne(LIGNE_SERVIE, cle);
+    assert.deepEqual(avertissements, [],
+      'le fail-ouvert crie alors que la base sert tout — en production ce serait une ligne par requête');
+  });
+
+  await okAsync('la clé est jugée AVANT l’abonnement : une clé malformée ne touche pas la base', async () => {
+    // L'ordre n'est pas cosmétique : il faut avoir prouvé qu'on détient une clé
+    // valide de cet établissement pour s'entendre dire que son abonnement est
+    // fini. L'inverse ferait de ce message un oracle pour qui tâtonne des clés.
+    let appels = 0;
+    const fetchOriginal = globalThis.fetch;
+    globalThis.fetch = async () => { appels += 1; return new Response('[]', { status: 200 }); };
+    try {
+      await assert.rejects(() => contextePourCle('pas-une-cle'), (e) => e instanceof CleRefusee);
+      assert.equal(appels, 0, 'une clé malformée a interrogé la base : la forme devrait la refuser avant');
+    } finally { globalThis.fetch = fetchOriginal; }
+  });
+
+  await okAsync('un compte éteint lève AbonnementSuspendu, pas CleRefusee', async () => {
+    const echu = new Date(Date.now() - 200 * 86400e3).toISOString();
+    await assert.rejects(
+      () => resoudreAvecLigne({ ...LIGNE_SERVIE, stripe_subscription_status: null, trial_ends_at: echu }, cle),
+      (e) => e instanceof AbonnementSuspendu && !(e instanceof CleRefusee) && /réactiv/i.test(e.message),
+    );
+  });
+})();
 
 console.log(`\n${passed} tests OK — MCP privé : clés, jeton, point de passage\n`);
