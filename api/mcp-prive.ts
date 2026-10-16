@@ -27,7 +27,7 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { cleDepuisEnTete, cleLisible } from '../lib/prive/cles.js';
-import { contextePourCle, CleRefusee } from '../lib/prive/contexte.js';
+import { contextePourCle, CleRefusee, AbonnementSuspendu } from '../lib/prive/contexte.js';
 import { deploiementAutorise, MESSAGE_HOTE_REFUSE } from '../lib/prive/hote.js';
 import { OUTILS_PRIVES, OUTIL_PAR_NOM } from '../lib/prive/outils.js';
 import { RESSOURCE } from './oauth-ressource.js';
@@ -140,6 +140,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // de se reconnecter — la panne silencieuse type.
       res.setHeader('WWW-Authenticate', enteteAuthentification());
       res.status(401).json(erreur(null, -32001, 'Clé API invalide ou révoquée'));
+      return;
+    }
+    if (e instanceof AbonnementSuspendu) {
+      // 402 Payment Required, et PAS 401 : la clé est bonne. Un 401 dirait à
+      // l'assistant « authentifie-toi encore » et relancerait le parcours
+      // d'autorisation en boucle, sur un compte où aucune autorisation ne
+      // débloquera rien. Pas d'en-tête WWW-Authenticate ici, pour la même
+      // raison.
+      //
+      // Le message part tel quel jusqu'à l'assistant, donc jusqu'au gérant : il
+      // nomme la cause et porte le lien de réactivation (cf. lib/prive/acces.ts).
+      console.warn('[mcp-prive] compte suspendu', cleLisible(cle));
+      res.status(402).json(erreur(null, -32003, (e as Error).message));
       return;
     }
     console.error('[mcp-prive] résolution de clé impossible', (e as Error)?.message);

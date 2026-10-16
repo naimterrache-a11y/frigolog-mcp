@@ -42,9 +42,14 @@ const { VAR_HOTES, hoteDeLaRequete, deploiementAutorise } = await import('../lib
 const { bornerChemin } = await import('../lib/prive/borne.ts');
 const {
   contexteDeTestSansVerification, totalDepuisContentRange, PLAFOND_LECTURE, TAILLE_PAGE,
+  contextePourCle,
+  CleRefusee, AbonnementSuspendu,
 } = await import('../lib/prive/contexte.ts');
 const { OUTIL_PAR_NOM } = await import('../lib/prive/outils.ts');
 const { jugerReleve, STATUT_TEMPERATURE } = await import('../lib/prive/conformite.ts');
+const {
+  verdictAcces, messageCoupure, VECTEURS_ACCES, URL_REACTIVATION, PAIEMENT_A_REGULARISER, TYPES_JAMAIS_COUPES, faitsServis,
+} = await import('../lib/prive/acces.ts');
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const lire = (...p) => readFileSync(path.join(ROOT, ...p), 'utf8');
@@ -981,5 +986,349 @@ ok('seul le select porte l\'embed : un order= qui nomme la ressource n\'est ni p
   assert.ok(b.includes('select=equipments!inner(name)'));
   assert.ok(b.includes('order=equipments(name).asc'), 'le order= a été réécrit');
 });
+
+// ─── Accès : un compte éteint ne sert plus ses données ─────────────────
+// Décision de Naïm du 2026-10-15 : couper, avec un message qui dit pourquoi et
+// un lien cliquable pour réactiver.
+//
+// Ce que ces vecteurs NE prouvent pas : qu'un client ait été servi gratuitement.
+// La clé trouvée en production sur un essai échu appartient à un compte interne
+// (décision du 2026-10-16), et `is_test` n'est jamais coupé. Ces cas-ci gardent
+// un comportement à venir, pas un incident passé.
+
+const faitsDuVecteur = ({ trial_jours, ...reste }) => (
+  trial_jours === undefined
+    ? reste
+    : { ...reste, trial_ends_at: new Date(Date.now() + trial_jours * 86400e3).toISOString() }
+);
+
+for (const v of VECTEURS_ACCES) {
+  ok(`accès — ${v.nom} : ${v.coupe ? 'coupé' : 'ouvert'}`, () => {
+    const verdict = verdictAcces(faitsDuVecteur(v.faits));
+    assert.equal(verdict.coupe, v.coupe);
+    // Un verdict qui coupe SANS motif ne produirait aucun message : le point de
+    // passage retomberait sur le 503 « service indisponible », soit la panne
+    // silencieuse qu'on cherche précisément à éviter.
+    if (v.coupe) assert.ok(verdict.motif, 'une coupure sans motif ne dit rien au gérant');
+    else assert.equal(verdict.motif, undefined);
+  });
+}
+
+// ─── Le vecteur partagé, asserté des DEUX côtés ────────────────────────
+//
+// Relevé par la revue adverse du 2026-10-16 : la taille figée (14) et la liste
+// de bypass n'étaient assertées QUE dans le dépôt `frigolog`. Deux divergences
+// passaient donc en silence :
+//   · un 15ᵉ vecteur ajouté ICI seulement : 89 tests OK ici, 32 là-bas ;
+//   · `|| account_type === 'partner'` ajouté à `isPaywalled` seulement : les
+//     DEUX suites passent, et le MCP coupe un `partner` à essai échu que l'app
+//     laisse travailler. C'est « le client qui paie et à qui on coupe l'IA »,
+//     le pire cas de ce chantier. Aucun `partner` en prod aujourd'hui, mais les
+//     apporteurs et les organismes de formation sont en cours.
+ok('le vecteur partagé garde sa taille — en ajouter un ici sans le faire là-bas ne protège rien', () => {
+  assert.equal(VECTEURS_ACCES.length, 14);
+});
+
+ok('la liste des comptes jamais coupés est figée, et sondée type par type', () => {
+  // Miroir EXACT de la boucle de `tests/billingAccess.test.mjs` (dépôt frigolog).
+  //
+  // Relevé le 2026-10-16 : ma version ne sondait qu'UN seul type inconnu
+  // (`standard`). Un `if (faits.account_type === 'partner') return { coupe: false }`
+  // écrit en dur dans `verdictAcces`, sans toucher au Set, survivait — 92 tests
+  // OK. Le côté app bouclait, lui, sur huit valeurs et mordait : c'était ce
+  // côté-ci, le MCP, le maillon faible du miroir.
+  assert.deepEqual([...TYPES_JAMAIS_COUPES].sort(), ['beta', 'founder']);
+  const echu = new Date(Date.now() - 200 * 86400e3).toISOString();
+  for (const t of TYPES_JAMAIS_COUPES) {
+    assert.equal(verdictAcces({ account_type: t, trial_ends_at: echu }).coupe, false, t);
+  }
+  // Tout autre type DOIT être coupé — y compris écrit en dur ailleurs dans la
+  // fonction. La liste des candidats couvre ce qui existe en base (`standard`)
+  // et ce qui est en cours d'arrivée.
+  for (const t of ['standard', 'partner', 'formateur', 'apporteur', 'reseau', null, undefined, '']) {
+    assert.equal(verdictAcces({ account_type: t, trial_ends_at: echu }).coupe, true,
+      `account_type ${JSON.stringify(t)} échappe à la coupure : ajoute-le à la liste de bypass`
+      + " de src/lib/billing.js (dépôt frigolog), ou retire-le d'ici");
+  }
+});
+
+ok('les colonnes surveillées sont EXACTEMENT celles que FaitsAcces déclare', () => {
+  // Condition posée par la revue adverse du 2026-10-17 : la liste des colonnes
+  // attendues est écrite en dur dans `faitsServis`. Une CINQUIÈME colonne
+  // ajoutée à `FaitsAcces` et servie par la migration ne serait surveillée par
+  // rien — mesuré : `tsc` 0 erreur, 92 tests OK, aucun avertissement. Le fait
+  // de facturation serait lu par `verdictAcces` sans que sa perte soit jamais
+  // signalée, ce qui est le défaut d'origine remis une couche plus haut.
+  //
+  // On lit donc l'interface dans le SOURCE et on la compare à ce que
+  // `faitsServis` surveille. Ajouter un champ sans l'ajouter à la liste fait
+  // tomber ce test, en le nommant.
+  const src = lire('lib', 'prive', 'acces.ts');
+  const bloc = new RegExp('export interface FaitsAcces \\{([\\s\\S]*?)\\n}').exec(src);
+  assert.ok(bloc, 'l’interface FaitsAcces n’a plus la forme attendue');
+
+  // ⚠️ ON N'EXTRAIT PAS, ON EXIGE UNE FORME. Deux versions de cette garde ont
+  // échoué avant celle-ci, et dans les deux sens.
+  //
+  //  · la 1ʳᵉ EXTRAYAIT les champs avec une expression, et ignorait en silence
+  //    ce qu'elle ne savait pas lire : un commentaire entre le nom et le type
+  //    (`readonly x /* Stripe */ ?: boolean`), un type sur la ligne suivante, un
+  //    nom entre guillemets. Trois colonnes pouvaient être servies sans être
+  //    surveillées, suite verte ;
+  //  · la 2ᵈᵉ comptait les `:` du bloc pour détecter ce qu'elle ratait — et
+  //    ACCUSAIT À TORT une interface correctement écrite : un type objet
+  //    (`{ a: string }`), un littéral `'a:b'`, et même un commentaire de bloc
+  //    dont une ligne de suite a la forme `mot: …`. Une garde qui accuse à tort
+  //    se fait désactiver dans la semaine.
+  //
+  // D'où la règle inverse, et c'est la seule qui ne mente dans aucun sens :
+  // CHAQUE ligne du bloc doit être une déclaration canonique
+  // `readonly <nom_snake_case>?: <type>;`, ou rien du tout. Une ligne qui ne
+  // s'y conforme pas ne fait pas « rater un champ » : elle fait tomber le test,
+  // en se citant. Le snake_case est exigé parce que ces champs sont des COLONNES
+  // Postgres : un `factureImpayee` ne correspondrait à rien en base.
+  const CANONIQUE = /^\s*readonly\s+[a-z][a-z_0-9]*\?:\s*[^;]+;\s*$/;
+  const lignesBloc = bloc[1]
+    .replace(/[/][*][^]*?[*][/]/g, '')                     // commentaires de bloc
+    .split(String.fromCharCode(10))
+    .map((x) => x.split(String.fromCharCode(13)).join('').replace(/[/][/].*$/, '').trimEnd())
+    .filter((x) => x.trim() !== '');
+
+  const horsForme = lignesBloc.filter((x) => !CANONIQUE.test(x));
+  assert.deepEqual(horsForme, [],
+    'Ces lignes de FaitsAcces ne sont pas des déclarations lisibles :\n  '
+    + horsForme.join('\n  ')
+    + '\n\nÉcris chaque champ sous la forme `readonly <nom_snake_case>?: <type>;`, une par ligne.'
+    + ' C\'est ce qui garantit qu\'aucune colonne servie n\'échappe à la surveillance du'
+    + ' fail-ouvert — et un nom en camelCase ne correspondrait à aucune colonne Postgres.');
+
+  const champs = lignesBloc.map((x) => /readonly\s+([a-z][a-z_0-9]*)\?:/.exec(x)[1]);
+  assert.equal(champs.length, lignesBloc.length, 'un champ canonique n’a pas été lu');
+  assert.ok(champs.length >= 4, `${champs.length} champ(s) dans FaitsAcces : la lecture a cassé`);
+  // `faitsServis(null)` rend toutes les colonnes surveillées : c'est la liste.
+  // `is_demo` est le seul champ volontairement NON surveillé : la fonction SQL
+  // ne le sert jamais — elle l'utilise dans son `where` pour refuser la clé d'un
+  // compte de démo, et ne le renvoie pas. Le surveiller ferait crier le
+  // fail-ouvert à chaque requête, pour toujours. L'exclusion est donc nommée
+  // ici, avec sa raison, et toute AUTRE colonne ajoutée à l'interface devra
+  // être surveillée ou exclue explicitement.
+  const NON_SURVEILLEES = { is_demo: 'jamais servie : filtrée dans le where de mcp_resolve_api_key' };
+  for (const [champ, raison] of Object.entries(NON_SURVEILLEES)) {
+    assert.ok(champs.includes(champ), `${champ} exclu mais absent de FaitsAcces`);
+    assert.ok(raison.length > 30, `${champ} exclu sans raison lisible`);
+  }
+  const attendues = champs.filter((c) => !(c in NON_SURVEILLEES));
+  assert.deepEqual([...faitsServis(null)].sort(), [...attendues].sort(),
+    'FaitsAcces et faitsServis ne surveillent pas les mêmes colonnes — une colonne servie '
+    + 'mais non surveillée perd le droit de faire crier le fail-ouvert');
+});
+
+ok('faitsServis NOMME chaque colonne manquante — une seule suffit à fausser le verdict', () => {
+  // Relevé le 2026-10-16 : avec un OU sur les quatre colonnes, perdre
+  // `trial_ends_at` seule rendait « des faits sont servis ». Aucun
+  // avertissement, et plus rien pour décider : accès rouvert à tout le monde en
+  // silence. Sans `trial_ends_at`, un essai échu ressemble à un essai en cours.
+  const QUATRE = ['is_test', 'account_type', 'stripe_subscription_status', 'trial_ends_at'];
+  assert.deepEqual(faitsServis(null), QUATRE);
+  assert.deepEqual(faitsServis(undefined), QUATRE);
+  assert.deepEqual(faitsServis({}), QUATRE);
+  // Colonnes servies avec des valeurs nulles : rien ne manque. Un compte sans
+  // abonnement ni essai renseigné est dans ce cas, et il ne doit rien crier.
+  assert.deepEqual(faitsServis({
+    is_test: false, account_type: null, stripe_subscription_status: null, trial_ends_at: null,
+  }), []);
+  // Chaque colonne perdue SEULE doit être nommée. C'est le cas qui échappait.
+  for (const perdue of QUATRE) {
+    const servies = {
+      is_test: false, account_type: null, stripe_subscription_status: null, trial_ends_at: null,
+    };
+    delete servies[perdue];
+    assert.deepEqual(faitsServis(servies), [perdue], `${perdue} perdue seule n'est pas nommée`);
+  }
+});
+
+ok('le message ne promet plus qu’une clé OAuth survivra à des mois de suspension', () => {
+  // Une suspension pour impayé dure des mois — Stripe relance trois semaines
+  // avant d'abandonner, et un compte peut rester éteint ensuite. Or un jeton
+  // 90 jours (api/oauth/actions.js du dépôt frigolog, DUREE_JETON_JOURS = 90),
+  // et `mcp_resolve_api_key` filtre `expires_at > now()`. Promettre « elle
+  // refonctionnera sans rien changer » envoyait le gérant chasser un bug de clé
+  // sur un 401 — exactement ce que ce message existe pour éviter.
+  for (const motif of ['essai_termine', 'abonnement_termine']) {
+    const m = messageCoupure(motif);
+    assert.ok(/90 jours/.test(m), `${motif} : l'expiration du jeton n'est pas dite`);
+    assert.ok(!/sans rien avoir à changer/.test(m), `${motif} : la promesse fausse est revenue`);
+    assert.ok(/un clic/.test(m), `${motif} : la distinction clé collée / un clic a disparu`);
+  }
+});
+
+ok('les vecteurs couvrent les deux verdicts, et le fichier miroir reste nommé', () => {
+  // Un jeu de vecteurs qui ne contiendrait que des `false` passerait avec une
+  // fonction qui ne coupe jamais — c'est-à-dire avec le défaut d'origine.
+  assert.ok(VECTEURS_ACCES.some((v) => v.coupe), 'aucun vecteur ne coupe');
+  assert.ok(VECTEURS_ACCES.some((v) => !v.coupe), 'aucun vecteur ne passe');
+  assert.ok(lire('lib', 'prive', 'acces.ts').includes('src/lib/billing.js'),
+    "le miroir côté app n'est plus nommé : la divergence redeviendrait silencieuse");
+});
+
+ok('un essai échu coupe, mais une carte refusée jamais', () => {
+  const echu = new Date(Date.now() - 100 * 86400e3).toISOString();
+  assert.equal(verdictAcces({ trial_ends_at: echu }).coupe, true);
+  for (const statut of PAIEMENT_A_REGULARISER) {
+    assert.equal(verdictAcces({ stripe_subscription_status: statut, trial_ends_at: echu }).coupe, false,
+      `${statut} coupe l'accès : c'est l'incident du Mafé qui recommence`);
+  }
+});
+
+ok('aucun fait servi ne coupe personne — la migration SQL peut arriver après', () => {
+  // Fail-OUVERT sur l'inconnu. Si cette assertion tombe, déployer ce dépôt
+  // avant la migration couperait TOUS les clients.
+  assert.equal(verdictAcces({}).coupe, false);
+  assert.equal(verdictAcces(null).coupe, false);
+  assert.equal(verdictAcces(undefined).coupe, false);
+});
+
+ok('le message de coupure porte le lien de réactivation et nomme la cause', () => {
+  for (const motif of ['essai_termine', 'abonnement_termine']) {
+    const m = messageCoupure(motif);
+    assert.ok(m.includes(URL_REACTIVATION), `${motif} : pas de lien cliquable`);
+    assert.ok(/réactiv/i.test(m), `${motif} : ne dit pas quoi faire`);
+    assert.ok(/intactes/.test(m), `${motif} : ne rassure pas sur les données`);
+  }
+  // Les deux motifs ne disent pas la même chose : un client qui a payé un an ne
+  // s'entend pas dire que son essai est terminé.
+  assert.notEqual(messageCoupure('essai_termine'), messageCoupure('abonnement_termine'));
+  assert.ok(/essai/i.test(messageCoupure('essai_termine')));
+  assert.ok(/abonnement/i.test(messageCoupure('abonnement_termine')));
+});
+
+ok('un compte suspendu n’est pas une clé refusée — l’aiguillage, pas seulement le texte', () => {
+  // Sabotage de la revue adverse du 2026-10-16, et il passait : faire hériter
+  // `AbonnementSuspendu` de `CleRefusee`. `tsc` propre, 93 tests OK, et comme
+  // `api/mcp-prive.ts` teste `e instanceof CleRefusee` AVANT, un compte suspendu
+  // repartait en **401 « Clé API invalide ou révoquée »** — le message de
+  // coupure et son lien de réactivation jetés, et le gérant renvoyé chasser un
+  // bug de clé. La garde d'à côté ne lit que le TEXTE de la branche 402, jamais
+  // l'aiguillage qui y mène.
+  const suspendu = new AbonnementSuspendu('test');
+  assert.ok(!(suspendu instanceof CleRefusee),
+    'AbonnementSuspendu hérite de CleRefusee : le point de passage l’attrapera dans la branche 401, '
+    + 'qui est testée d’abord, et le message de coupure ne sortira jamais');
+  assert.ok(!(new CleRefusee() instanceof AbonnementSuspendu), 'les deux erreurs se confondent dans l’autre sens');
+  assert.equal(suspendu.message, 'test', 'le message de coupure ne survit pas à la construction');
+  // Et l'ordre des branches, lu dans le code : si un jour `CleRefusee` passait
+  // en premier sur une classe qui en hérite, ce test-ci ne suffirait plus.
+  const code = lireCode('api', 'mcp-prive.ts');
+  assert.ok(code.indexOf('AbonnementSuspendu') > 0 && code.indexOf('CleRefusee') > 0,
+    'une des deux branches a disparu du point de passage');
+});
+
+ok("le point de passage répond 402 sans relancer l'autorisation", () => {
+  const code = lireCode('api', 'mcp-prive.ts');
+  const i = code.indexOf('if (e instanceof AbonnementSuspendu)');
+  assert.ok(i > 0, 'le point de passage ne traite pas AbonnementSuspendu');
+  // La branche, de son `if` à son `return` : c'est là que 402 doit être, et
+  // c'est là que WWW-Authenticate ne doit PAS être. Mesuré sur le code SANS
+  // commentaires — ce fichier explique longuement ce qu'il ne fait pas, et un
+  // garde qui mord sur une explication est un garde qu'on finit par désarmer.
+  const corps = code.slice(i, i + code.slice(i).indexOf('return;'));
+  assert.ok(corps.includes('402'), 'un compte suspendu ne répond pas 402');
+  assert.ok(!/WWW-Authenticate/i.test(corps),
+    "la branche relance le parcours d'autorisation : l'assistant bouclera sans jamais débloquer");
+  assert.ok(!corps.includes('401'), 'un 401 ferait chercher un bug de clé');
+});
+
+// ─── Le fail-ouvert DOIT crier, et c'est le point d'appel qu'on exerce ─
+//
+// Relevé par la revue adverse du 2026-10-16, et c'est le défaut le plus grave
+// qu'elle ait trouvé dans mes gardes : **supprimer tout le bloc `console.warn`
+// de `contextePourCle` laissait 94 tests OK.** Les tests exerçaient
+// `faitsServis`, la fonction pure, jamais son USAGE. La promesse « le
+// fail-ouvert est bruyant » n'était gardée nulle part — donc une régression SQL
+// qui cesserait de servir les colonnes rouvrait l'accès à tout le monde en
+// silence, c'est-à-dire le défaut d'origine remis une couche plus haut.
+//
+// On exerce donc `contextePourCle` pour de vrai, avec un faux PostgREST, et on
+// lit ce qui part dans les logs.
+const resoudreAvecLigne = async (ligne, cle) => {
+  const fetchOriginal = globalThis.fetch;
+  const warnOriginal = console.warn;
+  const avertissements = [];
+  const appels = [];
+  process.env.SUPABASE_URL = process.env.SUPABASE_URL || 'https://exemple.test';
+  process.env.SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'anon-de-test';
+  console.warn = (...a) => avertissements.push(a.join(' '));
+  globalThis.fetch = async (url) => {
+    appels.push(String(url));
+    const corps = String(url).includes('mcp_resolve_api_key') ? [ligne] : [];
+    return new Response(JSON.stringify(corps), { status: 200 });
+  };
+  try {
+    const ctx = await contextePourCle(cle);
+    return { ctx, avertissements, appels };
+  } finally {
+    globalThis.fetch = fetchOriginal;
+    console.warn = warnOriginal;
+  }
+};
+
+const LIGNE_SERVIE = {
+  establishment_id: '11111111-1111-4111-8111-111111111111',
+  permissions: ['read'],
+  is_test: false,
+  account_type: null,
+  stripe_subscription_status: 'active',
+  trial_ends_at: null,
+};
+
+await (async () => {
+  const cle = genererCle().cle;
+
+  await okAsync('aucune colonne servie : l’avertissement part, et nomme les quatre', async () => {
+    const { ctx, avertissements } = await resoudreAvecLigne({
+      establishment_id: LIGNE_SERVIE.establishment_id, permissions: ['read'],
+    }, cle);
+    assert.ok(ctx, 'la clé doit résoudre quand même : le fail-ouvert ne coupe pas');
+    assert.equal(avertissements.length, 1, `${avertissements.length} avertissement(s) : le fail-ouvert est muet`);
+    for (const colonne of ['is_test', 'account_type', 'stripe_subscription_status', 'trial_ends_at']) {
+      assert.ok(avertissements[0].includes(colonne), `${colonne} n’est pas nommée dans l’avertissement`);
+    }
+  });
+
+  await okAsync('une seule colonne perdue : elle est nommée, et elle seule', async () => {
+    const { trial_ends_at, ...sansEssai } = LIGNE_SERVIE;
+    const { avertissements } = await resoudreAvecLigne(sansEssai, cle);
+    assert.equal(avertissements.length, 1, 'perdre trial_ends_at seule ne dit rien');
+    assert.ok(avertissements[0].includes('trial_ends_at'));
+    assert.ok(!avertissements[0].includes('is_test'), 'une colonne servie est signalée comme manquante');
+  });
+
+  await okAsync('colonnes servies à null : aucun bruit', async () => {
+    const { avertissements } = await resoudreAvecLigne(LIGNE_SERVIE, cle);
+    assert.deepEqual(avertissements, [],
+      'le fail-ouvert crie alors que la base sert tout — en production ce serait une ligne par requête');
+  });
+
+  await okAsync('la clé est jugée AVANT l’abonnement : une clé malformée ne touche pas la base', async () => {
+    // L'ordre n'est pas cosmétique : il faut avoir prouvé qu'on détient une clé
+    // valide de cet établissement pour s'entendre dire que son abonnement est
+    // fini. L'inverse ferait de ce message un oracle pour qui tâtonne des clés.
+    let appels = 0;
+    const fetchOriginal = globalThis.fetch;
+    globalThis.fetch = async () => { appels += 1; return new Response('[]', { status: 200 }); };
+    try {
+      await assert.rejects(() => contextePourCle('pas-une-cle'), (e) => e instanceof CleRefusee);
+      assert.equal(appels, 0, 'une clé malformée a interrogé la base : la forme devrait la refuser avant');
+    } finally { globalThis.fetch = fetchOriginal; }
+  });
+
+  await okAsync('un compte éteint lève AbonnementSuspendu, pas CleRefusee', async () => {
+    const echu = new Date(Date.now() - 200 * 86400e3).toISOString();
+    await assert.rejects(
+      () => resoudreAvecLigne({ ...LIGNE_SERVIE, stripe_subscription_status: null, trial_ends_at: echu }, cle),
+      (e) => e instanceof AbonnementSuspendu && !(e instanceof CleRefusee) && /réactiv/i.test(e.message),
+    );
+  });
+})();
 
 console.log(`\n${passed} tests OK — MCP privé : clés, jeton, point de passage\n`);
