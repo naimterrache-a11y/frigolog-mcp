@@ -42,6 +42,7 @@ const { VAR_HOTES, hoteDeLaRequete, deploiementAutorise } = await import('../lib
 const { bornerChemin } = await import('../lib/prive/borne.ts');
 const {
   contexteDeTestSansVerification, totalDepuisContentRange, PLAFOND_LECTURE, TAILLE_PAGE,
+  CleRefusee, AbonnementSuspendu,
 } = await import('../lib/prive/contexte.ts');
 const { OUTIL_PAR_NOM } = await import('../lib/prive/outils.ts');
 const { jugerReleve, STATUT_TEMPERATURE } = await import('../lib/prive/conformite.ts');
@@ -1066,6 +1067,21 @@ ok('les colonnes surveillées sont EXACTEMENT celles que FaitsAcces déclare', (
   assert.ok(bloc, 'l’interface FaitsAcces n’a plus la forme attendue');
   const champs = [...bloc[1].matchAll(new RegExp('^\\s*(?:readonly\\s+)?([A-Za-z_0-9]+)\\??:', 'gm'))].map((m) => m[1]);
   assert.ok(champs.length >= 4, `${champs.length} champ(s) lus dans FaitsAcces : la lecture a cassé`);
+  // ⚠️ COMPTER les déclarations, pas seulement lire celles qu'on sait lire.
+  // Relevé le 2026-10-16 : trois écritures échappaient à l'extracteur EN
+  // SILENCE — un commentaire entre le nom et le type
+  // (`readonly x /* Stripe */ ?: boolean`), un type sur la ligne suivante, et un
+  // nom entre guillemets (`readonly 'x'?: boolean`). Un extracteur qui ignore ce
+  // qu'il ne comprend pas laisse passer exactement le champ qu'on cherchait.
+  // Une déclaration = un `:` de premier niveau dans le bloc, commentaires retirés.
+  const corps = bloc[1]
+    .replace(/[/][*][^]*?[*][/]/g, ' ')
+    .split(String.fromCharCode(10)).map((x) => x.replace(/[/][/].*$/, '')).join(String.fromCharCode(10));
+  const declarations = (corps.match(/:/g) || []).length;
+  assert.equal(champs.length, declarations,
+    `${declarations} déclaration(s) dans FaitsAcces, ${champs.length} lue(s) : une écriture `
+    + "échappe à l'extracteur. Les formes connues qui cassent : un commentaire entre le nom et "
+    + 'le type, un type sur la ligne suivante, un nom entre guillemets.');
   // `faitsServis(null)` rend toutes les colonnes surveillées : c'est la liste.
   // `is_demo` est le seul champ volontairement NON surveillé : la fonction SQL
   // ne le sert jamais — elle l'utilise dans son `where` pour refuser la clé d'un
@@ -1109,8 +1125,8 @@ ok('faitsServis NOMME chaque colonne manquante — une seule suffit à fausser l
 });
 
 ok('le message ne promet plus qu’une clé OAuth survivra à des mois de suspension', () => {
-  // Une suspension pour impayé dure des mois — celle de l'incident a duré cinq
-  // mois. Or un jeton d'assistant obtenu « en un clic » porte un `expires_at` à
+  // Une suspension pour impayé dure des mois — Stripe relance trois semaines
+  // avant d'abandonner, et un compte peut rester éteint ensuite. Or un jeton
   // 90 jours (api/oauth/actions.js du dépôt frigolog, DUREE_JETON_JOURS = 90),
   // et `mcp_resolve_api_key` filtre `expires_at > now()`. Promettre « elle
   // refonctionnera sans rien changer » envoyait le gérant chasser un bug de clé
@@ -1161,6 +1177,27 @@ ok('le message de coupure porte le lien de réactivation et nomme la cause', () 
   assert.notEqual(messageCoupure('essai_termine'), messageCoupure('abonnement_termine'));
   assert.ok(/essai/i.test(messageCoupure('essai_termine')));
   assert.ok(/abonnement/i.test(messageCoupure('abonnement_termine')));
+});
+
+ok('un compte suspendu n’est pas une clé refusée — l’aiguillage, pas seulement le texte', () => {
+  // Sabotage de la revue adverse du 2026-10-16, et il passait : faire hériter
+  // `AbonnementSuspendu` de `CleRefusee`. `tsc` propre, 93 tests OK, et comme
+  // `api/mcp-prive.ts` teste `e instanceof CleRefusee` AVANT, un compte suspendu
+  // repartait en **401 « Clé API invalide ou révoquée »** — le message de
+  // coupure et son lien de réactivation jetés, et le gérant renvoyé chasser un
+  // bug de clé. La garde d'à côté ne lit que le TEXTE de la branche 402, jamais
+  // l'aiguillage qui y mène.
+  const suspendu = new AbonnementSuspendu('test');
+  assert.ok(!(suspendu instanceof CleRefusee),
+    'AbonnementSuspendu hérite de CleRefusee : le point de passage l’attrapera dans la branche 401, '
+    + 'qui est testée d’abord, et le message de coupure ne sortira jamais');
+  assert.ok(!(new CleRefusee() instanceof AbonnementSuspendu), 'les deux erreurs se confondent dans l’autre sens');
+  assert.equal(suspendu.message, 'test', 'le message de coupure ne survit pas à la construction');
+  // Et l'ordre des branches, lu dans le code : si un jour `CleRefusee` passait
+  // en premier sur une classe qui en hérite, ce test-ci ne suffirait plus.
+  const code = lireCode('api', 'mcp-prive.ts');
+  assert.ok(code.indexOf('AbonnementSuspendu') > 0 && code.indexOf('CleRefusee') > 0,
+    'une des deux branches a disparu du point de passage');
 });
 
 ok("le point de passage répond 402 sans relancer l'autorisation", () => {
