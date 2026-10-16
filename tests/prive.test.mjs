@@ -1091,7 +1091,7 @@ ok('les colonnes surveillées sont EXACTEMENT celles que FaitsAcces déclare', (
   const lignesBloc = bloc[1]
     .replace(/[/][*][^]*?[*][/]/g, '')                     // commentaires de bloc
     .split(String.fromCharCode(10))
-    .map((x) => x.replace(/[/][/].*$/, '').trimEnd())      // commentaires de fin de ligne
+    .map((x) => x.split(String.fromCharCode(13)).join('').replace(/[/][/].*$/, '').trimEnd())
     .filter((x) => x.trim() !== '');
 
   const horsForme = lignesBloc.filter((x) => !CANONIQUE.test(x));
