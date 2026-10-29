@@ -30,7 +30,7 @@ ok('aucun résultat, SIRET vide ou mal formé : pas de lien pré-rempli', () => 
   assert.equal(ctaLienEtablissement(OUTIL, [E('')], 1), undefined);
   assert.equal(ctaLienEtablissement(OUTIL, [E('8527341980')], 1), undefined);
 });
-ok('recherche tronquée (total > fiches lues) : lien générique, l'homonyme est peut-être plus loin', () => {
+ok('recherche tronquée (total > fiches lues) : lien générique, un homonyme peut suivre', () => {
   assert.equal(ctaLienEtablissement(OUTIL, [E('85273419800012')], 2), undefined);
   assert.equal(ctaLienEtablissement(OUTIL, Array.from({ length: 5 }, () => E('85273419800012')), 6), undefined);
   assert.equal(ctaLienEtablissement(OUTIL, [E('85273419800012')], undefined), undefined);
