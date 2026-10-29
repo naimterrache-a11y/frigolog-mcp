@@ -39,3 +39,51 @@ export function ctaFor(toolName: string): ToolCta | undefined {
   if (!conseil) return undefined;
   return { conseil_pratique: conseil, lien: ctaLien(toolName) };
 }
+
+// ---- Le lien d'UN établissement (29/10/2026) --------------------------------
+// get_alimconfiance_etablissement est l'outil le plus appelé (341 appels sur 30
+// jours au 28/10/2026), et c'est le seul où l'on sait de QUI on parle. Le lien
+// générique vers frigolog.fr n'a amené aucun visiteur en 90 jours. Quand la
+// recherche désigne un seul établissement, le lien mène donc à l'inscription
+// déjà remplie à son nom et à son SIRET : la personne n'a plus rien à taper.
+//
+// Le texte du conseil ne change pas : il est validé côté business et se
+// recopie (voir plus haut). Seule la destination du lien change.
+//
+// UN SEUL SIRET, sinon le lien générique. Une recherche par nom renvoie souvent
+// plusieurs établissements homonymes : pré-remplir le premier, ce serait
+// inscrire quelqu'un au nom d'un autre. Plusieurs inspections d'un même SIRET,
+// en revanche, désignent bien un seul établissement.
+//
+// ET TOUTES LES FICHES VUES. La recherche est bornée (limit, 5 par défaut,
+// parfois 1) : cinq fiches d'un même SIRET peuvent cacher un homonyme à la
+// sixième. On ne conclut « un seul » que si `total` ne dépasse pas ce qu'on a
+// lu (relu par Parano le 29/10/2026).
+export const LIEN_INSCRIPTION_ETABLISSEMENT = 'https://app.frigolog.fr/onboarding';
+
+export function ctaLienEtablissement(
+  toolName: string,
+  etablissements: ReadonlyArray<{
+    siret?: string;
+    enseigne?: string;
+    libelle_etablissement?: string;
+    raison_sociale?: string;
+  }> | undefined,
+  total: number | undefined,
+): string | undefined {
+  if (toolName !== 'get_alimconfiance_etablissement' || !etablissements?.length) return undefined;
+  if (typeof total !== 'number' || total > etablissements.length) return undefined;
+  const sirets = new Set(etablissements.map((e) => (e.siret ?? '').trim()));
+  if (sirets.size !== 1) return undefined;
+  const [siret] = sirets;
+  if (!/^\d{14}$/.test(siret)) return undefined;
+  const e = etablissements[0];
+  const nom = (e.enseigne || e.libelle_etablissement || e.raison_sociale || '').trim();
+  const params = new URLSearchParams({ siret });
+  if (nom) params.set('etablissement', nom);
+  params.set('utm_source', 'mcp');
+  params.set('utm_medium', 'tool');
+  params.set('utm_campaign', toolName);
+  params.set('utm_content', 'fiche_etablissement');
+  return `${LIEN_INSCRIPTION_ETABLISSEMENT}?${params.toString()}`;
+}
