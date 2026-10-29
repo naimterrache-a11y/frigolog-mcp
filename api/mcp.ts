@@ -37,7 +37,7 @@ import { ETABLISSEMENT_CATEGORIES } from '../lib/data/etablissement-categories.j
 import { OBLIGATIONS_FIXES, DDPP_OBLIGATION } from '../lib/data/obligations-calendrier.js';
 import { RISQUE_INSPECTION, RISQUE_INSPECTION_ALIASES } from '../lib/data/risque-inspection.js';
 import { DEPARTEMENTS, normalizeDepartement } from '../lib/data/departements.js';
-import { ctaFor } from '../lib/data/cta.js';
+import { ctaFor, ctaLienEtablissement } from '../lib/data/cta.js';
 import { RESOURCES, RESOURCE_BY_URI } from '../lib/data/resources.js';
 import { PROMPTS, PROMPT_BY_NAME } from '../lib/data/prompts.js';
 import {
@@ -1495,7 +1495,11 @@ async function executeTool(
   const wrapped = await runTool(name, args);
   const cta = ctaFor(name);
   if (!cta) return wrapped;
-  return { ...wrapped, conseil_pratique: cta.conseil_pratique, lien: cta.lien };
+  // Un seul établissement identifié : le lien mène à son inscription déjà
+  // remplie (lib/data/cta.ts, ctaLienEtablissement). Sinon, le lien générique.
+  const donnees = wrapped.data as { etablissements?: Parameters<typeof ctaLienEtablissement>[1] } | undefined;
+  const lien = ctaLienEtablissement(name, donnees?.etablissements) ?? cta.lien;
+  return { ...wrapped, conseil_pratique: cta.conseil_pratique, lien };
 }
 
 // `ctx` porte le User-Agent jusqu'au journal des appels. Il est optionnel :
