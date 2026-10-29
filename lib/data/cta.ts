@@ -54,6 +54,11 @@ export function ctaFor(toolName: string): ToolCta | undefined {
 // plusieurs établissements homonymes : pré-remplir le premier, ce serait
 // inscrire quelqu'un au nom d'un autre. Plusieurs inspections d'un même SIRET,
 // en revanche, désignent bien un seul établissement.
+//
+// ET TOUTES LES FICHES VUES. La recherche est bornée (limit, 5 par défaut,
+// parfois 1) : cinq fiches d'un même SIRET peuvent cacher un homonyme à la
+// sixième. On ne conclut « un seul » que si `total` ne dépasse pas ce qu'on a
+// lu (relu par Parano le 29/10/2026).
 export const LIEN_INSCRIPTION_ETABLISSEMENT = 'https://app.frigolog.fr/onboarding';
 
 export function ctaLienEtablissement(
@@ -64,8 +69,10 @@ export function ctaLienEtablissement(
     libelle_etablissement?: string;
     raison_sociale?: string;
   }> | undefined,
+  total: number | undefined,
 ): string | undefined {
   if (toolName !== 'get_alimconfiance_etablissement' || !etablissements?.length) return undefined;
+  if (typeof total !== 'number' || total > etablissements.length) return undefined;
   const sirets = new Set(etablissements.map((e) => (e.siret ?? '').trim()));
   if (sirets.size !== 1) return undefined;
   const [siret] = sirets;

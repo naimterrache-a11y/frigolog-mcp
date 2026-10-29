@@ -541,6 +541,11 @@ function declaredToolNames() {
 
 function testCtas() {
   group('7. CTAs de conversion (offline — data/cta.json)');
+  // ⚠️ Ce groupe ne voit QUE le lien générique. Le lien d'un établissement
+  // (get_alimconfiance_etablissement, un seul SIRET) est construit à part par
+  // ctaLienEtablissement et mène à app.frigolog.fr/onboarding : il échouerait
+  // les règles ci-dessous par construction. Il est gardé par
+  // tests/lien-etablissement.test.mjs.
 
   // (a) gabarit du lien : un seul endroit porte le « / », on le vérifie une fois.
   check('lien_template commence par https://frigolog.fr/?',

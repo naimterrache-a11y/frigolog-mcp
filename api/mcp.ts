@@ -1497,8 +1497,14 @@ async function executeTool(
   if (!cta) return wrapped;
   // Un seul établissement identifié : le lien mène à son inscription déjà
   // remplie (lib/data/cta.ts, ctaLienEtablissement). Sinon, le lien générique.
-  const donnees = wrapped.data as { etablissements?: Parameters<typeof ctaLienEtablissement>[1] } | undefined;
-  const lien = ctaLienEtablissement(name, donnees?.etablissements) ?? cta.lien;
+  const donnees = wrapped.data as
+    | { etablissements?: Parameters<typeof ctaLienEtablissement>[1]; total?: number }
+    | undefined;
+  // Une recherche par SIRET est univoque : toutes ses fiches sont du même
+  // établissement, même tronquées. Par nom, il faut avoir tout vu (`total`).
+  const parSiret = typeof args?.siret === 'string' && args.siret.trim() !== '';
+  const total = parSiret ? donnees?.etablissements?.length : donnees?.total;
+  const lien = ctaLienEtablissement(name, donnees?.etablissements, total) ?? cta.lien;
   return { ...wrapped, conseil_pratique: cta.conseil_pratique, lien };
 }
 
