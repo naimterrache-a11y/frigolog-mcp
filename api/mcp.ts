@@ -37,6 +37,7 @@ import { ETABLISSEMENT_CATEGORIES } from '../lib/data/etablissement-categories.j
 import { OBLIGATIONS_FIXES, DDPP_OBLIGATION } from '../lib/data/obligations-calendrier.js';
 import { RISQUE_INSPECTION, RISQUE_INSPECTION_ALIASES } from '../lib/data/risque-inspection.js';
 import { DEPARTEMENTS, normalizeDepartement } from '../lib/data/departements.js';
+import PKG_JSON from '../package.json' with { type: 'json' };
 import { ctaFor, ctaLienEtablissement } from '../lib/data/cta.js';
 import { RESOURCES, RESOURCE_BY_URI } from '../lib/data/resources.js';
 import { PROMPTS, PROMPT_BY_NAME } from '../lib/data/prompts.js';
@@ -49,7 +50,9 @@ import {
 
 const PROTOCOL_VERSION = '2024-11-05';
 const SERVER_NAME = 'frigolog-haccp';
-const SERVER_VERSION = '3.0.0';
+// Lue depuis package.json, jamais écrite à la main : l'écart 3.0.0/3.0.1 (et 2.2.0/2.2.1 en
+// juillet) trompait les clients MCP qui s'en servent pour rafraîchir la liste des outils.
+const SERVER_VERSION: string = PKG_JSON.version;
 
 const META_AVERTISSEMENT =
   "Ces informations sont fournies à titre indicatif. Consultez la réglementation officielle via les liens du champ 'sources' (Légifrance, EUR-Lex, DGAL, DGCCRF) et vérifiez les tarifs sur les sites des éditeurs.";
